@@ -1,5 +1,5 @@
 import React from 'react';
-import { Trash2, ExternalLink, Download, Pencil, BookOpen, Star } from 'lucide-react';
+import { Trash2, ExternalLink, Download, Pencil, BookOpen } from 'lucide-react';
 import { Book } from '../types';
 
 interface BookCardProps {
@@ -10,10 +10,9 @@ interface BookCardProps {
   onDelete: (id: string, coverPath: string, epubPath: string) => void;
   onRead: (epubUrl: string) => void;
   onDownload: (epubUrl: string, title: string) => void;
-  onOpenReviews: (book: Book) => void;
 }
 
-export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, onOpenReviews }: BookCardProps) {
+export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload }: BookCardProps) {
   return (
     <div className="bg-white rounded-[3rem] p-5 shadow-sm hover:shadow-2xl transition-all duration-700 border border-slate-100 flex flex-col group animate-in zoom-in-95">
       <div 
@@ -91,12 +90,6 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
               Physical Copy <ExternalLink className="w-4 h-4 text-slate-400" />
             </a>
           )}
-          <button
-            onClick={() => onOpenReviews(book)}
-            className="w-full bg-amber-50 text-amber-600 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-amber-100 transition-all border border-amber-100 shadow-sm active:scale-95"
-          >
-            <Star className="w-4 h-4" /> Reviews
-          </button>
         </div>
       </div>
     </div>

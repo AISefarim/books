@@ -13,12 +13,3 @@ export interface Book {
   order?: number;
   isSettingsDoc?: boolean;
 }
-
-export interface Review {
-  id: string;
-  bookId: string;
-  rating: number;
-  text: string;
-  authorName: string;
-  createdAt: number;
-}
