@@ -18,8 +18,9 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  const [readingUrl, setReadingUrl] = useState<string | null>(null);
+  const [readingBook, setReadingBook] = useState<Book | null>(null);
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
 
   useEffect(() => {
@@ -76,11 +77,13 @@ export default function App() {
   };
 
   const handleDownload = (url: string, title: string) => {
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${title}.epub`;
-    a.click();
+    window.open(url, '_blank');
   };
+
+  const categories = Array.from(new Set(books.map(b => b.category || 'Uncategorized'))).sort();
+  const filteredBooks = selectedCategory 
+    ? books.filter(b => (b.category || 'Uncategorized') === selectedCategory)
+    : books;
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
@@ -119,12 +122,43 @@ export default function App() {
 
         {isAdmin && <AdminPanel onStatusMessage={showStatus} />}
 
+        {!isLoading && books.length > 0 && (
+          <div className="mb-8 flex flex-wrap gap-2">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+                selectedCategory === null
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
+              }`}
+            >
+              All
+            </button>
+            {categories.map(cat => (
+              <button
+                key={cat}
+                onClick={() => setSelectedCategory(cat)}
+                className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+                  selectedCategory === cat
+                    ? 'bg-indigo-600 text-white shadow-md'
+                    : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
+                }`}
+              >
+                {cat}
+              </button>
+            ))}
+          </div>
+        )}
+
         <BookGrid
-          books={books}
+          books={filteredBooks}
           isLoading={isLoading}
           isAdmin={isAdmin}
           onDelete={handleDeleteRequest}
-          onRead={setReadingUrl}
+          onRead={(url) => {
+            const book = books.find(b => b.epub === url);
+            if (book) setReadingBook(book);
+          }}
           onDownload={handleDownload}
         />
       </main>
@@ -144,10 +178,10 @@ export default function App() {
         />
       )}
 
-      {readingUrl && (
+      {readingBook && (
         <EpubReader
-          url={readingUrl}
-          onClose={() => setReadingUrl(null)}
+          book={readingBook}
+          onClose={() => setReadingBook(null)}
         />
       )}
     </div>

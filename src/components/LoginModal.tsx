@@ -12,7 +12,7 @@ export function LoginModal({ onLogin, onClose }: LoginModalProps) {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === '1234') {
+    if (password === '461500') {
       onLogin(password);
     } else {
       setError('Wrong Master Key!');

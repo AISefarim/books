@@ -49,9 +49,16 @@ export function BookCard({ book, isAdmin, onDelete, onRead, onDownload }: BookCa
             </button>
           )}
         </div>
-        <p className="text-indigo-600 font-black text-xs uppercase mb-6 tracking-tighter italic opacity-70">
-          By {book.author}
-        </p>
+        <div className="flex items-center justify-between mb-6">
+          <p className="text-indigo-600 font-black text-xs uppercase tracking-tighter italic opacity-70">
+            By {book.author}
+          </p>
+          {book.category && (
+            <span className="bg-slate-100 text-slate-500 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md">
+              {book.category}
+            </span>
+          )}
+        </div>
         <p className="text-slate-500 text-sm line-clamp-3 mb-10 font-medium leading-relaxed">{book.desc}</p>
         {book.buyLink && (
           <div className="mt-auto pt-6 border-t border-slate-50">

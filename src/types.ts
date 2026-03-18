@@ -4,6 +4,7 @@ export interface Book {
   author: string;
   desc: string;
   buyLink: string;
+  category?: string;
   cover: string;
   epub: string;
   coverPath: string;

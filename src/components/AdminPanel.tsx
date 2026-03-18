@@ -68,6 +68,7 @@ export function AdminPanel({ onStatusMessage }: AdminPanelProps) {
     const formData = new FormData(e.currentTarget);
     const title = formData.get('title') as string;
     const author = formData.get('author') as string;
+    const category = formData.get('category') as string;
     const desc = formData.get('desc') as string;
     const buyLink = formData.get('buyLink') as string;
 
@@ -82,6 +83,7 @@ export function AdminPanel({ onStatusMessage }: AdminPanelProps) {
       await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim'), {
         title,
         author,
+        category: category || 'Uncategorized',
         desc,
         buyLink,
         cover: coverUrl,
@@ -149,12 +151,19 @@ export function AdminPanel({ onStatusMessage }: AdminPanelProps) {
                 className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-lg bg-white"
                 placeholder="Title (*כותרת*)"
               />
-              <input
-                name="author"
-                required
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
-                placeholder="Author (*מחבר*)"
-              />
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  name="author"
+                  required
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                  placeholder="Author (*מחבר*)"
+                />
+                <input
+                  name="category"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                  placeholder="Category (e.g. Halacha)"
+                />
+              </div>
               <textarea
                 name="desc"
                 className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all h-24 resize-none font-medium bg-white"
