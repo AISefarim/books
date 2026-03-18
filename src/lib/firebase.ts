@@ -11,7 +11,7 @@ const fallbackConfig = {
   apiKey: "AIzaSyDxPMAW_pa1GBggo6swF348it_bdu71kZQ",
   authDomain: "ai-sefarim.firebaseapp.com",
   projectId: "ai-sefarim",
-  storageBucket: "ai-sefarim.appspot.com",
+  storageBucket: "ai-sefarim.firebasestorage.app",
   messagingSenderId: "918990822328",
   appId: "1:918990822328:web:a646432e6d6dbb19204d4d"
 };

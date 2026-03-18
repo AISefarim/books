@@ -97,7 +97,9 @@ export function AdminPanel({ onStatusMessage }: AdminPanelProps) {
       if (epubInputRef.current) epubInputRef.current.value = '';
       setIsFormVisible(false);
     } catch (err: any) {
-      console.error('Master Upload Error:', err);
+      console.error('Master Upload Error Details:', err);
+      console.error('Error code:', err.code);
+      console.error('Error message:', err.message);
       onStatusMessage(`Cloud Error: ${err.message}. Check if 'Storage' is enabled in Firebase console.`, 'error');
     } finally {
       setIsUploading(false);
@@ -167,7 +169,10 @@ export function AdminPanel({ onStatusMessage }: AdminPanelProps) {
                   <input
                     type="file"
                     ref={epubInputRef}
-                    onChange={() => { /* Trigger re-render to update label */ setProgress({ ...progress }); }}
+                    onChange={(e) => { 
+                      // Force a re-render by updating a dummy state so the label updates
+                      setProgress({ label: '', percent: 0 }); 
+                    }}
                     accept=".epub"
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
