@@ -94,8 +94,37 @@ export default function App() {
     }
   };
 
-  const handleDownload = (url: string, title: string) => {
-    window.open(url, '_blank');
+  const handleDownload = async (url: string, title: string) => {
+    try {
+      showStatus('Preparing file...', 'success');
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const file = new File([blob], `${title}.epub`, { type: 'application/epub+zip' });
+      
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        await navigator.share({
+          title: title,
+          files: [file]
+        });
+        setStatus(null);
+        return;
+      }
+      
+      // Fallback to direct download
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `${title}.epub`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(blobUrl);
+      setStatus(null);
+    } catch (e) {
+      // Fallback if fetch fails (e.g. CORS)
+      window.location.href = url;
+      setStatus(null);
+    }
   };
 
   const handleEditSave = async (id: string, updatedData: Partial<Book>) => {
