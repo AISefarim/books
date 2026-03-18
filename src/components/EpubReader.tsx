@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, BookOpen, Download, AlertCircle } from 'lucide-react';
+import { X, BookOpen, Download, AlertCircle, Maximize, Minimize } from 'lucide-react';
 import ePub, { Rendition } from 'epubjs';
 import { Book } from '../types';
 
@@ -10,9 +10,20 @@ interface EpubReaderProps {
 
 export function EpubReader({ book, onClose }: EpubReaderProps) {
   const viewerRef = useRef<HTMLDivElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
   const [rendition, setRendition] = useState<Rendition | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
 
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -55,14 +66,35 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
     rendition?.next();
   };
 
+  const toggleFullscreen = async () => {
+    if (!containerRef.current) return;
+
+    try {
+      if (!document.fullscreenElement) {
+        await containerRef.current.requestFullscreen();
+      } else {
+        await document.exitFullscreen();
+      }
+    } catch (err) {
+      console.error("Error attempting to toggle fullscreen:", err);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[100] bg-slate-900/95 flex flex-col p-4 backdrop-blur-sm">
-      <div className="bg-white w-full max-w-5xl h-[95vh] mx-auto rounded-[2.5rem] flex flex-col overflow-hidden shadow-2xl">
+      <div ref={containerRef} className={`bg-white w-full mx-auto flex flex-col overflow-hidden shadow-2xl ${isFullscreen ? 'h-screen max-w-none rounded-none' : 'max-w-5xl h-[95vh] rounded-[2.5rem]'}`}>
         <div className="p-5 border-b flex justify-between items-center bg-slate-50">
           <h3 className="font-black text-slate-800 flex items-center gap-2 tracking-tighter uppercase italic line-clamp-1">
             <BookOpen className="w-5 h-5 text-indigo-600" /> {book.title}
           </h3>
           <div className="flex items-center gap-3">
+            <button
+              onClick={toggleFullscreen}
+              className="p-2 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-full transition-colors hidden sm:block"
+              title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
+            >
+              {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
+            </button>
             <a
               href={book.epub}
               target="_blank"

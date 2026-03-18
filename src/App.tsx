@@ -14,6 +14,7 @@ import { EpubReader } from './components/EpubReader';
 import { ConfirmModal } from './components/ConfirmModal';
 import { EditBookModal } from './components/EditBookModal';
 import { SiteSettingsModal } from './components/SiteSettingsModal';
+import { AddToHomescreen } from './components/AddToHomescreen';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -246,6 +247,12 @@ export default function App() {
         />
       </main>
 
+      <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-200/60 mt-8">
+        <p className="text-slate-400 text-sm font-medium max-w-2xl mx-auto leading-relaxed">
+          <span className="font-bold text-slate-500">Please note:</span> These sefarim are generated using AI and have not been vetted by rabbinic authorities. We do not make any profit from the sale of physical books; they are printed and sold strictly at cost.
+        </p>
+      </footer>
+
       {itemToDelete && (
         <ConfirmModal
           message="Permanently delete this Sefer and its files from the cloud?"
@@ -282,6 +289,7 @@ export default function App() {
           onStatusMessage={showStatus}
         />
       )}
+      <AddToHomescreen />
     </div>
   );
 }
