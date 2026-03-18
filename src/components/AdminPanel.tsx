@@ -73,8 +73,8 @@ export function AdminPanel({ onStatusMessage }: AdminPanelProps) {
 
     try {
       const timestamp = Date.now();
-      const coverPath = `sefarim/cover_${timestamp}`;
-      const epubPath = `sefarim/epub_${timestamp}`;
+      const coverPath = `sefarim/cover_${timestamp}_${coverFile.name}`;
+      const epubPath = `sefarim/epub_${timestamp}_${epubFile.name}`;
 
       const coverUrl = await uploadWithProgress(coverFile, coverPath, 'Uploading Cover...');
       const epubUrl = await uploadWithProgress(epubFile, epubPath, 'Uploading Sefer...');
