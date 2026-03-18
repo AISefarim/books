@@ -67,7 +67,7 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
               href={book.epub}
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:flex items-center gap-2 px-4 py-2 bg-indigo-100 text-indigo-700 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-indigo-200 transition-colors"
+              className="flex items-center gap-2 px-3 sm:px-4 py-2 bg-indigo-100 text-indigo-700 rounded-xl font-bold text-[10px] sm:text-xs uppercase tracking-widest hover:bg-indigo-200 transition-colors"
             >
               <Download className="w-4 h-4" /> Download
             </a>

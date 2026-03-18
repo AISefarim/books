@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
 import { ShoppingCart, CheckCircle, AlertCircle } from 'lucide-react';
@@ -12,6 +12,7 @@ import { BookGrid } from './components/BookGrid';
 import { LoginModal } from './components/LoginModal';
 import { EpubReader } from './components/EpubReader';
 import { ConfirmModal } from './components/ConfirmModal';
+import { EditBookModal } from './components/EditBookModal';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -19,6 +20,7 @@ export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [readingBook, setReadingBook] = useState<Book | null>(null);
+  const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
@@ -78,6 +80,15 @@ export default function App() {
 
   const handleDownload = (url: string, title: string) => {
     window.open(url, '_blank');
+  };
+
+  const handleEditSave = async (id: string, updatedData: Partial<Book>) => {
+    try {
+      await updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', id), updatedData);
+      showStatus('Sefer updated successfully.', 'success');
+    } catch (e: any) {
+      showStatus(`Update Error: ${e.message}`, 'error');
+    }
   };
 
   const categories = Array.from(new Set(books.map(b => b.category || 'Uncategorized'))).sort();
@@ -154,6 +165,7 @@ export default function App() {
           books={filteredBooks}
           isLoading={isLoading}
           isAdmin={isAdmin}
+          onEdit={setEditingBook}
           onDelete={handleDeleteRequest}
           onRead={(url) => {
             const book = books.find(b => b.epub === url);
@@ -182,6 +194,14 @@ export default function App() {
         <EpubReader
           book={readingBook}
           onClose={() => setReadingBook(null)}
+        />
+      )}
+
+      {editingBook && (
+        <EditBookModal
+          book={editingBook}
+          onSave={handleEditSave}
+          onClose={() => setEditingBook(null)}
         />
       )}
     </div>

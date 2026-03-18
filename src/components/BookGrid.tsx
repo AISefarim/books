@@ -7,12 +7,13 @@ interface BookGridProps {
   books: Book[];
   isLoading: boolean;
   isAdmin: boolean;
+  onEdit: (book: Book) => void;
   onDelete: (id: string, coverPath: string, epubPath: string) => void;
   onRead: (epubUrl: string) => void;
   onDownload: (epubUrl: string, title: string) => void;
 }
 
-export function BookGrid({ books, isLoading, isAdmin, onDelete, onRead, onDownload }: BookGridProps) {
+export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload }: BookGridProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
@@ -43,6 +44,7 @@ export function BookGrid({ books, isLoading, isAdmin, onDelete, onRead, onDownlo
           key={book.id}
           book={book}
           isAdmin={isAdmin}
+          onEdit={onEdit}
           onDelete={onDelete}
           onRead={onRead}
           onDownload={onDownload}

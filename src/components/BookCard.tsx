@@ -1,17 +1,18 @@
 import React from 'react';
-import { Trash2, ExternalLink } from 'lucide-react';
+import { Trash2, ExternalLink, Download, Pencil } from 'lucide-react';
 import { Book } from '../types';
 
 interface BookCardProps {
   key?: string | number;
   book: Book;
   isAdmin: boolean;
+  onEdit: (book: Book) => void;
   onDelete: (id: string, coverPath: string, epubPath: string) => void;
   onRead: (epubUrl: string) => void;
   onDownload: (epubUrl: string, title: string) => void;
 }
 
-export function BookCard({ book, isAdmin, onDelete, onRead, onDownload }: BookCardProps) {
+export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload }: BookCardProps) {
   return (
     <div className="bg-white rounded-[3rem] p-5 shadow-sm hover:shadow-2xl transition-all duration-700 border border-slate-100 flex flex-col group animate-in zoom-in-95">
       <div className="aspect-[3/4] rounded-[2rem] overflow-hidden relative shadow-inner bg-slate-50">
@@ -22,18 +23,12 @@ export function BookCard({ book, isAdmin, onDelete, onRead, onDownload }: BookCa
           loading="lazy"
           referrerPolicy="no-referrer"
         />
-        <div className="absolute inset-0 bg-slate-900/80 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-end p-8 gap-4 backdrop-blur-[3px]">
+        <div className="absolute inset-0 bg-slate-900/80 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-8 backdrop-blur-[3px]">
           <button
             onClick={() => onRead(book.epub)}
-            className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-indigo-50 transform translate-y-6 group-hover:translate-y-0 transition-all duration-500"
+            className="w-full bg-white text-slate-900 py-4 rounded-2xl font-black uppercase text-xs tracking-[0.2em] hover:bg-indigo-50 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500 shadow-xl"
           >
             Read Online
-          </button>
-          <button
-            onClick={() => onDownload(book.epub, book.title)}
-            className="w-full bg-indigo-600 text-white py-4 rounded-2xl font-black uppercase text-[10px] tracking-[0.2em] hover:bg-indigo-700 transform translate-y-6 group-hover:translate-y-0 transition-all duration-700 delay-75"
-          >
-            Download EPUB
           </button>
         </div>
       </div>
@@ -41,12 +36,22 @@ export function BookCard({ book, isAdmin, onDelete, onRead, onDownload }: BookCa
         <div className="flex justify-between items-start mb-2">
           <h3 className="font-black text-2xl uppercase leading-[0.85] text-slate-800 tracking-tighter">{book.title}</h3>
           {isAdmin && (
-            <button
-              onClick={() => onDelete(book.id, book.coverPath, book.epubPath)}
-              className="text-slate-200 hover:text-rose-500 transition-colors p-2"
-            >
-              <Trash2 className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => onEdit(book)}
+                className="text-slate-300 hover:text-indigo-500 transition-colors p-2 bg-slate-50 hover:bg-indigo-50 rounded-full"
+                title="Edit Sefer"
+              >
+                <Pencil className="w-4 h-4" />
+              </button>
+              <button
+                onClick={() => onDelete(book.id, book.coverPath, book.epubPath)}
+                className="text-slate-300 hover:text-rose-500 transition-colors p-2 bg-slate-50 hover:bg-rose-50 rounded-full"
+                title="Delete Sefer"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           )}
         </div>
         <div className="flex items-center justify-between mb-6">
@@ -59,19 +64,25 @@ export function BookCard({ book, isAdmin, onDelete, onRead, onDownload }: BookCa
             </span>
           )}
         </div>
-        <p className="text-slate-500 text-sm line-clamp-3 mb-10 font-medium leading-relaxed">{book.desc}</p>
-        {book.buyLink && (
-          <div className="mt-auto pt-6 border-t border-slate-50">
+        <p className="text-slate-500 text-sm line-clamp-3 mb-8 font-medium leading-relaxed">{book.desc}</p>
+        <div className="mt-auto pt-6 border-t border-slate-50 flex flex-col gap-3">
+          <button
+            onClick={() => onDownload(book.epub, book.title)}
+            className="w-full bg-indigo-600 text-white px-6 py-4 rounded-2xl text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg active:scale-95"
+          >
+            <Download className="w-5 h-5" /> Download EPUB
+          </button>
+          {book.buyLink && (
             <a
               href={book.buyLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-slate-50 text-slate-900 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex justify-between items-center hover:bg-slate-100 transition-all border border-slate-100 shadow-sm active:scale-95"
+              className="w-full bg-slate-50 text-slate-900 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-slate-100 transition-all border border-slate-100 shadow-sm active:scale-95"
             >
-              Physical Copy <ExternalLink className="w-4 h-4 text-slate-300" />
+              Physical Copy <ExternalLink className="w-4 h-4 text-slate-400" />
             </a>
-          </div>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
