@@ -48,8 +48,13 @@ export function AdminPanel({ onStatusMessage, onOpenSettings }: AdminPanelProps)
           reject(error);
         },
         async () => {
-          const url = await getDownloadURL(uploadTask.snapshot.ref);
-          resolve(url);
+          try {
+            const url = await getDownloadURL(uploadTask.snapshot.ref);
+            resolve(url);
+          } catch (err) {
+            console.error('Download URL Error:', err);
+            reject(err);
+          }
         }
       );
     });
@@ -83,19 +88,24 @@ export function AdminPanel({ onStatusMessage, onOpenSettings }: AdminPanelProps)
       const coverUrl = await uploadWithProgress(coverFile, coverPath, 'Uploading Cover...');
       const epubUrl = await uploadWithProgress(epubFile, epubPath, 'Uploading Sefer...');
 
-      await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim'), {
+      const docData: any = {
         title,
         author,
         category: category || 'Uncategorized',
         desc,
         buyLink,
-        order,
         cover: coverUrl,
         epub: epubUrl,
         coverPath,
         epubPath,
         createdAt: timestamp,
-      });
+      };
+
+      if (order !== undefined && !isNaN(order)) {
+        docData.order = order;
+      }
+
+      await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim'), docData);
 
       onStatusMessage('Sefer published successfully to the cloud!', 'success');
       formRef.current?.reset();

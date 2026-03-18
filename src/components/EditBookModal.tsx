@@ -21,14 +21,20 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
     e.preventDefault();
     setIsSaving(true);
     try {
-      await onSave(book.id, {
+      const updatedData: Partial<Book> = {
         title,
         author,
         desc,
         category,
         buyLink,
-        order: order ? parseInt(order, 10) : undefined,
-      });
+      };
+      
+      const parsedOrder = order ? parseInt(order, 10) : undefined;
+      if (parsedOrder !== undefined && !isNaN(parsedOrder)) {
+        updatedData.order = parsedOrder;
+      }
+
+      await onSave(book.id, updatedData);
       onClose();
     } catch (error) {
       console.error("Failed to save book", error);

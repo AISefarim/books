@@ -15,6 +15,7 @@ import { ConfirmModal } from './components/ConfirmModal';
 import { EditBookModal } from './components/EditBookModal';
 import { SiteSettingsModal } from './components/SiteSettingsModal';
 import { AddToHomescreen } from './components/AddToHomescreen';
+import { ReviewsModal } from './components/ReviewsModal';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -23,6 +24,7 @@ export default function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [readingBook, setReadingBook] = useState<Book | null>(null);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [reviewingBook, setReviewingBook] = useState<Book | null>(null);
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -244,6 +246,7 @@ export default function App() {
             if (book) setReadingBook(book);
           }}
           onDownload={handleDownload}
+          onOpenReviews={setReviewingBook}
         />
       </main>
 
@@ -282,6 +285,14 @@ export default function App() {
           onClose={() => setEditingBook(null)}
         />
       )}
+      
+      {reviewingBook && (
+        <ReviewsModal
+          book={reviewingBook}
+          onClose={() => setReviewingBook(null)}
+        />
+      )}
+
       {showSettingsModal && (
         <SiteSettingsModal
           currentSettings={siteSettings}
