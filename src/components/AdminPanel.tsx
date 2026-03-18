@@ -1,14 +1,15 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Image as ImageIcon, Loader2 } from 'lucide-react';
+import { Plus, Image as ImageIcon, Loader2, Settings } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
 
 interface AdminPanelProps {
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
+  onOpenSettings: () => void;
 }
 
-export function AdminPanel({ onStatusMessage }: AdminPanelProps) {
+export function AdminPanel({ onStatusMessage, onOpenSettings }: AdminPanelProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState({ label: '', percent: 0 });
@@ -114,12 +115,21 @@ export function AdminPanel({ onStatusMessage }: AdminPanelProps) {
       <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-indigo-50">
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">Publishing Portal</h2>
-          <button
-            onClick={() => setIsFormVisible(!isFormVisible)}
-            className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
-          >
-            <Plus className="w-5 h-5" /> New Sefer
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={onOpenSettings}
+              className="bg-slate-100 text-slate-700 px-4 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-slate-200 transition-all"
+              title="Site Settings"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setIsFormVisible(!isFormVisible)}
+              className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+            >
+              <Plus className="w-5 h-5" /> New Sefer
+            </button>
+          </div>
         </div>
 
         {isFormVisible && (

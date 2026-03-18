@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search } from 'lucide-react';
 
 import { db, storage, auth } from './lib/firebase';
 import { Book } from './types';
@@ -13,6 +13,7 @@ import { LoginModal } from './components/LoginModal';
 import { EpubReader } from './components/EpubReader';
 import { ConfirmModal } from './components/ConfirmModal';
 import { EditBookModal } from './components/EditBookModal';
+import { SiteSettingsModal } from './components/SiteSettingsModal';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -23,7 +24,10 @@ export default function App() {
   const [editingBook, setEditingBook] = useState<Book | null>(null);
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
+  const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string }>({});
+  const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   useEffect(() => {
     signInAnonymously(auth).catch((err) => {
@@ -31,14 +35,24 @@ export default function App() {
     });
 
     const booksRef = collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim');
-    const unsubscribe = onSnapshot(booksRef, (snapshot) => {
+    const unsubscribeBooks = onSnapshot(booksRef, (snapshot) => {
       const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Book));
       docs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       setBooks(docs);
       setIsLoading(false);
     });
 
-    return () => unsubscribe();
+    const settingsRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'settings', 'config');
+    const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
+      if (docSnap.exists()) {
+        setSiteSettings(docSnap.data() as any);
+      }
+    });
+
+    return () => {
+      unsubscribeBooks();
+      unsubscribeSettings();
+    };
   }, []);
 
   const showStatus = (message: string, type: 'success' | 'error') => {
@@ -92,9 +106,17 @@ export default function App() {
   };
 
   const categories = Array.from(new Set(books.map(b => b.category || 'Uncategorized'))).sort();
-  const filteredBooks = selectedCategory 
-    ? books.filter(b => (b.category || 'Uncategorized') === selectedCategory)
-    : books;
+  const filteredBooks = books.filter(b => {
+    const matchesCategory = selectedCategory ? (b.category || 'Uncategorized') === selectedCategory : true;
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = searchLower === '' || 
+      b.title.toLowerCase().includes(searchLower) || 
+      b.author.toLowerCase().includes(searchLower) || 
+      b.desc.toLowerCase().includes(searchLower);
+    return matchesCategory && matchesSearch;
+  });
+
+  const bannerUrl = siteSettings.bannerUrl || "https://www.lulu.com/shop/a-s/rambam-hilchot-maachalot-asurot-part-1/paperback/product-v2m5m4.html";
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
@@ -105,7 +127,7 @@ export default function App() {
             <ShoppingCart className="w-5 h-5 text-indigo-300" /> WANT PHYSICAL COPIES?
           </p>
           <a
-            href="https://www.lulu.com/shop/a-s/rambam-hilchot-maachalot-asurot-part-1/paperback/product-v2m5m4.html"
+            href={bannerUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="bg-white text-indigo-900 px-8 py-1.5 rounded-full text-sm font-black hover:scale-105 transition-all uppercase shadow-md"
@@ -115,7 +137,7 @@ export default function App() {
         </div>
       </div>
 
-      <Navbar isAdmin={isAdmin} onToggleAdmin={handleToggleAdmin} />
+      <Navbar isAdmin={isAdmin} onToggleAdmin={handleToggleAdmin} logoUrl={siteSettings.logoUrl} />
 
       <main className="max-w-7xl mx-auto p-6 lg:p-12">
         {status && (
@@ -131,33 +153,46 @@ export default function App() {
           </div>
         )}
 
-        {isAdmin && <AdminPanel onStatusMessage={showStatus} />}
+        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} />}
 
         {!isLoading && books.length > 0 && (
-          <div className="mb-8 flex flex-wrap gap-2">
-            <button
-              onClick={() => setSelectedCategory(null)}
-              className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
-                selectedCategory === null
-                  ? 'bg-indigo-600 text-white shadow-md'
-                  : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
-              }`}
-            >
-              All
-            </button>
-            {categories.map(cat => (
+          <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full md:w-96">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Search by title, author, or description..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="w-full pl-12 pr-4 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-700 shadow-sm"
+              />
+            </div>
+            
+            <div className="flex flex-wrap gap-2 justify-center md:justify-end w-full md:w-auto">
               <button
-                key={cat}
-                onClick={() => setSelectedCategory(cat)}
+                onClick={() => setSelectedCategory(null)}
                 className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
-                  selectedCategory === cat
+                  selectedCategory === null
                     ? 'bg-indigo-600 text-white shadow-md'
                     : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
                 }`}
               >
-                {cat}
+                All
               </button>
-            ))}
+              {categories.map(cat => (
+                <button
+                  key={cat}
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+                    selectedCategory === cat
+                      ? 'bg-indigo-600 text-white shadow-md'
+                      : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
           </div>
         )}
 
@@ -202,6 +237,13 @@ export default function App() {
           book={editingBook}
           onSave={handleEditSave}
           onClose={() => setEditingBook(null)}
+        />
+      )}
+      {showSettingsModal && (
+        <SiteSettingsModal
+          currentSettings={siteSettings}
+          onClose={() => setShowSettingsModal(false)}
+          onStatusMessage={showStatus}
         />
       )}
     </div>
