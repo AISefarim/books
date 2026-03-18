@@ -72,6 +72,8 @@ export function AdminPanel({ onStatusMessage, onOpenSettings }: AdminPanelProps)
     const category = formData.get('category') as string;
     const desc = formData.get('desc') as string;
     const buyLink = formData.get('buyLink') as string;
+    const orderStr = formData.get('order') as string;
+    const order = orderStr ? parseInt(orderStr, 10) : undefined;
 
     try {
       const timestamp = Date.now();
@@ -87,6 +89,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings }: AdminPanelProps)
         category: category || 'Uncategorized',
         desc,
         buyLink,
+        order,
         cover: coverUrl,
         epub: epubUrl,
         coverPath,
@@ -174,16 +177,29 @@ export function AdminPanel({ onStatusMessage, onOpenSettings }: AdminPanelProps)
                   placeholder="Category (e.g. Halacha)"
                 />
               </div>
+              <div className="grid grid-cols-2 gap-4">
+                <input
+                  name="buyLink"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                  placeholder="Physical Copy URL"
+                />
+                <input
+                  name="order"
+                  type="number"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                  placeholder="Rank Order (1 is highest)"
+                />
+              </div>
               <textarea
                 name="desc"
                 className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all h-24 resize-none font-medium bg-white"
                 placeholder="Describe the Sefer..."
               ></textarea>
 
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <div className="relative bg-white p-4 rounded-2xl ring-1 ring-slate-200 flex items-center justify-center group hover:bg-indigo-50 transition-colors">
                   <span className={`text-xs font-black uppercase tracking-widest ${epubInputRef.current?.files?.length ? 'text-emerald-600' : 'text-slate-400'}`}>
-                    {epubInputRef.current?.files?.length ? 'READY FOR CLOUD âœ…' : 'UPLOAD EPUB'}
+                    {epubInputRef.current?.files?.length ? 'READY FOR CLOUD ✅' : 'UPLOAD EPUB'}
                   </span>
                   <input
                     type="file"
@@ -196,11 +212,6 @@ export function AdminPanel({ onStatusMessage, onOpenSettings }: AdminPanelProps)
                     className="absolute inset-0 opacity-0 cursor-pointer"
                   />
                 </div>
-                <input
-                  name="buyLink"
-                  className="p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all text-sm font-bold bg-white"
-                  placeholder="Physical Copy URL"
-                />
               </div>
 
               {isUploading && (

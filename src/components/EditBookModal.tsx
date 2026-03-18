@@ -14,6 +14,7 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
   const [desc, setDesc] = useState(book.desc);
   const [category, setCategory] = useState(book.category || '');
   const [buyLink, setBuyLink] = useState(book.buyLink || '');
+  const [order, setOrder] = useState(book.order?.toString() || '');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,6 +27,7 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
         desc,
         category,
         buyLink,
+        order: order ? parseInt(order, 10) : undefined,
       });
       onClose();
     } catch (error) {
@@ -84,15 +86,26 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Physical Copy URL</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Rank Order (1 is highest)</label>
               <input
-                type="url"
-                value={buyLink}
-                onChange={(e) => setBuyLink(e.target.value)}
-                placeholder="https://..."
+                type="number"
+                value={order}
+                onChange={(e) => setOrder(e.target.value)}
+                placeholder="e.g. 1, 2, 3... (Leave blank for default)"
                 className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Physical Copy URL</label>
+            <input
+              type="url"
+              value={buyLink}
+              onChange={(e) => setBuyLink(e.target.value)}
+              placeholder="https://..."
+              className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+            />
           </div>
 
           <div className="space-y-2">

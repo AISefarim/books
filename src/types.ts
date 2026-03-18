@@ -10,5 +10,6 @@ export interface Book {
   coverPath: string;
   epubPath: string;
   createdAt: number;
+  order?: number;
   isSettingsDoc?: boolean;
 }

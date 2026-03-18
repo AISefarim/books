@@ -39,7 +39,12 @@ export default function App() {
       const docs = snapshot.docs
         .map((d) => ({ id: d.id, ...d.data() } as Book))
         .filter(d => d.id !== '_site_settings_' && !d.isSettingsDoc);
-      docs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      docs.sort((a, b) => {
+        const orderA = a.order ?? 999;
+        const orderB = b.order ?? 999;
+        if (orderA !== orderB) return orderA - orderB;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
       setBooks(docs);
       setIsLoading(false);
     });
