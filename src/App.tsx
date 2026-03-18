@@ -36,13 +36,15 @@ export default function App() {
 
     const booksRef = collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim');
     const unsubscribeBooks = onSnapshot(booksRef, (snapshot) => {
-      const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Book));
+      const docs = snapshot.docs
+        .map((d) => ({ id: d.id, ...d.data() } as Book))
+        .filter(d => d.id !== '_site_settings_' && !d.isSettingsDoc);
       docs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
       setBooks(docs);
       setIsLoading(false);
     });
 
-    const settingsRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'settings', 'config');
+    const settingsRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_');
     const unsubscribeSettings = onSnapshot(settingsRef, (docSnap) => {
       if (docSnap.exists()) {
         setSiteSettings(docSnap.data() as any);

@@ -10,4 +10,5 @@ export interface Book {
   coverPath: string;
   epubPath: string;
   createdAt: number;
+  isSettingsDoc?: boolean;
 }

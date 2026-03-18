@@ -40,9 +40,10 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
         finalLogoUrl = await getDownloadURL(uploadTask.ref);
       }
 
-      await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'settings', 'config'), {
+      await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_'), {
         bannerUrl,
-        logoUrl: finalLogoUrl
+        logoUrl: finalLogoUrl,
+        isSettingsDoc: true
       }, { merge: true });
 
       onStatusMessage('Site settings updated successfully!', 'success');
