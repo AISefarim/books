@@ -56,7 +56,7 @@ export default function App() {
       if (sharedBookId) {
         const bookToOpen = docs.find(b => b.id === sharedBookId);
         if (bookToOpen) {
-          setReadingBook(bookToOpen);
+          setSearchQuery(bookToOpen.title);
           // Clear the URL parameter so it doesn't re-trigger
           window.history.replaceState({}, '', window.location.pathname);
         }
