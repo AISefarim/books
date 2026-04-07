@@ -10,9 +10,10 @@ interface BookCardProps {
   onDelete: (id: string, coverPath: string, epubPath: string) => void;
   onRead: (epubUrl: string) => void;
   onDownload: (epubUrl: string, title: string) => void;
+  onSelect?: () => void;
 }
 
-export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload }: BookCardProps) {
+export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, onSelect }: BookCardProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
@@ -29,7 +30,7 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload }
     <div className="bg-white rounded-[3rem] p-5 shadow-sm hover:shadow-2xl transition-all duration-700 border border-slate-100 flex flex-col group animate-in zoom-in-95">
       <div 
         className="aspect-[3/4] rounded-[2rem] overflow-hidden relative shadow-inner bg-slate-50 cursor-pointer"
-        onClick={() => onRead(book.epub)}
+        onClick={() => onSelect ? onSelect() : onRead(book.epub)}
       >
         <img
           src={book.cover}
@@ -40,13 +41,18 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload }
         />
         <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-8 backdrop-blur-[2px]">
           <div className="bg-white text-slate-900 px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">
-            <BookOpen className="w-4 h-4" /> Read Online
+            <BookOpen className="w-4 h-4" /> {onSelect ? 'View Details' : 'Read Online'}
           </div>
         </div>
       </div>
       <div className="py-8 px-4 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-2">
-          <h3 className="font-black text-2xl uppercase leading-[0.85] text-slate-800 tracking-tighter">{book.title}</h3>
+          <h3 
+            className="font-black text-2xl uppercase leading-[0.85] text-slate-800 tracking-tighter cursor-pointer hover:text-indigo-600 transition-colors"
+            onClick={() => onSelect ? onSelect() : onRead(book.epub)}
+          >
+            {book.title}
+          </h3>
           {isAdmin && (
             <div className="flex items-center gap-1">
               <button

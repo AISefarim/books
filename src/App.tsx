@@ -10,6 +10,7 @@ import { Navbar } from './components/Navbar';
 import { AdminPanel } from './components/AdminPanel';
 import { BookGrid } from './components/BookGrid';
 import { FeaturedBooks } from './components/FeaturedBooks';
+import { BookDetails } from './components/BookDetails';
 import { LoginModal } from './components/LoginModal';
 import { EpubReader } from './components/EpubReader';
 import { ConfirmModal } from './components/ConfirmModal';
@@ -24,6 +25,7 @@ export default function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [readingBook, setReadingBook] = useState<Book | null>(null);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
@@ -56,9 +58,7 @@ export default function App() {
       if (sharedBookId) {
         const bookToOpen = docs.find(b => b.id === sharedBookId);
         if (bookToOpen) {
-          setSearchQuery(bookToOpen.title);
-          // Clear the URL parameter so it doesn't re-trigger
-          window.history.replaceState({}, '', window.location.pathname);
+          setSelectedBook(bookToOpen);
         }
       }
     });
@@ -151,6 +151,39 @@ export default function App() {
     }
   };
 
+  useEffect(() => {
+    const handlePopState = () => {
+      const params = new URLSearchParams(window.location.search);
+      const sharedBookId = params.get('book');
+      if (sharedBookId) {
+        const bookToOpen = books.find(b => b.id === sharedBookId);
+        if (bookToOpen) {
+          setSelectedBook(bookToOpen);
+        }
+      } else {
+        setSelectedBook(null);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [books]);
+
+  const handleHome = () => {
+    setSearchQuery('');
+    setSelectedCategory(null);
+    setReadingBook(null);
+    setSelectedBook(null);
+    window.history.replaceState({}, '', window.location.pathname);
+  };
+
+  const handleBookSelect = (book: Book) => {
+    setSelectedBook(book);
+    const url = new URL(window.location.href);
+    url.searchParams.set('book', book.id);
+    window.history.pushState({}, '', url.toString());
+  };
+
   const handleEditSave = async (id: string, updatedData: Partial<Book>) => {
     try {
       await updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', id), updatedData);
@@ -194,7 +227,7 @@ export default function App() {
         </div>
       </div>
 
-      <Navbar isAdmin={isAdmin} onToggleAdmin={handleToggleAdmin} logoUrl={siteSettings.logoUrl} />
+      <Navbar isAdmin={isAdmin} onToggleAdmin={handleToggleAdmin} onHome={handleHome} logoUrl={siteSettings.logoUrl} />
 
       <main className="max-w-7xl mx-auto p-6 lg:p-12">
         {status && (
@@ -212,86 +245,104 @@ export default function App() {
 
         {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} />}
 
-        {!isLoading && featuredBooks.length > 0 && !searchQuery && !selectedCategory && (
-          <FeaturedBooks 
-            books={featuredBooks} 
+        {selectedBook ? (
+          <BookDetails
+            book={selectedBook}
+            onBack={handleHome}
             onRead={(url) => {
-              const book = books.find(b => b.epub === url);
-              if (book) {
-                setReadingBook(book);
-                updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
-                  readCount: increment(1)
-                }).catch(err => console.error("Failed to increment read count", err));
-              }
-            }}
-            onDownload={(url, title) => {
-              const book = books.find(b => b.epub === url);
-              if (book) handleDownload(url, title, book.id);
-            }}
-          />
-        )}
-
-        {!isLoading && books.length > 0 && (
-          <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-            <div className="relative w-full md:w-96">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search by title, author, or description..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-700 shadow-sm"
-              />
-            </div>
-            
-            <div className="flex flex-wrap gap-2 justify-center md:justify-end w-full md:w-auto">
-              <button
-                onClick={() => setSelectedCategory(null)}
-                className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
-                  selectedCategory === null
-                    ? 'bg-indigo-600 text-white shadow-md'
-                    : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                All
-              </button>
-              {categories.map(cat => (
-                <button
-                  key={cat}
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
-                    selectedCategory === cat
-                      ? 'bg-indigo-600 text-white shadow-md'
-                      : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        <BookGrid
-          books={filteredBooks}
-          isLoading={isLoading}
-          isAdmin={isAdmin}
-          onEdit={setEditingBook}
-          onDelete={handleDeleteRequest}
-          onRead={(url) => {
-            const book = books.find(b => b.epub === url);
-            if (book) {
-              setReadingBook(book);
-              updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
+              setReadingBook(selectedBook);
+              updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', selectedBook.id), {
                 readCount: increment(1)
               }).catch(err => console.error("Failed to increment read count", err));
-            }
-          }}
-          onDownload={(url, title) => {
-            const book = books.find(b => b.epub === url);
-            if (book) handleDownload(url, title, book.id);
-          }}
-        />
+            }}
+            onDownload={(url, title) => handleDownload(url, title, selectedBook.id)}
+          />
+        ) : (
+          <>
+            {!isLoading && featuredBooks.length > 0 && !searchQuery && !selectedCategory && (
+              <FeaturedBooks 
+                books={featuredBooks} 
+                onRead={(url) => {
+                  const book = books.find(b => b.epub === url);
+                  if (book) {
+                    setReadingBook(book);
+                    updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
+                      readCount: increment(1)
+                    }).catch(err => console.error("Failed to increment read count", err));
+                  }
+                }}
+                onDownload={(url, title) => {
+                  const book = books.find(b => b.epub === url);
+                  if (book) handleDownload(url, title, book.id);
+                }}
+                onSelect={handleBookSelect}
+              />
+            )}
+
+            {!isLoading && books.length > 0 && (
+              <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="relative w-full md:w-96">
+                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                  <input
+                    type="text"
+                    placeholder="Search by title, author, or description..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full pl-12 pr-4 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-700 shadow-sm"
+                  />
+                </div>
+                
+                <div className="flex flex-wrap gap-2 justify-center md:justify-end w-full md:w-auto">
+                  <button
+                    onClick={() => setSelectedCategory(null)}
+                    className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+                      selectedCategory === null
+                        ? 'bg-indigo-600 text-white shadow-md'
+                        : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {categories.map(cat => (
+                    <button
+                      key={cat}
+                      onClick={() => setSelectedCategory(cat)}
+                      className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
+                        selectedCategory === cat
+                          ? 'bg-indigo-600 text-white shadow-md'
+                          : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
+                      }`}
+                    >
+                      {cat}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <BookGrid
+              books={filteredBooks}
+              isLoading={isLoading}
+              isAdmin={isAdmin}
+              onEdit={setEditingBook}
+              onDelete={handleDeleteRequest}
+              onRead={(url) => {
+                const book = books.find(b => b.epub === url);
+                if (book) {
+                  setReadingBook(book);
+                  updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
+                    readCount: increment(1)
+                  }).catch(err => console.error("Failed to increment read count", err));
+                }
+              }}
+              onDownload={(url, title) => {
+                const book = books.find(b => b.epub === url);
+                if (book) handleDownload(url, title, book.id);
+              }}
+              onSelectBook={handleBookSelect}
+            />
+          </>
+        )}
       </main>
 
       <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-200/60 mt-8">

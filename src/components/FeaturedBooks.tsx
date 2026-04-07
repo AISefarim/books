@@ -6,9 +6,10 @@ interface FeaturedBooksProps {
   books: Book[];
   onRead: (epubUrl: string) => void;
   onDownload: (epubUrl: string, title: string) => void;
+  onSelect?: (book: Book) => void;
 }
 
-export function FeaturedBooks({ books, onRead, onDownload }: FeaturedBooksProps) {
+export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedBooksProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   useEffect(() => {
@@ -74,24 +75,12 @@ export function FeaturedBooks({ books, onRead, onDownload }: FeaturedBooksProps)
           </p>
           
           <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-4">
-            <button
-              onClick={() => onRead(currentBook.epub)}
-              className="bg-white text-indigo-900 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-xl hover:shadow-2xl active:scale-95"
-            >
-              <BookOpen className="w-5 h-5" /> Read Now
-            </button>
-            <button
-              onClick={() => onDownload(currentBook.epub, currentBook.title)}
-              className="bg-indigo-800/50 backdrop-blur-md text-white border border-indigo-500/30 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700/50 transition-all active:scale-95"
-            >
-              <Download className="w-5 h-5" /> Download
-            </button>
             {currentBook.buyLink && (
               <a
                 href={currentBook.buyLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-emerald-500 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-600 transition-all shadow-xl hover:shadow-2xl active:scale-95"
+                className="bg-white text-indigo-900 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-xl hover:shadow-2xl active:scale-95"
               >
                 <ShoppingCart className="w-5 h-5" /> Buy Physical
               </a>
@@ -103,7 +92,7 @@ export function FeaturedBooks({ books, onRead, onDownload }: FeaturedBooksProps)
         <div className="w-64 md:w-64 lg:w-80 shrink-0 perspective-1000 order-2 md:order-2">
           <div 
             className="aspect-[3/4] rounded-2xl overflow-hidden shadow-2xl transform transition-all duration-700 hover:scale-105 hover:rotate-y-12 cursor-pointer border border-white/10"
-            onClick={() => onRead(currentBook.epub)}
+            onClick={() => onSelect ? onSelect(currentBook) : onRead(currentBook.epub)}
           >
             <img
               key={currentBook.id} // Force re-render for animation
