@@ -94,22 +94,22 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
         </div>
         <p className="text-slate-500 text-sm line-clamp-3 mb-8 font-medium leading-relaxed">{book.desc}</p>
         <div className="mt-auto pt-6 border-t border-slate-50 flex flex-col gap-3">
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <button
               onClick={() => onRead(book.epub)}
-              className="flex-1 bg-indigo-600 text-white px-2 py-4 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg active:scale-95"
+              className="flex-1 min-w-[100px] bg-indigo-600 text-white px-2 py-4 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg active:scale-95"
             >
               <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" /> Read
             </button>
             <button
               onClick={() => onDownload(book.epub, book.title)}
-              className="flex-1 bg-indigo-50 text-indigo-700 px-2 py-4 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-indigo-100 transition-all shadow-sm hover:shadow-md active:scale-95"
+              className="flex-1 min-w-[100px] bg-indigo-50 text-indigo-700 px-2 py-4 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-indigo-100 transition-all shadow-sm hover:shadow-md active:scale-95"
             >
               <Download className="w-4 h-4 sm:w-5 sm:h-5" /> Download
             </button>
             <button
               onClick={handleShare}
-              className="bg-slate-50 text-slate-700 px-4 py-4 rounded-2xl flex justify-center items-center hover:bg-slate-100 transition-all shadow-sm hover:shadow-md active:scale-95"
+              className="w-12 sm:w-14 bg-slate-50 text-slate-700 py-4 rounded-2xl flex justify-center items-center hover:bg-slate-100 transition-all shadow-sm hover:shadow-md active:scale-95 shrink-0"
               title="Copy Share Link"
             >
               {copied ? <Check className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" /> : <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />}
