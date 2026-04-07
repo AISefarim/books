@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, deleteDoc, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
 import { ShoppingCart, CheckCircle, AlertCircle, Search } from 'lucide-react';
@@ -9,6 +9,7 @@ import { Book } from './types';
 import { Navbar } from './components/Navbar';
 import { AdminPanel } from './components/AdminPanel';
 import { BookGrid } from './components/BookGrid';
+import { FeaturedBooks } from './components/FeaturedBooks';
 import { LoginModal } from './components/LoginModal';
 import { EpubReader } from './components/EpubReader';
 import { ConfirmModal } from './components/ConfirmModal';
@@ -48,6 +49,18 @@ export default function App() {
       });
       setBooks(docs);
       setIsLoading(false);
+
+      // Check for shared book link
+      const params = new URLSearchParams(window.location.search);
+      const sharedBookId = params.get('book');
+      if (sharedBookId) {
+        const bookToOpen = docs.find(b => b.id === sharedBookId);
+        if (bookToOpen) {
+          setReadingBook(bookToOpen);
+          // Clear the URL parameter so it doesn't re-trigger
+          window.history.replaceState({}, '', window.location.pathname);
+        }
+      }
     });
 
     const settingsRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_');
@@ -100,8 +113,13 @@ export default function App() {
     }
   };
 
-  const handleDownload = async (url: string, title: string) => {
+  const handleDownload = async (url: string, title: string, bookId: string) => {
     try {
+      // Increment download count
+      updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', bookId), {
+        downloadCount: increment(1)
+      }).catch(err => console.error("Failed to increment download count", err));
+
       showStatus('Preparing file...', 'success');
       const response = await fetch(url);
       const blob = await response.blob();
@@ -153,6 +171,8 @@ export default function App() {
     return matchesCategory && matchesSearch;
   });
 
+  const featuredBooks = books.filter(b => b.isFeatured);
+
   const bannerUrl = siteSettings.bannerUrl || "https://www.lulu.com/shop/a-s/rambam-hilchot-maachalot-asurot-part-1/paperback/product-v2m5m4.html";
 
   return (
@@ -191,6 +211,25 @@ export default function App() {
         )}
 
         {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} />}
+
+        {!isLoading && featuredBooks.length > 0 && !searchQuery && !selectedCategory && (
+          <FeaturedBooks 
+            books={featuredBooks} 
+            onRead={(url) => {
+              const book = books.find(b => b.epub === url);
+              if (book) {
+                setReadingBook(book);
+                updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
+                  readCount: increment(1)
+                }).catch(err => console.error("Failed to increment read count", err));
+              }
+            }}
+            onDownload={(url, title) => {
+              const book = books.find(b => b.epub === url);
+              if (book) handleDownload(url, title, book.id);
+            }}
+          />
+        )}
 
         {!isLoading && books.length > 0 && (
           <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
@@ -241,9 +280,17 @@ export default function App() {
           onDelete={handleDeleteRequest}
           onRead={(url) => {
             const book = books.find(b => b.epub === url);
-            if (book) setReadingBook(book);
+            if (book) {
+              setReadingBook(book);
+              updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
+                readCount: increment(1)
+              }).catch(err => console.error("Failed to increment read count", err));
+            }
           }}
-          onDownload={handleDownload}
+          onDownload={(url, title) => {
+            const book = books.find(b => b.epub === url);
+            if (book) handleDownload(url, title, book.id);
+          }}
         />
       </main>
 

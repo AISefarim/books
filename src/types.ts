@@ -12,4 +12,7 @@ export interface Book {
   createdAt: number;
   order?: number;
   isSettingsDoc?: boolean;
+  readCount?: number;
+  downloadCount?: number;
+  isFeatured?: boolean;
 }

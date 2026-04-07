@@ -15,6 +15,7 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
   const [category, setCategory] = useState(book.category || '');
   const [buyLink, setBuyLink] = useState(book.buyLink || '');
   const [order, setOrder] = useState(book.order?.toString() || '');
+  const [isFeatured, setIsFeatured] = useState(book.isFeatured || false);
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -27,6 +28,7 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
         desc,
         category,
         buyLink,
+        isFeatured,
       };
       
       const parsedOrder = order ? parseInt(order, 10) : undefined;
@@ -123,6 +125,19 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
               rows={4}
               className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium resize-none"
             />
+          </div>
+
+          <div className="flex items-center gap-3 ml-2">
+            <input
+              type="checkbox"
+              id="isFeatured"
+              checked={isFeatured}
+              onChange={(e) => setIsFeatured(e.target.checked)}
+              className="w-5 h-5 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <label htmlFor="isFeatured" className="text-sm font-bold text-slate-700 cursor-pointer">
+              Feature this book at the top of the page
+            </label>
           </div>
 
           <div className="pt-4 flex justify-end gap-4">

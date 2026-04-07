@@ -1,5 +1,5 @@
-import React from 'react';
-import { Trash2, ExternalLink, Download, Pencil, BookOpen } from 'lucide-react';
+import React, { useState } from 'react';
+import { Trash2, ExternalLink, Download, Pencil, BookOpen, Share2, Check } from 'lucide-react';
 import { Book } from '../types';
 
 interface BookCardProps {
@@ -13,6 +13,18 @@ interface BookCardProps {
 }
 
 export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload }: BookCardProps) {
+  const [copied, setCopied] = useState(false);
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}${window.location.pathname}?book=${book.id}`;
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy link', err);
+    }
+  };
   return (
     <div className="bg-white rounded-[3rem] p-5 shadow-sm hover:shadow-2xl transition-all duration-700 border border-slate-100 flex flex-col group animate-in zoom-in-95">
       <div 
@@ -54,7 +66,7 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload }
             </div>
           )}
         </div>
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-2">
           <p className="text-indigo-600 font-black text-xs uppercase tracking-tighter italic opacity-70">
             By {book.author}
           </p>
@@ -63,6 +75,16 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload }
               {book.category}
             </span>
           )}
+        </div>
+        <div className="flex items-center gap-4 mb-6 text-slate-400 text-xs font-semibold">
+          <div className="flex items-center gap-1" title="Reads">
+            <BookOpen className="w-3.5 h-3.5" />
+            {book.readCount || 0}
+          </div>
+          <div className="flex items-center gap-1" title="Downloads">
+            <Download className="w-3.5 h-3.5" />
+            {book.downloadCount || 0}
+          </div>
         </div>
         <p className="text-slate-500 text-sm line-clamp-3 mb-8 font-medium leading-relaxed">{book.desc}</p>
         <div className="mt-auto pt-6 border-t border-slate-50 flex flex-col gap-3">
@@ -78,6 +100,13 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload }
               className="flex-1 bg-indigo-50 text-indigo-700 px-2 py-4 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-indigo-100 transition-all shadow-sm hover:shadow-md active:scale-95"
             >
               <Download className="w-4 h-4 sm:w-5 sm:h-5" /> Download
+            </button>
+            <button
+              onClick={handleShare}
+              className="bg-slate-50 text-slate-700 px-4 py-4 rounded-2xl flex justify-center items-center hover:bg-slate-100 transition-all shadow-sm hover:shadow-md active:scale-95"
+              title="Copy Share Link"
+            >
+              {copied ? <Check className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" /> : <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />}
             </button>
           </div>
           {book.buyLink && (
