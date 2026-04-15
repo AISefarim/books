@@ -38,6 +38,7 @@ async function startServer() {
       
       let ogTitle = null;
       let ogDesc = null;
+      let ogImage = null;
 
       if (videoId) {
         try {
@@ -49,6 +50,22 @@ async function startServer() {
               const category = data.fields.category?.stringValue || 'Category';
               ogTitle = `${category} : ${title}`;
               ogDesc = `Watch ${title} from the ${category} category on AI Sefarim.`;
+              
+              // Fetch settings to get category thumbnail
+              try {
+                const settingsResponse = await fetch(`https://firestore.googleapis.com/v1/projects/ai-sefarim/databases/(default)/documents/artifacts/ai-sefarim/public/data/sefarim/_site_settings_`);
+                if (settingsResponse.ok) {
+                  const settingsData = await settingsResponse.json();
+                  if (settingsData.fields && settingsData.fields.videoCategoryThumbnails && settingsData.fields.videoCategoryThumbnails.mapValue && settingsData.fields.videoCategoryThumbnails.mapValue.fields) {
+                    const thumbnails = settingsData.fields.videoCategoryThumbnails.mapValue.fields;
+                    if (thumbnails[category] && thumbnails[category].stringValue) {
+                      ogImage = thumbnails[category].stringValue;
+                    }
+                  }
+                }
+              } catch (err) {
+                console.error("Error fetching settings metadata:", err);
+              }
             }
           }
         } catch (err) {
@@ -85,6 +102,12 @@ async function startServer() {
           /<title>.*<\/title>/,
           `<title>${ogTitle}</title>`
         );
+        if (ogImage) {
+          template = template.replace(
+            /<meta property="og:image" content="[^"]*" \/>/,
+            `<meta property="og:image" content="${ogImage}" />`
+          );
+        }
       }
 
       res.status(200).set({ "Content-Type": "text/html" }).end(template);
