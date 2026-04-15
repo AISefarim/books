@@ -490,7 +490,7 @@ export default function App() {
                   >
                     <div className="aspect-square rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
                       {siteSettings.videoCategoryThumbnails?.[cat] ? (
-                        <img src={siteSettings.videoCategoryThumbnails[cat]} alt={cat} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                        <img src={siteSettings.videoCategoryThumbnails[cat]} alt={cat} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                       ) : (
                         <PlayCircle className="w-12 h-12 text-indigo-300 group-hover:text-indigo-500 transition-colors group-hover:scale-110 duration-300" />
                       )}

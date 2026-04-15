@@ -30,10 +30,10 @@ export function VideoCard({ video, isAdmin, onDelete, onSelect, categoryThumbnai
       className="bg-white rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col group cursor-pointer"
       onClick={onSelect}
     >
-      <div className="aspect-video rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
+      <div className="aspect-square rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
         {categoryThumbnail ? (
           <>
-            <img src={categoryThumbnail} alt={video.category} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <img src={categoryThumbnail} alt={video.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
             <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-colors flex items-center justify-center">
               <PlayCircle className="w-12 h-12 text-white opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300 drop-shadow-md" />
             </div>

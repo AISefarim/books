@@ -37,7 +37,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
         {/* Left side: Thumbnail / Graphic */}
         <div className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-50 flex items-center justify-center overflow-hidden shadow-inner border-4 border-slate-50 relative group">
           {categoryThumbnail ? (
-            <img src={categoryThumbnail} alt={video.category} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
+            <img src={categoryThumbnail} alt={video.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" />
           ) : (
             <PlayCircle className="w-24 h-24 text-indigo-200" />
           )}
@@ -96,7 +96,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
               >
                 <div className="aspect-square rounded-xl bg-indigo-50 flex items-center justify-center mb-4 group-hover:bg-indigo-100 transition-colors overflow-hidden">
                   {categoryThumbnail ? (
-                    <img src={categoryThumbnail} alt={v.category} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                    <img src={categoryThumbnail} alt={v.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
                   ) : (
                     <PlayCircle className="w-10 h-10 text-indigo-300 group-hover:text-indigo-500 transition-colors group-hover:scale-110 duration-300" />
                   )}
