@@ -2,6 +2,10 @@ const functions = require("firebase-functions");
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
+const admin = require("firebase-admin");
+
+admin.initializeApp();
+const db = admin.firestore();
 
 const app = express();
 
@@ -20,24 +24,24 @@ app.get("*", async (req, res) => {
 
     if (videoId) {
       try {
-        const response = await fetch(`https://firestore.googleapis.com/v1/projects/ai-sefarim/databases/(default)/documents/artifacts/ai-sefarim/public/data/sefarim/${videoId}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.fields && data.fields.type && data.fields.type.stringValue === 'video') {
-            const title = data.fields.title?.stringValue || 'Video';
-            const category = data.fields.category?.stringValue || 'Category';
+        const docRef = db.collection('artifacts').doc('ai-sefarim').collection('public').doc('data').collection('sefarim').doc(videoId);
+        const docSnap = await docRef.get();
+        
+        if (docSnap.exists) {
+          const data = docSnap.data();
+          if (data.type === 'video') {
+            const title = data.title || 'Video';
+            const category = data.category || 'Category';
             ogTitle = `${category} : ${title}`;
             ogDesc = `Watch ${title} from the ${category} category on AI Sefarim.`;
             
             try {
-              const settingsResponse = await fetch(`https://firestore.googleapis.com/v1/projects/ai-sefarim/databases/(default)/documents/artifacts/ai-sefarim/public/data/sefarim/_site_settings_`);
-              if (settingsResponse.ok) {
-                const settingsData = await settingsResponse.json();
-                if (settingsData.fields?.videoCategoryThumbnails?.mapValue?.fields) {
-                  const thumbnails = settingsData.fields.videoCategoryThumbnails.mapValue.fields;
-                  if (thumbnails[category]?.stringValue) {
-                    ogImage = thumbnails[category].stringValue;
-                  }
+              const settingsRef = db.collection('artifacts').doc('ai-sefarim').collection('public').doc('data').collection('sefarim').doc('_site_settings_');
+              const settingsSnap = await settingsRef.get();
+              if (settingsSnap.exists) {
+                const settingsData = settingsSnap.data();
+                if (settingsData.videoCategoryThumbnails && settingsData.videoCategoryThumbnails[category]) {
+                  ogImage = settingsData.videoCategoryThumbnails[category];
                 }
               }
             } catch (err) {
@@ -50,14 +54,15 @@ app.get("*", async (req, res) => {
       }
     } else if (bookId) {
       try {
-        const response = await fetch(`https://firestore.googleapis.com/v1/projects/ai-sefarim/databases/(default)/documents/artifacts/ai-sefarim/public/data/sefarim/${bookId}`);
-        if (response.ok) {
-          const data = await response.json();
-          if (data.fields && (!data.fields.type || data.fields.type.stringValue !== 'video')) {
-            const title = data.fields.title?.stringValue || 'Sefer';
-            const author = data.fields.author?.stringValue || 'Author';
+        const docRef = db.collection('artifacts').doc('ai-sefarim').collection('public').doc('data').collection('sefarim').doc(bookId);
+        const docSnap = await docRef.get();
+        if (docSnap.exists) {
+          const data = docSnap.data();
+          if (data.type !== 'video') {
+            const title = data.title || 'Sefer';
+            const author = data.author || 'Author';
             ogTitle = `${title} by ${author}`;
-            ogDesc = data.fields.desc?.stringValue || `Read and download ${title} on AI Sefarim.`;
+            ogDesc = data.desc || `Read and download ${title} on AI Sefarim.`;
           }
         }
       } catch (err) {

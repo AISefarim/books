@@ -9,8 +9,7 @@
     "rewrites": [
       {
         "source": "**",
-        "function": "ssr",
-        "region": "us-central1"
+        "function": "ssr"
       }
     ]
   },
