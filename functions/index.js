@@ -74,7 +74,7 @@ app.get("*", async (req, res) => {
       }
     }
 
-    res.status(200).set({ "Content-Type": "text/html" }).end(template);
+    res.status(200).set({ "Content-Type": "text/html", "Cache-Control": "public, max-age=300, s-maxage=600" }).end(template);
   } catch (e) {
     console.error(e);
     res.status(500).send("Internal Server Error");
