@@ -5,7 +5,11 @@ import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
 
 interface SiteSettingsModalProps {
-  currentSettings: { bannerUrl?: string, logoUrl?: string };
+  currentSettings: { 
+    bannerUrl?: string, 
+    logoUrl?: string,
+    videoCategoryThumbnails?: Record<string, string>
+  };
   onClose: () => void;
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
 }
@@ -13,8 +17,12 @@ interface SiteSettingsModalProps {
 export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }: SiteSettingsModalProps) {
   const [bannerUrl, setBannerUrl] = useState(currentSettings.bannerUrl || 'https://www.lulu.com/shop/a-s/rambam-hilchot-maachalot-asurot-part-1/paperback/product-v2m5m4.html');
   const [logoPreview, setLogoPreview] = useState<string | null>(currentSettings.logoUrl || null);
+  const [categoryThumbnails, setCategoryThumbnails] = useState<Record<string, string>>(currentSettings.videoCategoryThumbnails || {});
   const [isSaving, setIsSaving] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
+  const categoryInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const categories = ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach"];
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -22,6 +30,17 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
       const reader = new FileReader();
       reader.onload = (ev) => {
         setLogoPreview(ev.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const handleCategoryThumbnailChange = (category: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        setCategoryThumbnails(prev => ({ ...prev, [category]: ev.target?.result as string }));
       };
       reader.readAsDataURL(file);
     }
@@ -40,9 +59,22 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
         finalLogoUrl = await getDownloadURL(uploadTask.ref);
       }
 
+      const finalCategoryThumbnails = { ...categoryThumbnails };
+      
+      for (const category of categories) {
+        const fileInput = categoryInputRefs.current[category];
+        const file = fileInput?.files?.[0];
+        if (file) {
+          const storageRef = ref(storage, `settings/category_${category.replace(/\s+/g, '_')}_${Date.now()}_${file.name}`);
+          const uploadTask = await uploadBytesResumable(storageRef, file);
+          finalCategoryThumbnails[category] = await getDownloadURL(uploadTask.ref);
+        }
+      }
+
       await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_'), {
         bannerUrl,
         logoUrl: finalLogoUrl,
+        videoCategoryThumbnails: finalCategoryThumbnails,
         isSettingsDoc: true
       }, { merge: true });
 
@@ -110,6 +142,31 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
               placeholder="https://www.lulu.com/..."
               className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
             />
+          </div>
+
+          <div className="space-y-3">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Video Category Thumbnails</label>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+              {categories.map(category => (
+                <div key={category} className="flex flex-col gap-2">
+                  <div className="aspect-video rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative shadow-inner">
+                    {categoryThumbnails[category] ? (
+                      <img src={categoryThumbnails[category]} alt={category} className="w-full h-full object-cover" />
+                    ) : (
+                      <ImageIcon className="w-6 h-6 text-slate-300" />
+                    )}
+                    <input
+                      type="file"
+                      ref={el => categoryInputRefs.current[category] = el}
+                      onChange={(e) => handleCategoryThumbnailChange(category, e)}
+                      accept="image/*"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                    />
+                  </div>
+                  <span className="text-[10px] font-bold text-slate-600 text-center">{category}</span>
+                </div>
+              ))}
+            </div>
           </div>
 
           <div className="pt-4 flex justify-end gap-4">

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle } from 'lucide-react';
 
 import { db, storage, auth } from './lib/firebase';
 import { Book, Video } from './types';
@@ -45,40 +45,41 @@ export default function App() {
 
     const booksRef = collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim');
     const unsubscribeBooks = onSnapshot(booksRef, (snapshot) => {
-      const docs = snapshot.docs
-        .map((d) => ({ id: d.id, ...d.data() } as Book))
-        .filter(d => d.id !== '_site_settings_' && !d.isSettingsDoc);
-      docs.sort((a, b) => {
+      const allDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      
+      const bookDocs = allDocs
+        .filter(d => d.id !== '_site_settings_' && !d.isSettingsDoc && d.type !== 'video')
+        .map(d => d as Book);
+        
+      bookDocs.sort((a, b) => {
         const orderA = a.order ?? 999;
         const orderB = b.order ?? 999;
         if (orderA !== orderB) return orderA - orderB;
         return (b.createdAt || 0) - (a.createdAt || 0);
       });
-      setBooks(docs);
+      setBooks(bookDocs);
       setIsLoading(false);
 
-      // Check for shared book link
+      const videoDocs = allDocs
+        .filter(d => d.type === 'video')
+        .map(d => d as unknown as Video);
+        
+      videoDocs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      setVideos(videoDocs);
+
+      // Check for shared links
       const params = new URLSearchParams(window.location.search);
       const sharedBookId = params.get('book');
+      const sharedVideoId = params.get('video');
+      
       if (sharedBookId) {
-        const bookToOpen = docs.find(b => b.id === sharedBookId);
+        const bookToOpen = bookDocs.find(b => b.id === sharedBookId);
         if (bookToOpen) {
           setSelectedBook(bookToOpen);
           setActiveTab('sefarim');
         }
-      }
-    });
-
-    const videosRef = collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'videos');
-    const unsubscribeVideos = onSnapshot(videosRef, (snapshot) => {
-      const docs = snapshot.docs.map((d) => ({ id: d.id, ...d.data() } as Video));
-      docs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-      setVideos(docs);
-
-      const params = new URLSearchParams(window.location.search);
-      const sharedVideoId = params.get('video');
-      if (sharedVideoId) {
-        const videoToOpen = docs.find(v => v.id === sharedVideoId);
+      } else if (sharedVideoId) {
+        const videoToOpen = videoDocs.find(v => v.id === sharedVideoId);
         if (videoToOpen) {
           setSelectedVideo(videoToOpen);
           setActiveTab('videos');
@@ -95,7 +96,6 @@ export default function App() {
 
     return () => {
       unsubscribeBooks();
-      unsubscribeVideos();
       unsubscribeSettings();
     };
   }, []);
@@ -125,7 +125,7 @@ export default function App() {
   const handleVideoDelete = async (id: string) => {
     if (window.confirm('Are you sure you want to delete this video?')) {
       try {
-        await deleteDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'videos', id));
+        await deleteDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', id));
         showStatus('Video deleted successfully.', 'success');
       } catch (e: any) {
         showStatus(`Delete Error: ${e.message}`, 'error');
@@ -259,7 +259,8 @@ export default function App() {
     return matchesCategory && matchesSearch;
   });
 
-  const videoCategories = Array.from(new Set(videos.map(v => v.category))).sort();
+  const predefinedVideoCategories = ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach"];
+  const videoCategories = Array.from(new Set([...predefinedVideoCategories, ...videos.map(v => v.category)])).sort();
   const filteredVideos = videos.filter(v => {
     const matchesCategory = selectedCategory ? v.category === selectedCategory : true;
     const searchLower = searchQuery.toLowerCase();
@@ -437,7 +438,7 @@ export default function App() {
           </>
         ) : (
           <>
-            {!isLoading && videos.length > 0 && (
+            {!isLoading && (
               <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
                 <div className="relative w-full md:w-96">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -478,13 +479,37 @@ export default function App() {
               </div>
             )}
 
-            <VideoGrid
-              videos={filteredVideos}
-              isLoading={isLoading}
-              isAdmin={isAdmin}
-              onDelete={handleVideoDelete}
-              onSelectVideo={handleVideoSelect}
-            />
+            {!searchQuery && !selectedCategory ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                {videoCategories.map(cat => (
+                  <div 
+                    key={cat}
+                    onClick={() => setSelectedCategory(cat)}
+                    className="bg-white rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col group cursor-pointer"
+                  >
+                    <div className="aspect-video rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
+                      {siteSettings.videoCategoryThumbnails?.[cat] ? (
+                        <img src={siteSettings.videoCategoryThumbnails[cat]} alt={cat} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                      ) : (
+                        <PlayCircle className="w-12 h-12 text-indigo-300 group-hover:text-indigo-500 transition-colors group-hover:scale-110 duration-300" />
+                      )}
+                    </div>
+                    <h3 className="font-black text-xl text-slate-800 text-center uppercase tracking-tighter group-hover:text-indigo-600 transition-colors">{cat}</h3>
+                    <p className="text-center text-slate-400 text-sm font-medium mt-2">
+                      {videos.filter(v => v.category === cat).length} videos
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <VideoGrid
+                videos={filteredVideos}
+                isLoading={isLoading}
+                isAdmin={isAdmin}
+                onDelete={handleVideoDelete}
+                onSelectVideo={handleVideoSelect}
+              />
+            )}
           </>
         )}
       </main>

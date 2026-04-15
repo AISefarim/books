@@ -15,6 +15,7 @@ export interface Book {
   readCount?: number;
   downloadCount?: number;
   isFeatured?: boolean;
+  type?: 'sefer' | 'video';
 }
 
 export interface Video {
@@ -24,4 +25,5 @@ export interface Video {
   category: string;
   createdAt: number;
   views?: number;
+  type?: 'video';
 }

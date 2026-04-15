@@ -139,10 +139,11 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab }: Admin
         url,
         category,
         createdAt: timestamp,
-        views: 0
+        views: 0,
+        type: 'video'
       };
 
-      await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'videos'), docData);
+      await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim'), docData);
 
       onStatusMessage('Video published successfully!', 'success');
       formRef.current?.reset();
@@ -308,8 +309,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab }: Admin
               >
                 <option value="">Select Category...</option>
                 <option value="AI Daf">AI Daf</option>
-                <option value="AI">AI</option>
-                <option value="Parasha">Parasha</option>
+                <option value="AI Parasha">AI Parasha</option>
                 <option value="AI Mishnah">AI Mishnah</option>
                 <option value="AI Rambam">AI Rambam</option>
                 <option value="AI Tanach">AI Tanach</option>
