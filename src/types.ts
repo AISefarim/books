@@ -16,3 +16,12 @@ export interface Book {
   downloadCount?: number;
   isFeatured?: boolean;
 }
+
+export interface Video {
+  id: string;
+  title: string;
+  url: string;
+  category: string;
+  createdAt: number;
+  views?: number;
+}

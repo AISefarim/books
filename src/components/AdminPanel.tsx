@@ -7,9 +7,10 @@ import { db, storage } from '../lib/firebase';
 interface AdminPanelProps {
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
   onOpenSettings: () => void;
+  activeTab: 'sefarim' | 'videos';
 }
 
-export function AdminPanel({ onStatusMessage, onOpenSettings }: AdminPanelProps) {
+export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab }: AdminPanelProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState({ label: '', percent: 0 });
@@ -123,6 +124,37 @@ export function AdminPanel({ onStatusMessage, onOpenSettings }: AdminPanelProps)
     }
   };
 
+  const handleVideoSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsUploading(true);
+    const formData = new FormData(e.currentTarget);
+    const title = formData.get('title') as string;
+    const url = formData.get('url') as string;
+    const category = formData.get('category') as string;
+
+    try {
+      const timestamp = Date.now();
+      const docData = {
+        title,
+        url,
+        category,
+        createdAt: timestamp,
+        views: 0
+      };
+
+      await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'videos'), docData);
+
+      onStatusMessage('Video published successfully!', 'success');
+      formRef.current?.reset();
+      setIsFormVisible(false);
+    } catch (err: any) {
+      console.error('Video Upload Error:', err);
+      onStatusMessage(`Error: ${err.message}`, 'error');
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
   return (
     <div className="mb-16">
       <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-indigo-50">
@@ -140,12 +172,12 @@ export function AdminPanel({ onStatusMessage, onOpenSettings }: AdminPanelProps)
               onClick={() => setIsFormVisible(!isFormVisible)}
               className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
             >
-              <Plus className="w-5 h-5" /> New Sefer
+              <Plus className="w-5 h-5" /> New {activeTab === 'sefarim' ? 'Sefer' : 'Video'}
             </button>
           </div>
         </div>
 
-        {isFormVisible && (
+        {isFormVisible && activeTab === 'sefarim' && (
           <form ref={formRef} onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6 p-8 bg-slate-50 rounded-3xl border border-slate-100">
             <div className="lg:col-span-1">
               <label className="block text-xs font-black text-slate-400 uppercase mb-3 tracking-widest">Sefer Cover</label>
@@ -247,6 +279,53 @@ export function AdminPanel({ onStatusMessage, onOpenSettings }: AdminPanelProps)
                   </>
                 ) : (
                   'Publish to ספריה'
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {isFormVisible && activeTab === 'videos' && (
+          <form ref={formRef} onSubmit={handleVideoSubmit} className="grid grid-cols-1 gap-8 mt-6 p-8 bg-slate-50 rounded-3xl border border-slate-100">
+            <div className="space-y-5">
+              <input
+                name="title"
+                required
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-lg bg-white"
+                placeholder="Video Title"
+              />
+              <input
+                name="url"
+                required
+                type="url"
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                placeholder="NotebookLM Link (e.g. https://notebooklm.google.com/...)"
+              />
+              <select
+                name="category"
+                required
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
+              >
+                <option value="">Select Category...</option>
+                <option value="AI Daf">AI Daf</option>
+                <option value="AI">AI</option>
+                <option value="Parasha">Parasha</option>
+                <option value="AI Mishnah">AI Mishnah</option>
+                <option value="AI Rambam">AI Rambam</option>
+                <option value="AI Tanach">AI Tanach</option>
+              </select>
+
+              <button
+                type="submit"
+                disabled={isUploading}
+                className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" /> SAVING...
+                  </>
+                ) : (
+                  'Publish Video'
                 )}
               </button>
             </div>
