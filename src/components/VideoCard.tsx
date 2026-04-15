@@ -7,9 +7,10 @@ interface VideoCardProps {
   isAdmin: boolean;
   onDelete: (id: string) => void;
   onSelect: () => void;
+  categoryThumbnail?: string;
 }
 
-export function VideoCard({ video, isAdmin, onDelete, onSelect }: VideoCardProps) {
+export function VideoCard({ video, isAdmin, onDelete, onSelect, categoryThumbnail }: VideoCardProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -30,8 +31,17 @@ export function VideoCard({ video, isAdmin, onDelete, onSelect }: VideoCardProps
       onClick={onSelect}
     >
       <div className="aspect-video rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
-        <PlayCircle className="w-12 h-12 text-indigo-300 group-hover:text-indigo-500 transition-colors group-hover:scale-110 duration-300" />
-        <div className="absolute top-3 right-3">
+        {categoryThumbnail ? (
+          <>
+            <img src={categoryThumbnail} alt={video.category} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+            <div className="absolute inset-0 bg-slate-900/20 group-hover:bg-slate-900/40 transition-colors flex items-center justify-center">
+              <PlayCircle className="w-12 h-12 text-white opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-300 drop-shadow-md" />
+            </div>
+          </>
+        ) : (
+          <PlayCircle className="w-12 h-12 text-indigo-300 group-hover:text-indigo-500 transition-colors group-hover:scale-110 duration-300" />
+        )}
+        <div className="absolute top-3 right-3 z-10">
           <span className="bg-white/90 backdrop-blur text-indigo-700 text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md shadow-sm">
             {video.category}
           </span>

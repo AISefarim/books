@@ -9,9 +9,10 @@ interface VideoGridProps {
   isAdmin: boolean;
   onDelete: (id: string) => void;
   onSelectVideo: (video: Video) => void;
+  categoryThumbnails?: Record<string, string>;
 }
 
-export function VideoGrid({ videos, isLoading, isAdmin, onDelete, onSelectVideo }: VideoGridProps) {
+export function VideoGrid({ videos, isLoading, isAdmin, onDelete, onSelectVideo, categoryThumbnails }: VideoGridProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
@@ -48,6 +49,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onDelete, onSelectVideo 
           isAdmin={isAdmin}
           onDelete={onDelete}
           onSelect={() => onSelectVideo(video)}
+          categoryThumbnail={categoryThumbnails?.[video.category]}
         />
       ))}
     </div>

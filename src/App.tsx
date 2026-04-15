@@ -509,6 +509,7 @@ export default function App() {
                 isAdmin={isAdmin}
                 onDelete={handleVideoDelete}
                 onSelectVideo={handleVideoSelect}
+                categoryThumbnails={siteSettings.videoCategoryThumbnails}
               />
             )}
           </>
