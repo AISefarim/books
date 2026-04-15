@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle } from 'lucide-react';
 
 import { db, storage, auth } from './lib/firebase';
 import { Book, Video } from './types';
@@ -270,7 +270,7 @@ export default function App() {
 
   const featuredBooks = books.filter(b => b.isFeatured);
 
-  const bannerUrl = siteSettings.bannerUrl || "https://www.lulu.com/shop/a-s/rambam-hilchot-maachalot-asurot-part-1/paperback/product-v2m5m4.html";
+  const bannerUrl = siteSettings.bannerUrl || "https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr";
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
@@ -278,7 +278,7 @@ export default function App() {
       <div className="bg-indigo-900 text-white py-3 px-4 sticky top-0 z-50 shadow-lg text-center">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4">
           <p className="font-bold flex items-center gap-2">
-            <ShoppingCart className="w-5 h-5 text-indigo-300" /> WANT PHYSICAL COPIES?
+            <MessageCircle className="w-5 h-5 text-indigo-300" /> JOIN OUR WHATSAPP COMMUNITY
           </p>
           <a
             href={bannerUrl}
@@ -286,7 +286,7 @@ export default function App() {
             rel="noopener noreferrer"
             className="bg-white text-indigo-900 px-8 py-1.5 rounded-full text-sm font-black hover:scale-105 transition-all uppercase shadow-md"
           >
-            Shop AI Sefarim
+            Join Now
           </a>
         </div>
       </div>
@@ -350,6 +350,7 @@ export default function App() {
             relatedVideos={videos.filter(v => v.category === selectedVideo.category && v.id !== selectedVideo.id)}
             onBack={handleHome}
             onSelectVideo={handleVideoSelect}
+            categoryThumbnail={siteSettings.videoCategoryThumbnails?.[selectedVideo.category]}
           />
         ) : activeTab === 'sefarim' ? (
           <>
@@ -487,7 +488,7 @@ export default function App() {
                     onClick={() => setSelectedCategory(cat)}
                     className="bg-white rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col group cursor-pointer"
                   >
-                    <div className="aspect-video rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
+                    <div className="aspect-square rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
                       {siteSettings.videoCategoryThumbnails?.[cat] ? (
                         <img src={siteSettings.videoCategoryThumbnails[cat]} alt={cat} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                       ) : (

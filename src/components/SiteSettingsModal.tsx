@@ -15,7 +15,7 @@ interface SiteSettingsModalProps {
 }
 
 export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }: SiteSettingsModalProps) {
-  const [bannerUrl, setBannerUrl] = useState(currentSettings.bannerUrl || 'https://www.lulu.com/shop/a-s/rambam-hilchot-maachalot-asurot-part-1/paperback/product-v2m5m4.html');
+  const [bannerUrl, setBannerUrl] = useState(currentSettings.bannerUrl || 'https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr');
   const [logoPreview, setLogoPreview] = useState<string | null>(currentSettings.logoUrl || null);
   const [categoryThumbnails, setCategoryThumbnails] = useState<Record<string, string>>(currentSettings.videoCategoryThumbnails || {});
   const [isSaving, setIsSaving] = useState(false);
@@ -133,13 +133,13 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
           </div>
 
           <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Banner "Physical Copy" URL</label>
+            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Banner "WhatsApp" URL</label>
             <input
               type="url"
               required
               value={bannerUrl}
               onChange={(e) => setBannerUrl(e.target.value)}
-              placeholder="https://www.lulu.com/..."
+              placeholder="https://chat.whatsapp.com/..."
               className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
             />
           </div>
@@ -149,7 +149,7 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {categories.map(category => (
                 <div key={category} className="flex flex-col gap-2">
-                  <div className="aspect-video rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative shadow-inner">
+                  <div className="aspect-square rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative shadow-inner">
                     {categoryThumbnails[category] ? (
                       <img src={categoryThumbnails[category]} alt={category} className="w-full h-full object-cover" />
                     ) : (
