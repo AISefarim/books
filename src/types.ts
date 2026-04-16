@@ -26,4 +26,5 @@ export interface Video {
   createdAt: number;
   views?: number;
   type?: 'video';
+  order?: number;
 }

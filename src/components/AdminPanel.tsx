@@ -8,9 +8,10 @@ interface AdminPanelProps {
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
   onOpenSettings: () => void;
   activeTab: 'sefarim' | 'videos';
+  videoCategories: string[];
 }
 
-export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab }: AdminPanelProps) {
+export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories }: AdminPanelProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState({ label: '', percent: 0 });
@@ -131,10 +132,12 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab }: Admin
     const title = formData.get('title') as string;
     const url = formData.get('url') as string;
     const category = formData.get('category') as string;
+    const orderStr = formData.get('order') as string;
+    const order = orderStr ? parseInt(orderStr, 10) : undefined;
 
     try {
       const timestamp = Date.now();
-      const docData = {
+      const docData: any = {
         title,
         url,
         category,
@@ -142,6 +145,10 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab }: Admin
         views: 0,
         type: 'video'
       };
+
+      if (order !== undefined && !isNaN(order)) {
+        docData.order = order;
+      }
 
       await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim'), docData);
 
@@ -302,18 +309,24 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab }: Admin
                 className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
                 placeholder="NotebookLM Link (e.g. https://notebooklm.google.com/...)"
               />
-              <select
-                name="category"
-                required
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
-              >
-                <option value="">Select Category...</option>
-                <option value="AI Daf">AI Daf</option>
-                <option value="AI Parasha">AI Parasha</option>
-                <option value="AI Mishnah">AI Mishnah</option>
-                <option value="AI Rambam">AI Rambam</option>
-                <option value="AI Tanach">AI Tanach</option>
-              </select>
+              <div className="grid grid-cols-2 gap-4">
+                <select
+                  name="category"
+                  required
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
+                >
+                  <option value="">Select Category...</option>
+                  {videoCategories.map(cat => (
+                    <option key={cat} value={cat}>{cat}</option>
+                  ))}
+                </select>
+                <input
+                  name="order"
+                  type="number"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                  placeholder="Rank Order (1 is highest)"
+                />
+              </div>
 
               <button
                 type="submit"

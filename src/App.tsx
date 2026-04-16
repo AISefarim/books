@@ -17,6 +17,7 @@ import { LoginModal } from './components/LoginModal';
 import { EpubReader } from './components/EpubReader';
 import { ConfirmModal } from './components/ConfirmModal';
 import { EditBookModal } from './components/EditBookModal';
+import { EditVideoModal } from './components/EditVideoModal';
 import { SiteSettingsModal } from './components/SiteSettingsModal';
 import { AddToHomescreen } from './components/AddToHomescreen';
 
@@ -29,13 +30,14 @@ export default function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [readingBook, setReadingBook] = useState<Book | null>(null);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
+  const [editingVideo, setEditingVideo] = useState<Video | null>(null);
   const [selectedBook, setSelectedBook] = useState<Book | null>(null);
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
-  const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string }>({});
+  const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string> }>({});
   const [showSettingsModal, setShowSettingsModal] = useState(false);
 
   useEffect(() => {
@@ -64,7 +66,12 @@ export default function App() {
         .filter(d => d.type === 'video')
         .map(d => d as unknown as Video);
         
-      videoDocs.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+      videoDocs.sort((a, b) => {
+        const orderA = a.order ?? 999;
+        const orderB = b.order ?? 999;
+        if (orderA !== orderB) return orderA - orderB;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
       setVideos(videoDocs);
 
       // Check for shared links
@@ -248,6 +255,15 @@ export default function App() {
     }
   };
 
+  const handleVideoEditSave = async (id: string, updatedData: Partial<Video>) => {
+    try {
+      await updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', id), updatedData);
+      showStatus('Video updated successfully.', 'success');
+    } catch (e: any) {
+      showStatus(`Update Error: ${e.message}`, 'error');
+    }
+  };
+
   const categories = Array.from(new Set(books.map(b => b.category || 'Uncategorized'))).sort();
   const filteredBooks = books.filter(b => {
     const matchesCategory = selectedCategory ? (b.category || 'Uncategorized') === selectedCategory : true;
@@ -259,8 +275,8 @@ export default function App() {
     return matchesCategory && matchesSearch;
   });
 
-  const predefinedVideoCategories = ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach"];
-  const videoCategories = Array.from(new Set([...predefinedVideoCategories, ...videos.map(v => v.category)])).sort();
+  const strictVideoCategories = siteSettings.videoCategories || ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach"];
+  const videoCategories = Array.from(new Set([...strictVideoCategories, ...videos.map(v => v.category)])).sort();
   const filteredVideos = videos.filter(v => {
     const matchesCategory = selectedCategory ? v.category === selectedCategory : true;
     const searchLower = searchQuery.toLowerCase();
@@ -330,7 +346,7 @@ export default function App() {
           </div>
         )}
 
-        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} />}
+        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} />}
 
         {selectedBook ? (
           <BookDetails
@@ -507,6 +523,7 @@ export default function App() {
                 videos={filteredVideos}
                 isLoading={isLoading}
                 isAdmin={isAdmin}
+                onEdit={setEditingVideo}
                 onDelete={handleVideoDelete}
                 onSelectVideo={handleVideoSelect}
                 categoryThumbnails={siteSettings.videoCategoryThumbnails}
@@ -549,6 +566,15 @@ export default function App() {
           book={editingBook}
           onSave={handleEditSave}
           onClose={() => setEditingBook(null)}
+        />
+      )}
+
+      {editingVideo && (
+        <EditVideoModal
+          video={editingVideo}
+          videoCategories={strictVideoCategories}
+          onSave={handleVideoEditSave}
+          onClose={() => setEditingVideo(null)}
         />
       )}
 

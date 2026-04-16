@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { Trash2, Share2, Check, PlayCircle } from 'lucide-react';
+import { Trash2, Share2, Check, PlayCircle, Edit2 } from 'lucide-react';
 import { Video } from '../types';
 
 interface VideoCardProps {
   video: Video;
   isAdmin: boolean;
+  onEdit: () => void;
   onDelete: (id: string) => void;
   onSelect: () => void;
   categoryThumbnail?: string;
 }
 
-export function VideoCard({ video, isAdmin, onDelete, onSelect, categoryThumbnail }: VideoCardProps) {
+export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, categoryThumbnail }: VideoCardProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -54,13 +55,22 @@ export function VideoCard({ video, isAdmin, onDelete, onSelect, categoryThumbnai
             {video.title}
           </h3>
           {isAdmin && (
-            <button
-              onClick={(e) => { e.stopPropagation(); onDelete(video.id); }}
-              className="text-slate-300 hover:text-rose-500 transition-colors p-2 bg-slate-50 hover:bg-rose-50 rounded-full shrink-0"
-              title="Delete Video"
-            >
-              <Trash2 className="w-4 h-4" />
-            </button>
+            <div className="flex gap-1 shrink-0">
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit(); }}
+                className="text-slate-300 hover:text-indigo-500 transition-colors p-2 bg-slate-50 hover:bg-indigo-50 rounded-full"
+                title="Edit Video"
+              >
+                <Edit2 className="w-4 h-4" />
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); onDelete(video.id); }}
+                className="text-slate-300 hover:text-rose-500 transition-colors p-2 bg-slate-50 hover:bg-rose-50 rounded-full"
+                title="Delete Video"
+              >
+                <Trash2 className="w-4 h-4" />
+              </button>
+            </div>
           )}
         </div>
         

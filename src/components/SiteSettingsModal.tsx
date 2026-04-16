@@ -8,6 +8,7 @@ interface SiteSettingsModalProps {
   currentSettings: { 
     bannerUrl?: string, 
     logoUrl?: string,
+    videoCategories?: string[],
     videoCategoryThumbnails?: Record<string, string>
   };
   onClose: () => void;
@@ -18,11 +19,25 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
   const [bannerUrl, setBannerUrl] = useState(currentSettings.bannerUrl || 'https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr');
   const [logoPreview, setLogoPreview] = useState<string | null>(currentSettings.logoUrl || null);
   const [categoryThumbnails, setCategoryThumbnails] = useState<Record<string, string>>(currentSettings.videoCategoryThumbnails || {});
+  const [categories, setCategories] = useState<string[]>(currentSettings.videoCategories || ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach"]);
+  const [newCategory, setNewCategory] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const categoryInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
-  const categories = ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach"];
+  const handleAddCategory = () => {
+    if (newCategory.trim() && !categories.includes(newCategory.trim())) {
+      setCategories([...categories, newCategory.trim()]);
+      setNewCategory('');
+    }
+  };
+
+  const handleRemoveCategory = (catToRemove: string) => {
+    setCategories(categories.filter(c => c !== catToRemove));
+    const newThumbnails = { ...categoryThumbnails };
+    delete newThumbnails[catToRemove];
+    setCategoryThumbnails(newThumbnails);
+  };
 
   const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -74,6 +89,7 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
       await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_'), {
         bannerUrl,
         logoUrl: finalLogoUrl,
+        videoCategories: categories,
         videoCategoryThumbnails: finalCategoryThumbnails,
         isSettingsDoc: true
       }, { merge: true });
@@ -145,10 +161,35 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
           </div>
 
           <div className="space-y-3">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Video Category Thumbnails</label>
+            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Video Categories & Thumbnails</label>
+            
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                value={newCategory}
+                onChange={(e) => setNewCategory(e.target.value)}
+                placeholder="New Category Name..."
+                className="flex-1 px-4 py-2 bg-slate-50 border-2 border-slate-100 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+              />
+              <button
+                type="button"
+                onClick={handleAddCategory}
+                className="px-6 py-2 bg-indigo-600 text-white rounded-xl font-bold uppercase tracking-widest hover:bg-indigo-700 transition-colors"
+              >
+                Add
+              </button>
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
               {categories.map(category => (
-                <div key={category} className="flex flex-col gap-2">
+                <div key={category} className="flex flex-col gap-2 relative group">
+                  <button
+                    type="button"
+                    onClick={() => handleRemoveCategory(category)}
+                    className="absolute -top-2 -right-2 bg-rose-500 text-white rounded-full p-1 z-10 opacity-0 group-hover:opacity-100 transition-opacity shadow-sm hover:bg-rose-600"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
                   <div className="aspect-square rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative shadow-inner">
                     {categoryThumbnails[category] ? (
                       <img src={categoryThumbnails[category]} alt={category} className="w-full h-full object-cover" />
