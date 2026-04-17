@@ -80,11 +80,18 @@ export default async function handler(req, res) {
     }
 
     if (ogTitle && ogDesc) {
-      html = html.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/>/, `<meta property="og:title" content="${ogTitle}" />`);
-      html = html.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/>/, `<meta property="og:description" content="${ogDesc}" />`);
-      html = html.replace(/<title>.*<\/title>/, `<title>${ogTitle}</title>`);
+      // Escape for HTML output
+      const esTitle = ogTitle.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const esDesc = ogDesc.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      
+      html = html.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/>/, `<meta property="og:title" content="${esTitle}" />\n    <meta name="twitter:title" content="${esTitle}" />`);
+      html = html.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/>/, `<meta property="og:description" content="${esDesc}" />\n    <meta name="twitter:description" content="${esDesc}" />\n    <meta name="twitter:card" content="summary_large_image" />`);
+      html = html.replace(/<title>.*<\/title>/, `<title>${esTitle}</title>`);
       if (ogImage) {
-        html = html.replace(/<meta\s+property="og:image"\s+content="[^"]*"\s*\/>/, `<meta property="og:image" content="${ogImage}" />`);
+        const escapedOgImage = ogImage.replace(/&/g, '&amp;');
+        html = html.replace(/<meta\s+property="og:image"\s+content="[^"]*"\s*\/>/, `<meta property="og:image" content="${escapedOgImage}" />\n    <meta name="twitter:image" content="${escapedOgImage}" />\n    <meta property="og:image:alt" content="${esTitle}" />`);
+        // Force the thumbnail to also override the apple-touch-icon so it has no choice but to show the category thumbnail
+        html = html.replace(/<link\s+rel="apple-touch-icon"\s+href="[^"]*"\s*\/>/, `<link rel="apple-touch-icon" href="${escapedOgImage}" />`);
       }
     }
 
