@@ -1,24 +1,16 @@
 {
   "rewrites": [
     {
-      "source": "/",
-      "has": [
-        {
-          "type": "query",
-          "key": "video"
-        }
-      ],
-      "destination": "/api/preview"
+      "source": "/v/:id",
+      "destination": "/api/preview?video=:id"
     },
     {
-      "source": "/",
-      "has": [
-        {
-          "type": "query",
-          "key": "book"
-        }
-      ],
-      "destination": "/api/preview"
+      "source": "/b/:id",
+      "destination": "/api/preview?book=:id"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }

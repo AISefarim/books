@@ -1,5 +1,5 @@
-const url1 = "https://aisefarim.com/?video=5ux56lNHj5upf3hjfaJ2";
-const url2 = "https://aisefarim.com/api/preview?video=5ux56lNHj5upf3hjfaJ2";
+const url1 = "https://aisefarim.com/?video=c78BCcl0tBfN1xP0esxd";
+const url2 = "https://aisefarim.com/api/preview?video=c78BCcl0tBfN1xP0esxd";
 
 async function test() {
   try {

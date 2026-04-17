@@ -17,7 +17,7 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
-    const url = `${window.location.origin}${window.location.pathname}?book=${book.id}`;
+    const url = `${window.location.origin}/b/${book.id}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);

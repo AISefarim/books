@@ -76,8 +76,15 @@ export default function App() {
 
       // Check for shared links
       const params = new URLSearchParams(window.location.search);
-      const sharedBookId = params.get('book');
-      const sharedVideoId = params.get('video');
+      let sharedBookId = params.get('book');
+      let sharedVideoId = params.get('video');
+      
+      const pathParts = window.location.pathname.split('/');
+      if (pathParts[1] === 'v' && pathParts[2]) {
+        sharedVideoId = pathParts[2];
+      } else if (pathParts[1] === 'b' && pathParts[2]) {
+        sharedBookId = pathParts[2];
+      }
       
       if (sharedBookId) {
         const bookToOpen = bookDocs.find(b => b.id === sharedBookId);
@@ -196,8 +203,15 @@ export default function App() {
   useEffect(() => {
     const handlePopState = () => {
       const params = new URLSearchParams(window.location.search);
-      const sharedBookId = params.get('book');
-      const sharedVideoId = params.get('video');
+      let sharedBookId = params.get('book');
+      let sharedVideoId = params.get('video');
+      
+      const pathParts = window.location.pathname.split('/');
+      if (pathParts[1] === 'v' && pathParts[2]) {
+        sharedVideoId = pathParts[2];
+      } else if (pathParts[1] === 'b' && pathParts[2]) {
+        sharedBookId = pathParts[2];
+      }
       
       if (sharedBookId) {
         const bookToOpen = books.find(b => b.id === sharedBookId);
@@ -261,6 +275,29 @@ export default function App() {
       showStatus('Video updated successfully.', 'success');
     } catch (e: any) {
       showStatus(`Update Error: ${e.message}`, 'error');
+    }
+  };
+
+  const handleVideoReorder = async (reorderedVideos: Video[]) => {
+    // Optimistically update local state if we want, or just wait for snapshot.
+    // The reorderedVideos array is the new order.
+    // We can assign order = index + 1 for all of them.
+    
+    // To avoid too many writes, we only update those whose order changed.
+    const updates = [];
+    for (let i = 0; i < reorderedVideos.length; i++) {
+      const video = reorderedVideos[i];
+      const newOrder = i + 1;
+      if (video.order !== newOrder) {
+        updates.push({ id: video.id, order: newOrder });
+      }
+    }
+    
+    // Update firestore
+    for (const update of updates) {
+      updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', update.id), {
+        order: update.order
+      }).catch(err => console.error("Failed to update order", err));
     }
   };
 
@@ -526,6 +563,7 @@ export default function App() {
                 onEdit={setEditingVideo}
                 onDelete={handleVideoDelete}
                 onSelectVideo={handleVideoSelect}
+                onReorder={selectedCategory ? handleVideoReorder : undefined}
                 categoryThumbnails={siteSettings.videoCategoryThumbnails}
               />
             )}

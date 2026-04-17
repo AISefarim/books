@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, Share2, Check, PlayCircle, Edit2 } from 'lucide-react';
+import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical } from 'lucide-react';
 import { Video } from '../types';
 
 interface VideoCardProps {
@@ -9,14 +9,15 @@ interface VideoCardProps {
   onDelete: (id: string) => void;
   onSelect: () => void;
   categoryThumbnail?: string;
+  dragHandleProps?: Record<string, any>;
 }
 
-export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, categoryThumbnail }: VideoCardProps) {
+export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, categoryThumbnail, dragHandleProps }: VideoCardProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    const url = `${window.location.origin}${window.location.pathname}?video=${video.id}`;
+    const url = `${window.location.origin}/v/${video.id}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
@@ -32,6 +33,15 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
       onClick={onSelect}
     >
       <div className="aspect-square rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
+        {isAdmin && dragHandleProps && (
+          <div 
+            {...dragHandleProps}
+            className="absolute top-2 left-2 z-20 p-2 bg-white/80 backdrop-blur rounded-lg shadow-sm opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing transition-opacity touch-none"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="w-5 h-5 text-slate-400" />
+          </div>
+        )}
         {categoryThumbnail ? (
           <>
             <img src={categoryThumbnail} alt={video.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />

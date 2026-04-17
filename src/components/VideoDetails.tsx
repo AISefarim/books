@@ -14,7 +14,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
-    const url = `${window.location.origin}${window.location.pathname}?video=${video.id}`;
+    const url = `${window.location.origin}/v/${video.id}`;
     try {
       await navigator.clipboard.writeText(url);
       setCopied(true);
