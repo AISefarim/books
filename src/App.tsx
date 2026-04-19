@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play } from 'lucide-react';
 
 import { db, storage, auth } from './lib/firebase';
 import { Book, Video } from './types';
@@ -39,6 +39,8 @@ export default function App() {
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
   const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string> }>({});
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showBanner, setShowBanner] = useState(true);
+  const [isPlayingWelcome, setIsPlayingWelcome] = useState(false);
 
   useEffect(() => {
     signInAnonymously(auth).catch((err) => {
@@ -328,21 +330,29 @@ export default function App() {
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       {/* Top Sales Banner */}
-      <div className="bg-indigo-900 text-white py-3 px-4 sticky top-0 z-50 shadow-lg text-center">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4">
-          <p className="font-bold flex items-center gap-2">
-            <MessageCircle className="w-5 h-5 text-indigo-300" /> JOIN OUR WHATSAPP COMMUNITY
-          </p>
-          <a
-            href={bannerUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="bg-white text-indigo-900 px-8 py-1.5 rounded-full text-sm font-black hover:scale-105 transition-all uppercase shadow-md"
+      {showBanner && (
+        <div className="bg-indigo-900 text-white py-3 px-4 relative z-50 shadow-lg text-center">
+          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4">
+            <p className="font-bold flex items-center gap-2">
+              <MessageCircle className="w-5 h-5 text-indigo-300" /> JOIN OUR WHATSAPP COMMUNITY
+            </p>
+            <a
+              href={bannerUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white text-indigo-900 px-8 py-1.5 rounded-full text-sm font-black hover:scale-105 transition-all uppercase shadow-md"
+            >
+              Join Now
+            </a>
+          </div>
+          <button 
+            onClick={() => setShowBanner(false)}
+            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white font-bold p-2"
           >
-            Join Now
-          </a>
+            ✕
+          </button>
         </div>
-      </div>
+      )}
 
       <Navbar 
         isAdmin={isAdmin} 
@@ -353,7 +363,61 @@ export default function App() {
         onTabChange={setActiveTab}
       />
 
-      <main className="max-w-7xl mx-auto p-6 lg:p-12">
+      {/* Welcome Video Section (Only on main dashboard) */}
+      {!selectedBook && !selectedVideo && !searchQuery && !selectedCategory && (
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-8 pb-4">
+          <div className="bg-slate-900 rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl border border-slate-800 flex flex-col md:flex-row relative">
+            <div className="md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center text-white z-10 relative">
+               <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4">
+                 Welcome to <br/><span className="text-indigo-400">AI Sefarim</span>
+               </h2>
+               <p className="text-slate-300 text-base md:text-lg mb-8 max-w-md leading-relaxed">
+                 An endless digital library of ancient wisdom, structured and illuminated by artificial intelligence. Watch the 2-minute overview.
+               </p>
+               {!isPlayingWelcome && (
+                 <button 
+                   onClick={() => setIsPlayingWelcome(true)}
+                   className="bg-indigo-600 self-start text-white px-6 py-3.5 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-500 transition-all shadow-xl hover:shadow-indigo-500/25 active:scale-95 group"
+                 >
+                   <Play className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" /> Watch Intro
+                 </button>
+               )}
+            </div>
+            <div className="md:w-1/2 relative bg-black aspect-video md:aspect-auto min-h-[250px] overflow-hidden group">
+               {isPlayingWelcome ? (
+                 <iframe
+                    className="absolute inset-0 w-full h-full"
+                    src="https://www.youtube.com/embed/n42s_aT-Zqk?autoplay=1&rel=0&modestbranding=1"
+                    title="AI Sefarim Intro"
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                 ></iframe>
+               ) : (
+                 <>
+                   <img 
+                     src="https://firebasestorage.googleapis.com/v0/b/ai-sefarim.firebasestorage.app/o/settings%2Flogo_1773796055186_Gemini_Generated_Image_4u7kg54u7kg54u7k_cropped_processed_by_imagy.jpg?alt=media&token=6b05830c-600b-46ca-a8a9-1e5dc44d1bc6"
+                     alt="Welcome Thumbnail" 
+                     className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700"
+                   />
+                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent md:bg-gradient-to-r md:from-slate-900 md:to-transparent opacity-90" />
+                   
+                   <div 
+                     className="absolute inset-0 flex items-center justify-center cursor-pointer"
+                     onClick={() => setIsPlayingWelcome(true)}
+                   >
+                      <div className="w-16 h-16 rounded-full bg-indigo-500/90 backdrop-blur-md text-white flex items-center justify-center transform group-hover:scale-110 shadow-xl transition-transform duration-300">
+                        <Play className="w-8 h-8 fill-current ml-1" />
+                      </div>
+                   </div>
+                 </>
+               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <main className="max-w-7xl mx-auto p-6 lg:p-12 pt-4">
         {status && (
           <div
             className={`mb-6 p-5 rounded-3xl font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4 ${
