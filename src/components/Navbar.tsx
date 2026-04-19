@@ -1,4 +1,4 @@
-import { BookOpen, Video, Library } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle } from 'lucide-react';
 
 interface NavbarProps {
   isAdmin: boolean;
@@ -7,43 +7,44 @@ interface NavbarProps {
   logoUrl?: string;
   activeTab: 'sefarim' | 'videos';
   onTabChange: (tab: 'sefarim' | 'videos') => void;
+  whatsappUrl?: string;
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl }: NavbarProps) {
   return (
-    <nav className="bg-white/80 backdrop-blur-md border-b sticky top-[52px] z-40 shadow-sm">
-      <div className="max-w-7xl mx-auto px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
+    <nav className="bg-white/85 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40 shadow-sm">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
         {/* Logo Section */}
         <div 
-          className="flex items-center gap-4 cursor-pointer group self-start md:self-auto"
+          className="flex items-center gap-3 cursor-pointer group self-start md:self-auto"
           onClick={() => {
             onHome();
           }}
         >
           {logoUrl ? (
-            <img src={logoUrl} alt="Site Logo" className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform" />
+            <img src={logoUrl} alt="Site Logo" className="w-10 h-10 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform" />
           ) : (
-            <div className="bg-indigo-600 p-2.5 rounded-2xl text-white shadow-lg shadow-indigo-100 group-hover:scale-105 transition-transform">
-              <BookOpen className="w-6 h-6" />
+            <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-100 group-hover:scale-105 transition-transform">
+              <BookOpen className="w-5 h-5" />
             </div>
           )}
           <div>
-            <h1 className="text-2xl font-black text-slate-900 tracking-tighter group-hover:text-indigo-600 transition-colors">AI SEFARIM</h1>
-            <p className="text-[10px] text-indigo-600 font-black uppercase tracking-widest">Digital ספריה</p>
+            <h1 className="text-xl font-black text-slate-900 tracking-tighter group-hover:text-indigo-600 transition-colors leading-tight">AI SEFARIM</h1>
+            <p className="text-[9px] text-indigo-600 font-black uppercase tracking-widest leading-tight">Digital ספריה</p>
           </div>
         </div>
 
         {/* Global Navigation - Center */}
-        <div className="bg-slate-100/80 backdrop-blur p-1 rounded-full flex self-stretch md:self-auto shadow-inner border border-slate-200">
+        <div className="bg-slate-100/80 backdrop-blur p-1 rounded-full flex self-stretch md:self-auto shadow-inner border border-slate-200 w-full md:w-auto">
           <button
             onClick={() => {
               onTabChange('sefarim');
               onHome();
             }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all ${
+            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-full text-sm font-black uppercase tracking-widest transition-all ${
               activeTab === 'sefarim' 
-                ? 'bg-white text-indigo-900 shadow-sm ring-1 ring-slate-200/50' 
-                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                ? 'bg-white text-indigo-900 shadow-[0_2px_10px_-3px_rgba(6,181,227,0.3)] ring-1 ring-slate-200/50 scale-[1.02]' 
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 scale-95'
             }`}
           >
             <Library className="w-4 h-4" />
@@ -54,10 +55,10 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
               onTabChange('videos');
               onHome();
             }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-6 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all ${
+            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-full text-sm font-black uppercase tracking-widest transition-all ${
               activeTab === 'videos' 
-                ? 'bg-white text-indigo-900 shadow-sm ring-1 ring-slate-200/50' 
-                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50'
+                ? 'bg-white text-indigo-900 shadow-[0_2px_10px_-3px_rgba(6,181,227,0.3)] ring-1 ring-slate-200/50 scale-[1.02]' 
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 scale-95'
             }`}
           >
             <Video className="w-4 h-4" />
@@ -65,23 +66,55 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
           </button>
         </div>
 
-        {/* Admin Section */}
-        <button
-          onClick={onToggleAdmin}
-          className="hidden md:block px-5 py-2.5 bg-slate-50 text-slate-700 rounded-xl font-bold hover:bg-slate-100 transition-all text-sm border border-slate-200"
-        >
-          {isAdmin ? 'Logout Admin' : 'Admin Login'}
-        </button>
+        {/* Action Buttons Section */}
+        <div className="hidden md:flex items-center gap-3">
+          {whatsappUrl && (
+            <div className="relative group">
+              <div className="absolute inset-0 bg-[#25D366] rounded-xl animate-ping opacity-20" style={{ animationDuration: '3s' }}></div>
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative px-5 py-2.5 bg-[#25D366] text-white hover:bg-[#1fa14b] rounded-xl font-bold transition-all text-sm flex items-center gap-2 shadow-lg shadow-[#25D366]/30 hover:shadow-[#25D366]/50 hover:-translate-y-0.5 active:scale-95 uppercase tracking-wide border border-white/20"
+              >
+                <MessageCircle className="w-5 h-5 fill-current" />
+                Join WhatsApp
+              </a>
+            </div>
+          )}
+          <button
+            onClick={onToggleAdmin}
+            className="px-4 py-2.5 bg-slate-50 text-slate-700 rounded-xl font-bold hover:bg-slate-100 transition-all text-sm border border-slate-200 shadow-sm relative z-10"
+          >
+            {isAdmin ? 'Logout' : 'Admin'}
+          </button>
+        </div>
         
-        {/* Mobile quick admin toggle (hidden visually but clickable for admin) */}
-        {!isAdmin && (
-           <div className="md:hidden absolute top-4 right-4 w-12 h-12 rounded-full opacity-0 cursor-pointer" onClick={onToggleAdmin}></div>
-        )}
-        {isAdmin && (
-           <button onClick={onToggleAdmin} className="md:hidden absolute top-4 right-4 text-xs font-bold text-rose-500 bg-rose-50 px-3 py-1 rounded-full border border-rose-100">
-             Log Out
-           </button>
-        )}
+        {/* Mobile quick actions */}
+        <div className="md:hidden absolute top-3 right-4 flex items-center gap-2">
+          {whatsappUrl && (
+            <div className="relative pt-[2px]">
+              <div className="absolute inset-0 bg-[#25D366] rounded-full animate-ping opacity-20" style={{ animationDuration: '3s' }}></div>
+              <a
+                href={whatsappUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="relative px-3 py-1.5 bg-[#25D366] text-white rounded-full font-black transition-all text-[10px] sm:text-xs flex items-center gap-1 shadow-md shadow-[#25D366]/40 uppercase tracking-widest active:scale-95 border border-white/20"
+              >
+                <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
+                WhatsApp
+              </a>
+            </div>
+          )}
+          {!isAdmin && (
+             <div className="w-6 h-6 rounded-full opacity-0 cursor-pointer relative z-10" onClick={onToggleAdmin}></div>
+          )}
+          {isAdmin && (
+             <button onClick={onToggleAdmin} className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-full border border-rose-100 relative z-10">
+               Logout
+             </button>
+          )}
+        </div>
       </div>
     </nav>
   );

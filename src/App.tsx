@@ -37,9 +37,8 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
-  const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string> }>({});
+  const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string>, welcomeVideoUrl?: string }>({});
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showBanner, setShowBanner] = useState(true);
   const [isPlayingWelcome, setIsPlayingWelcome] = useState(false);
 
   useEffect(() => {
@@ -329,31 +328,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
-      {/* Top Sales Banner */}
-      {showBanner && (
-        <div className="bg-indigo-900 text-white py-3 px-4 relative z-50 shadow-lg text-center">
-          <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-center gap-4">
-            <p className="font-bold flex items-center gap-2">
-              <MessageCircle className="w-5 h-5 text-indigo-300" /> JOIN OUR WHATSAPP COMMUNITY
-            </p>
-            <a
-              href={bannerUrl}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-white text-indigo-900 px-8 py-1.5 rounded-full text-sm font-black hover:scale-105 transition-all uppercase shadow-md"
-            >
-              Join Now
-            </a>
-          </div>
-          <button 
-            onClick={() => setShowBanner(false)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/60 hover:text-white font-bold p-2"
-          >
-            ✕
-          </button>
-        </div>
-      )}
-
       <Navbar 
         isAdmin={isAdmin} 
         onToggleAdmin={handleToggleAdmin} 
@@ -361,6 +335,7 @@ export default function App() {
         logoUrl={siteSettings.logoUrl}
         activeTab={activeTab}
         onTabChange={setActiveTab}
+        whatsappUrl={bannerUrl}
       />
 
       {/* Welcome Video Section (Only on main dashboard) */}
@@ -372,7 +347,7 @@ export default function App() {
                  Welcome to <br/><span className="text-indigo-400">AI Sefarim</span>
                </h2>
                <p className="text-slate-300 text-base md:text-lg mb-8 max-w-md leading-relaxed">
-                 An endless digital library of ancient wisdom, structured and illuminated by artificial intelligence. Watch the 2-minute overview.
+                 An endless digital library of ancient wisdom, structured and illuminated by artificial intelligence.
                </p>
                {!isPlayingWelcome && (
                  <button 
@@ -385,20 +360,30 @@ export default function App() {
             </div>
             <div className="md:w-1/2 relative bg-black aspect-video md:aspect-auto min-h-[250px] overflow-hidden group">
                {isPlayingWelcome ? (
-                 <iframe
-                    className="absolute inset-0 w-full h-full"
-                    src="https://www.youtube.com/embed/n42s_aT-Zqk?autoplay=1&rel=0&modestbranding=1"
-                    title="AI Sefarim Intro"
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                 ></iframe>
+                 siteSettings.welcomeVideoUrl ? (
+                   <video 
+                     className="absolute inset-0 w-full h-full object-cover bg-black" 
+                     src={siteSettings.welcomeVideoUrl} 
+                     controls 
+                     autoPlay 
+                     playsInline
+                   />
+                 ) : (
+                   <div className="absolute inset-0 w-full h-full bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
+                      <AlertCircle className="w-12 h-12 text-slate-500 mb-4" />
+                      <h3 className="text-white font-bold text-lg mb-2">Video Not Configured</h3>
+                      <p className="text-slate-400 text-sm max-w-xs leading-relaxed">
+                        Because you securely uploaded the video directly in AI Studio, a public link couldn't be generated automatically. 
+                        Please click <span className="font-bold text-white">"Admin" &rarr; "Settings"</span> to upload your `.mp4` video directly to your website storage!
+                      </p>
+                   </div>
+                 )
                ) : (
                  <>
                    <img 
-                     src="https://firebasestorage.googleapis.com/v0/b/ai-sefarim.firebasestorage.app/o/settings%2Flogo_1773796055186_Gemini_Generated_Image_4u7kg54u7kg54u7k_cropped_processed_by_imagy.jpg?alt=media&token=6b05830c-600b-46ca-a8a9-1e5dc44d1bc6"
+                     src={siteSettings.logoUrl || "https://firebasestorage.googleapis.com/v0/b/ai-sefarim.firebasestorage.app/o/settings%2Flogo_1773796055186_Gemini_Generated_Image_4u7kg54u7kg54u7k_cropped_processed_by_imagy.jpg?alt=media&token=6b05830c-600b-46ca-a8a9-1e5dc44d1bc6"}
                      alt="Welcome Thumbnail" 
-                     className="absolute inset-0 w-full h-full object-cover opacity-40 group-hover:scale-105 transition-transform duration-700"
+                     className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-700 blur-sm scale-110"
                    />
                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent md:bg-gradient-to-r md:from-slate-900 md:to-transparent opacity-90" />
                    
