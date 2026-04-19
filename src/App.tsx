@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
@@ -40,6 +40,8 @@ export default function App() {
   const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string>, welcomeVideoUrl?: string }>({});
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPlayingWelcome, setIsPlayingWelcome] = useState(false);
+  const [isDirectLinkEntry, setIsDirectLinkEntry] = useState(false);
+  const hasCheckedSharedLink = React.useRef(false);
 
   useEffect(() => {
     signInAnonymously(auth).catch((err) => {
@@ -76,28 +78,33 @@ export default function App() {
       setVideos(videoDocs);
 
       // Check for shared links
-      const params = new URLSearchParams(window.location.search);
-      let sharedBookId = params.get('book');
-      let sharedVideoId = params.get('video');
-      
-      const pathParts = window.location.pathname.split('/');
-      if (pathParts[1] === 'v' && pathParts[2]) {
-        sharedVideoId = pathParts[2];
-      } else if (pathParts[1] === 'b' && pathParts[2]) {
-        sharedBookId = pathParts[2];
-      }
-      
-      if (sharedBookId) {
-        const bookToOpen = bookDocs.find(b => b.id === sharedBookId);
-        if (bookToOpen) {
-          setSelectedBook(bookToOpen);
-          setActiveTab('sefarim');
+      if (!hasCheckedSharedLink.current && (bookDocs.length > 0 || videoDocs.length > 0)) {
+        hasCheckedSharedLink.current = true;
+        const params = new URLSearchParams(window.location.search);
+        let sharedBookId = params.get('book');
+        let sharedVideoId = params.get('video');
+        
+        const pathParts = window.location.pathname.split('/');
+        if (pathParts[1] === 'v' && pathParts[2]) {
+          sharedVideoId = pathParts[2];
+        } else if (pathParts[1] === 'b' && pathParts[2]) {
+          sharedBookId = pathParts[2];
         }
-      } else if (sharedVideoId) {
-        const videoToOpen = videoDocs.find(v => v.id === sharedVideoId);
-        if (videoToOpen) {
-          setSelectedVideo(videoToOpen);
-          setActiveTab('videos');
+        
+        if (sharedBookId) {
+          const bookToOpen = bookDocs.find(b => b.id === sharedBookId);
+          if (bookToOpen) {
+            setSelectedBook(bookToOpen);
+            setActiveTab('sefarim');
+            setIsDirectLinkEntry(true);
+          }
+        } else if (sharedVideoId) {
+          const videoToOpen = videoDocs.find(v => v.id === sharedVideoId);
+          if (videoToOpen) {
+            setSelectedVideo(videoToOpen);
+            setActiveTab('videos');
+            setIsDirectLinkEntry(true);
+          }
         }
       }
     });
@@ -229,6 +236,7 @@ export default function App() {
       } else {
         setSelectedBook(null);
         setSelectedVideo(null);
+        setIsDirectLinkEntry(false);
       }
     };
 
@@ -242,11 +250,13 @@ export default function App() {
     setReadingBook(null);
     setSelectedBook(null);
     setSelectedVideo(null);
-    window.history.replaceState({}, '', window.location.pathname);
+    setIsDirectLinkEntry(false);
+    window.history.replaceState({}, '', '/');
   };
 
   const handleBookSelect = (book: Book) => {
     setSelectedBook(book);
+    setIsDirectLinkEntry(false);
     const url = new URL(window.location.href);
     url.searchParams.set('book', book.id);
     url.searchParams.delete('video');
@@ -255,6 +265,7 @@ export default function App() {
 
   const handleVideoSelect = (video: Video) => {
     setSelectedVideo(video);
+    setIsDirectLinkEntry(false);
     const url = new URL(window.location.href);
     url.searchParams.set('video', video.id);
     url.searchParams.delete('book');
@@ -418,6 +429,44 @@ export default function App() {
         )}
 
         {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} />}
+
+        {isDirectLinkEntry && (selectedBook || selectedVideo) && (
+          <div className="mb-8 bg-indigo-950 rounded-[2rem] p-4 md:p-6 flex flex-col md:flex-row items-center gap-6 shadow-xl border border-indigo-900/50">
+             <div className="w-full md:w-64 aspect-video bg-black rounded-2xl overflow-hidden relative shrink-0 border border-white/10 shadow-lg">
+                {siteSettings.welcomeVideoUrl ? (
+                   <video 
+                     className="absolute inset-0 w-full h-full object-cover bg-black" 
+                     src={siteSettings.welcomeVideoUrl} 
+                     controls 
+                     playsInline
+                   />
+                ) : (
+                   <img 
+                     src={siteSettings.logoUrl || "https://firebasestorage.googleapis.com/v0/b/ai-sefarim.firebasestorage.app/o/settings%2Flogo_1773796055186_Gemini_Generated_Image_4u7kg54u7kg54u7k_cropped_processed_by_imagy.jpg?alt=media&token=6b05830c-600b-46ca-a8a9-1e5dc44d1bc6"}
+                     alt="Welcome Thumbnail" 
+                     className="absolute inset-0 w-full h-full object-cover opacity-50"
+                   />
+                )}
+             </div>
+             <div className="text-white flex-1 text-center md:text-left">
+               <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-900 rounded-full text-xs font-bold text-indigo-300 mb-2 uppercase tracking-widest">
+                 <PlayCircle className="w-3.5 h-3.5" /> Welcome
+               </div>
+               <h3 className="text-xl md:text-2xl font-black mb-2 leading-tight">New here?</h3>
+               <p className="text-sm md:text-base text-indigo-200/80 mb-4 max-w-lg leading-relaxed mx-auto md:mx-0">
+                 You were sent a direct link to this content! AI Sefarim is an endless digital library of ancient wisdom. Watch this 2-minute intro to see what else you can discover.
+               </p>
+               <div className="flex justify-center md:justify-start gap-3">
+                 <button 
+                   onClick={() => setIsDirectLinkEntry(false)}
+                   className="px-5 py-2 md:py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs md:text-sm font-bold transition-colors uppercase tracking-wider"
+                 >
+                   Dismiss
+                 </button>
+               </div>
+             </div>
+          </div>
+        )}
 
         {selectedBook ? (
           <BookDetails
