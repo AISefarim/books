@@ -51,7 +51,8 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
     }
   };
 
-  const displayRelated = relatedVideos.slice(0, 8);
+  const upNextVideo = relatedVideos[0];
+  const otherRelated = relatedVideos.slice(1, 9);
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
@@ -118,19 +119,78 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
         </div>
       </div>
 
-      {displayRelated.length > 0 && (
+      {/* Up Next Spotlight Card */}
+      {upNextVideo && (
         <div className="mt-16 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-200 fill-mode-both">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3">
-              <PlayCircle className="w-6 h-6 text-indigo-500" /> Up Next in {video.category}
+              <PlayCircle className="w-6 h-6 text-indigo-500" /> Up Next
             </h3>
-            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest">
-              {relatedVideos.length} Videos
+            <span className="text-sm font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
+              {relatedVideos.length} Related Videos
             </span>
           </div>
+
+          <div 
+            onClick={() => onSelectVideo(upNextVideo)}
+            className="group cursor-pointer bg-slate-900 rounded-[2.5rem] overflow-hidden relative shadow-2xl hover:shadow-indigo-500/20 transition-all duration-500 border border-slate-800 flex flex-col md:flex-row min-h-[300px]"
+          >
+            {/* Background blur layer */}
+            {categoryThumbnail && (
+                <div className="absolute inset-0 opacity-20 hidden md:block">
+                  <img src={categoryThumbnail} alt="" className="w-full h-full object-cover blur-3xl opacity-50" />
+                </div>
+            )}
+            
+            {/* Left Image Area */}
+            <div className="w-full md:w-5/12 lg:w-4/12 relative bg-black shrink-0 overflow-hidden aspect-video md:aspect-auto">
+                {categoryThumbnail ? (
+                  <img src={categoryThumbnail} alt={upNextVideo.category} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" />
+                ) : (
+                   <div className="w-full h-full flex items-center justify-center bg-indigo-900/60 "><PlayCircle className="w-20 h-20 text-indigo-400 opacity-50" /></div>
+                )}
+                 <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent md:bg-gradient-to-r md:from-transparent md:to-slate-900/90" />
+                 
+                 <div className="absolute inset-0 flex md:items-end justify-center items-center pb-0 md:pb-8 md:pl-8 md:justify-start">
+                    <div className="w-16 h-16 rounded-full bg-indigo-500/90 backdrop-blur-md text-white flex items-center justify-center transform group-hover:scale-110 shadow-xl transition-transform duration-300">
+                      <Play className="w-8 h-8 fill-current ml-1" />
+                    </div>
+                 </div>
+            </div>
+
+            {/* Right Content Area */}
+            <div className="p-8 md:p-12 flex flex-col justify-center relative z-10 text-white w-full">
+                <div className="flex items-center gap-3 mb-4">
+                  <span className="bg-indigo-500/20 text-indigo-300 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-indigo-500/30">
+                    {upNextVideo.category}
+                  </span>
+                </div>
+                <h4 className="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight mb-6 group-hover:text-indigo-200 transition-colors">
+                  {upNextVideo.title}
+                </h4>
+                <div className="flex flex-wrap items-center gap-4 text-sm font-semibold text-slate-400 uppercase tracking-widest mt-auto">
+                  <span className="flex items-center gap-2"><Calendar className="w-4 h-4" /> {new Date(upNextVideo.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                  {upNextVideo.views !== undefined && (
+                    <>
+                      <span className="w-1.5 h-1.5 rounded-full bg-slate-700"></span>
+                      <span className="flex items-center gap-2"><Eye className="w-4 h-4" /> {upNextVideo.views} views</span>
+                    </>
+                  )}
+                </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Grid for remaining items */}
+      {otherRelated.length > 0 && (
+        <div className="mt-12 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-300 fill-mode-both">
+          <h3 className="text-lg font-bold text-slate-500 uppercase tracking-widest mb-6">
+            More from {video.category}
+          </h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {displayRelated.map((v, idx) => (
+            {otherRelated.map((v, idx) => (
               <div 
                 key={v.id}
                 onClick={() => onSelectVideo(v)}
