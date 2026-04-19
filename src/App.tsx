@@ -344,7 +344,14 @@ export default function App() {
         </div>
       </div>
 
-      <Navbar isAdmin={isAdmin} onToggleAdmin={handleToggleAdmin} onHome={handleHome} logoUrl={siteSettings.logoUrl} />
+      <Navbar 
+        isAdmin={isAdmin} 
+        onToggleAdmin={handleToggleAdmin} 
+        onHome={handleHome} 
+        logoUrl={siteSettings.logoUrl}
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+      />
 
       <main className="max-w-7xl mx-auto p-6 lg:p-12">
         {status && (
@@ -357,29 +364,6 @@ export default function App() {
           >
             {status.type === 'success' ? <CheckCircle className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
             <span>{status.message}</span>
-          </div>
-        )}
-
-        {!selectedBook && !selectedVideo && (
-          <div className="flex justify-center mb-8">
-            <div className="bg-slate-200/50 p-1 rounded-full inline-flex">
-              <button
-                onClick={() => { setActiveTab('sefarim'); handleHome(); }}
-                className={`px-8 py-3 rounded-full text-sm font-black uppercase tracking-widest transition-all ${
-                  activeTab === 'sefarim' ? 'bg-white text-indigo-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Sefarim
-              </button>
-              <button
-                onClick={() => { setActiveTab('videos'); handleHome(); }}
-                className={`px-8 py-3 rounded-full text-sm font-black uppercase tracking-widest transition-all ${
-                  activeTab === 'videos' ? 'bg-white text-indigo-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
-                }`}
-              >
-                Videos
-              </button>
-            </div>
           </div>
         )}
 
