@@ -357,64 +357,79 @@ export default function App() {
       {/* Welcome Video Section (Only on main dashboard) */}
       {!selectedBook && !selectedVideo && !searchQuery && !selectedCategory && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 md:pt-8 pb-4">
-          <div className="bg-slate-900 rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl border border-slate-800 flex flex-col-reverse md:flex-row shadow-indigo-900/10">
-            <div className="w-full md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center text-white z-10 relative">
-               <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4 text-center md:text-left">
-                 Welcome to <br/><span className="text-indigo-400">AI Sefarim</span>
-               </h2>
-               <p className="text-slate-300 text-base md:text-lg mb-8 max-w-md mx-auto md:mx-0 leading-relaxed text-center md:text-left">
-                 An endless digital library of ancient wisdom, structured and illuminated by artificial intelligence.
-               </p>
-               {!isPlayingWelcome && (
-                 <button 
-                   onClick={() => setIsPlayingWelcome(true)}
-                   className="bg-indigo-600 self-center md:self-start text-white px-6 py-3.5 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-500 transition-all shadow-xl hover:shadow-indigo-500/25 active:scale-95 group"
-                 >
-                   <Play className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" /> Watch Intro
-                 </button>
-               )}
-            </div>
-            <div className="w-full md:w-1/2 relative bg-black aspect-video md:aspect-auto overflow-hidden group">
-               {isPlayingWelcome ? (
-                 siteSettings.welcomeVideoUrl ? (
-                   <video 
-                     className="absolute inset-0 w-full h-full object-contain md:object-cover bg-black" 
-                     src={siteSettings.welcomeVideoUrl} 
-                     controls 
-                     autoPlay 
-                     playsInline
-                   />
-                 ) : (
-                   <div className="absolute inset-0 w-full h-full bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
-                      <AlertCircle className="w-12 h-12 text-slate-500 mb-4" />
-                      <h3 className="text-white font-bold text-lg mb-2">Video Not Configured</h3>
-                      <p className="text-slate-400 text-sm max-w-xs leading-relaxed">
-                        Because you securely uploaded the video directly in AI Studio, a public link couldn't be generated automatically. 
-                        Please click <span className="font-bold text-white">"Admin" &rarr; "Settings"</span> to upload your `.mp4` video directly to your website storage!
-                      </p>
+          <div className="bg-slate-900 rounded-[1.5rem] md:rounded-[3rem] overflow-hidden shadow-2xl border border-slate-800 shadow-indigo-900/10 relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-slate-900 to-slate-900 pointer-events-none" />
+            
+            {isPlayingWelcome ? (
+              <div className="relative aspect-video w-full bg-black animate-in fade-in zoom-in-95 duration-500">
+                <button 
+                  onClick={() => setIsPlayingWelcome(false)}
+                  className="absolute top-4 right-4 md:top-6 md:right-6 z-50 p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-all border border-white/20"
+                >
+                  <X className="w-5 h-5 md:w-6 md:h-6" />
+                </button>
+                {siteSettings.welcomeVideoUrl ? (
+                  <video 
+                    className="absolute inset-0 w-full h-full object-contain bg-black" 
+                    src={siteSettings.welcomeVideoUrl} 
+                    controls 
+                    autoPlay 
+                    playsInline
+                  />
+                ) : (
+                  <div className="absolute inset-0 w-full h-full bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
+                     <AlertCircle className="w-12 h-12 text-slate-500 mb-4" />
+                     <h3 className="text-white font-bold text-lg mb-2">Video Not Configured</h3>
+                     <p className="text-slate-400 text-sm max-w-xs leading-relaxed">
+                        Please click <span className="font-bold text-white">"Admin" &rarr; "Settings"</span> to upload your `.mp4` video directly to your website storage.
+                     </p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="relative px-5 py-8 sm:p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-12 z-10 w-full">
+                 <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start w-full">
+                   <div className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-300 text-xs font-bold uppercase tracking-widest mb-6">
+                     <BookOpen className="w-3.5 h-3.5" /> Welcome to the Library
                    </div>
-                 )
-               ) : (
-                 <>
-                   <img 
-                     src={siteSettings.logoUrl || "https://firebasestorage.googleapis.com/v0/b/ai-sefarim.firebasestorage.app/o/settings%2Flogo_1773796055186_Gemini_Generated_Image_4u7kg54u7kg54u7k_cropped_processed_by_imagy.jpg?alt=media&token=6b05830c-600b-46ca-a8a9-1e5dc44d1bc6"}
-                     alt="Welcome Thumbnail" 
-                     className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-700 blur-sm scale-110"
-                   />
-                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent md:bg-gradient-to-r md:from-slate-900 md:to-transparent opacity-90 hidden md:block" />
-                   <div className="absolute inset-0 bg-slate-900/40 block md:hidden pointer-events-none" />
-                   
-                   <div 
-                     className="absolute inset-0 flex items-center justify-center cursor-pointer"
-                     onClick={() => setIsPlayingWelcome(true)}
-                   >
-                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-indigo-500/90 backdrop-blur-md text-white flex items-center justify-center transform group-hover:scale-110 shadow-xl transition-transform duration-300">
-                        <Play className="w-8 h-8 md:w-10 md:h-10 fill-current ml-1 md:ml-2" />
-                      </div>
+                   <h2 className="text-[28px] sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05] sm:leading-[1.1] mb-3 md:mb-6 text-white max-w-[280px] sm:max-w-md md:max-w-none mx-auto md:mx-0">
+                     Ancient wisdom,<br className="hidden md:block"/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mt-1 inline-block md:mt-0">illuminated by AI.</span>
+                   </h2>
+                   <p className="text-slate-300 text-sm sm:text-base md:text-lg mb-6 md:mb-8 max-w-[280px] sm:max-w-sm md:max-w-xl leading-relaxed mx-auto md:mx-0">
+                     Explore an endless digital repository of sefarim and video classes, beautifully structured and enhanced by artificial intelligence.
+                   </p>
+                   {siteSettings.welcomeVideoUrl && (
+                     <button 
+                       onClick={() => setIsPlayingWelcome(true)}
+                       className="bg-indigo-600 text-white px-6 md:px-8 py-3.5 md:py-4 rounded-xl md:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 hover:shadow-indigo-500/40 hover:-translate-y-1 active:translate-y-0 active:scale-95 group w-full sm:w-auto justify-center"
+                     >
+                       <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current group-hover:scale-110 transition-transform" /> Watch Intro
+                     </button>
+                   )}
+                 </div>
+                 
+                 {siteSettings.welcomeVideoUrl && (
+                   <div className="hidden md:block w-[380px] lg:w-[480px] shrink-0">
+                     <div 
+                       onClick={() => setIsPlayingWelcome(true)}
+                       className="relative aspect-video rounded-3xl overflow-hidden cursor-pointer group shadow-2xl border border-white/10 ring-4 ring-indigo-500/10 hover:ring-indigo-500/30 transition-all transform hover:-translate-y-2 hover:shadow-indigo-500/20"
+                     >
+                        <div className="absolute inset-0 bg-slate-800">
+                          {siteSettings.logoUrl && (
+                             <img src={siteSettings.logoUrl} className="w-full h-full object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-700 blur-[2px]" alt="Thumbnail" />
+                          )}
+                        </div>
+                        <div className="absolute inset-0 bg-gradient-to-tr from-indigo-900/60 via-transparent to-transparent mix-blend-overlay" />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                           <div className="w-16 h-16 rounded-full bg-indigo-600/90 backdrop-blur-md border border-indigo-400/30 text-white flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-500 transition-all duration-300 shadow-2xl shadow-indigo-900">
+                             <Play className="w-7 h-7 fill-current ml-1" />
+                           </div>
+                        </div>
+                     </div>
                    </div>
-                 </>
-               )}
-            </div>
+                 )}
+              </div>
+            )}
           </div>
         </div>
       )}
