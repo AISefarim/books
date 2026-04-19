@@ -340,29 +340,29 @@ export default function App() {
 
       {/* Welcome Video Section (Only on main dashboard) */}
       {!selectedBook && !selectedVideo && !searchQuery && !selectedCategory && (
-        <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-8 pb-4">
-          <div className="bg-slate-900 rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl border border-slate-800 flex flex-col md:flex-row relative">
-            <div className="md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center text-white z-10 relative">
-               <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 md:pt-8 pb-4">
+          <div className="bg-slate-900 rounded-[2rem] md:rounded-[3rem] overflow-hidden shadow-2xl border border-slate-800 flex flex-col-reverse md:flex-row shadow-indigo-900/10">
+            <div className="w-full md:w-1/2 p-8 md:p-12 lg:p-16 flex flex-col justify-center text-white z-10 relative">
+               <h2 className="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-4 text-center md:text-left">
                  Welcome to <br/><span className="text-indigo-400">AI Sefarim</span>
                </h2>
-               <p className="text-slate-300 text-base md:text-lg mb-8 max-w-md leading-relaxed">
+               <p className="text-slate-300 text-base md:text-lg mb-8 max-w-md mx-auto md:mx-0 leading-relaxed text-center md:text-left">
                  An endless digital library of ancient wisdom, structured and illuminated by artificial intelligence.
                </p>
                {!isPlayingWelcome && (
                  <button 
                    onClick={() => setIsPlayingWelcome(true)}
-                   className="bg-indigo-600 self-start text-white px-6 py-3.5 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-500 transition-all shadow-xl hover:shadow-indigo-500/25 active:scale-95 group"
+                   className="bg-indigo-600 self-center md:self-start text-white px-6 py-3.5 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-500 transition-all shadow-xl hover:shadow-indigo-500/25 active:scale-95 group"
                  >
                    <Play className="w-5 h-5 fill-current group-hover:scale-110 transition-transform" /> Watch Intro
                  </button>
                )}
             </div>
-            <div className="md:w-1/2 relative bg-black aspect-video md:aspect-auto min-h-[250px] overflow-hidden group">
+            <div className="w-full md:w-1/2 relative bg-black aspect-video md:aspect-auto overflow-hidden group">
                {isPlayingWelcome ? (
                  siteSettings.welcomeVideoUrl ? (
                    <video 
-                     className="absolute inset-0 w-full h-full object-cover bg-black" 
+                     className="absolute inset-0 w-full h-full object-contain md:object-cover bg-black" 
                      src={siteSettings.welcomeVideoUrl} 
                      controls 
                      autoPlay 
@@ -385,14 +385,15 @@ export default function App() {
                      alt="Welcome Thumbnail" 
                      className="absolute inset-0 w-full h-full object-cover opacity-30 group-hover:scale-105 transition-transform duration-700 blur-sm scale-110"
                    />
-                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent md:bg-gradient-to-r md:from-slate-900 md:to-transparent opacity-90" />
+                   <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent md:bg-gradient-to-r md:from-slate-900 md:to-transparent opacity-90 hidden md:block" />
+                   <div className="absolute inset-0 bg-slate-900/40 block md:hidden pointer-events-none" />
                    
                    <div 
                      className="absolute inset-0 flex items-center justify-center cursor-pointer"
                      onClick={() => setIsPlayingWelcome(true)}
                    >
-                      <div className="w-16 h-16 rounded-full bg-indigo-500/90 backdrop-blur-md text-white flex items-center justify-center transform group-hover:scale-110 shadow-xl transition-transform duration-300">
-                        <Play className="w-8 h-8 fill-current ml-1" />
+                      <div className="w-16 h-16 md:w-20 md:h-20 rounded-full bg-indigo-500/90 backdrop-blur-md text-white flex items-center justify-center transform group-hover:scale-110 shadow-xl transition-transform duration-300">
+                        <Play className="w-8 h-8 md:w-10 md:h-10 fill-current ml-1 md:ml-2" />
                       </div>
                    </div>
                  </>
