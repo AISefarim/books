@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen } from 'lucide-react';
 
 import { db, storage, auth } from './lib/firebase';
 import { Book, Video } from './types';
@@ -431,8 +431,9 @@ export default function App() {
         {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} />}
 
         {isDirectLinkEntry && (selectedBook || selectedVideo) && (
-          <div className="mb-8 bg-indigo-950 rounded-[2rem] p-4 md:p-6 flex flex-col md:flex-row items-center gap-6 shadow-xl border border-indigo-900/50">
-             <div className="w-full md:w-64 aspect-video bg-black rounded-2xl overflow-hidden relative shrink-0 border border-white/10 shadow-lg">
+          <div className="mb-6 md:mb-8 relative bg-slate-900 rounded-[2rem] overflow-hidden shadow-xl border border-slate-800 flex flex-col sm:flex-row group animate-in fade-in slide-in-from-top-4">
+             {/* Left side: Video */}
+             <div className="w-full sm:w-1/2 md:w-[360px] aspect-video bg-black relative shrink-0">
                 {siteSettings.welcomeVideoUrl ? (
                    <video 
                      className="absolute inset-0 w-full h-full object-cover bg-black" 
@@ -448,22 +449,32 @@ export default function App() {
                    />
                 )}
              </div>
-             <div className="text-white flex-1 text-center md:text-left">
-               <div className="inline-flex items-center gap-2 px-3 py-1 bg-indigo-900 rounded-full text-xs font-bold text-indigo-300 mb-2 uppercase tracking-widest">
-                 <PlayCircle className="w-3.5 h-3.5" /> Welcome
-               </div>
-               <h3 className="text-xl md:text-2xl font-black mb-2 leading-tight">New here?</h3>
-               <p className="text-sm md:text-base text-indigo-200/80 mb-4 max-w-lg leading-relaxed mx-auto md:mx-0">
-                 You were sent a direct link to this content! AI Sefarim is an endless digital library of ancient wisdom. Watch this 2-minute intro to see what else you can discover.
-               </p>
-               <div className="flex justify-center md:justify-start gap-3">
-                 <button 
-                   onClick={() => setIsDirectLinkEntry(false)}
-                   className="px-5 py-2 md:py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs md:text-sm font-bold transition-colors uppercase tracking-wider"
-                 >
-                   Dismiss
-                 </button>
-               </div>
+             
+             {/* Right side: Logo & Dismiss */}
+             <div className="p-6 md:p-8 flex flex-1 flex-col justify-center items-center sm:items-start relative">
+                <button 
+                  onClick={() => setIsDirectLinkEntry(false)}
+                  className="absolute top-4 right-4 text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full p-2 transition-colors z-10"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+
+                <div className="flex items-center gap-4">
+                   {siteSettings.logoUrl ? (
+                     <img src={siteSettings.logoUrl} alt="Logo" className="w-12 h-12 md:w-16 md:h-16 rounded-xl object-cover shadow-lg" />
+                   ) : (
+                     <div className="bg-indigo-600 p-2.5 md:p-3.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
+                       <BookOpen className="w-6 h-6 md:w-8 md:h-8" />
+                     </div>
+                   )}
+                   <div>
+                     <h2 className="text-xl md:text-3xl font-black text-white tracking-tighter leading-tight">AI SEFARIM</h2>
+                     <p className="text-[10px] md:text-xs text-indigo-400 font-black uppercase tracking-widest leading-tight">Digital ספריה</p>
+                   </div>
+                </div>
+                <p className="mt-4 text-sm text-slate-400 max-w-sm text-center sm:text-left font-medium">
+                  Watch the intro to see what else you can discover in the library.
+                </p>
              </div>
           </div>
         )}
