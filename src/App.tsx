@@ -41,6 +41,7 @@ export default function App() {
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPlayingWelcome, setIsPlayingWelcome] = useState(false);
   const [isDirectLinkEntry, setIsDirectLinkEntry] = useState(false);
+  const [playingDirectVideo, setPlayingDirectVideo] = useState(false);
   const hasCheckedSharedLink = React.useRef(false);
 
   useEffect(() => {
@@ -237,6 +238,7 @@ export default function App() {
         setSelectedBook(null);
         setSelectedVideo(null);
         setIsDirectLinkEntry(false);
+        setPlayingDirectVideo(false);
       }
     };
 
@@ -251,12 +253,14 @@ export default function App() {
     setSelectedBook(null);
     setSelectedVideo(null);
     setIsDirectLinkEntry(false);
+    setPlayingDirectVideo(false);
     window.history.replaceState({}, '', '/');
   };
 
   const handleBookSelect = (book: Book) => {
     setSelectedBook(book);
     setIsDirectLinkEntry(false);
+    setPlayingDirectVideo(false);
     const url = new URL(window.location.href);
     url.searchParams.set('book', book.id);
     url.searchParams.delete('video');
@@ -266,6 +270,7 @@ export default function App() {
   const handleVideoSelect = (video: Video) => {
     setSelectedVideo(video);
     setIsDirectLinkEntry(false);
+    setPlayingDirectVideo(false);
     const url = new URL(window.location.href);
     url.searchParams.set('video', video.id);
     url.searchParams.delete('book');
@@ -431,51 +436,57 @@ export default function App() {
         {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} />}
 
         {isDirectLinkEntry && (selectedBook || selectedVideo) && (
-          <div className="mb-6 md:mb-8 relative bg-slate-900 rounded-[2rem] overflow-hidden shadow-xl border border-slate-800 flex flex-col sm:flex-row group animate-in fade-in slide-in-from-top-4">
-             {/* Left side: Video */}
-             <div className="w-full sm:w-1/2 md:w-[360px] aspect-video bg-black relative shrink-0">
-                {siteSettings.welcomeVideoUrl ? (
-                   <video 
-                     className="absolute inset-0 w-full h-full object-cover bg-black" 
-                     src={siteSettings.welcomeVideoUrl} 
-                     controls 
-                     playsInline
-                   />
-                ) : (
-                   <img 
-                     src={siteSettings.logoUrl || "https://firebasestorage.googleapis.com/v0/b/ai-sefarim.firebasestorage.app/o/settings%2Flogo_1773796055186_Gemini_Generated_Image_4u7kg54u7kg54u7k_cropped_processed_by_imagy.jpg?alt=media&token=6b05830c-600b-46ca-a8a9-1e5dc44d1bc6"}
-                     alt="Welcome Thumbnail" 
-                     className="absolute inset-0 w-full h-full object-cover opacity-50"
-                   />
-                )}
-             </div>
-             
-             {/* Right side: Logo & Dismiss */}
-             <div className="p-6 md:p-8 flex flex-1 flex-col justify-center items-center sm:items-start relative">
-                <button 
-                  onClick={() => setIsDirectLinkEntry(false)}
-                  className="absolute top-4 right-4 text-slate-500 hover:text-white bg-slate-800 hover:bg-slate-700 rounded-full p-2 transition-colors z-10"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-
-                <div className="flex items-center gap-4">
-                   {siteSettings.logoUrl ? (
-                     <img src={siteSettings.logoUrl} alt="Logo" className="w-12 h-12 md:w-16 md:h-16 rounded-xl object-cover shadow-lg" />
+          <div className="mb-6 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-4">
+             <div className="p-3 sm:p-4 flex items-center justify-between gap-4">
+                <div className="flex items-center gap-3 md:gap-4 flex-1">
+                  {siteSettings.logoUrl ? (
+                     <img src={siteSettings.logoUrl} alt="Logo" className="w-10 h-10 md:w-12 md:h-12 rounded-xl object-cover shadow-sm shrink-0" />
                    ) : (
-                     <div className="bg-indigo-600 p-2.5 md:p-3.5 rounded-xl text-white shadow-lg shadow-indigo-500/30">
-                       <BookOpen className="w-6 h-6 md:w-8 md:h-8" />
+                     <div className="bg-indigo-600 p-2 md:p-2.5 rounded-xl text-white shadow-sm shrink-0">
+                       <BookOpen className="w-5 h-5 md:w-6 md:h-6" />
                      </div>
                    )}
                    <div>
-                     <h2 className="text-xl md:text-3xl font-black text-white tracking-tighter leading-tight">AI SEFARIM</h2>
-                     <p className="text-[10px] md:text-xs text-indigo-400 font-black uppercase tracking-widest leading-tight">Digital ספריה</p>
+                     <h2 className="text-sm md:text-base font-black text-slate-800 leading-tight mb-0.5 tracking-tight truncate">Welcome to AI Sefarim</h2>
+                     <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest truncate">Digital Library</p>
                    </div>
                 </div>
-                <p className="mt-4 text-sm text-slate-400 max-w-sm text-center sm:text-left font-medium">
-                  Watch the intro to see what else you can discover in the library.
-                </p>
+                
+                <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
+                  {siteSettings.welcomeVideoUrl && (
+                     <button 
+                        onClick={() => setPlayingDirectVideo(!playingDirectVideo)}
+                        className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${playingDirectVideo ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:scale-95'}`}
+                     >
+                       <PlayCircle className="w-4 h-4 shrink-0" />
+                       <span className="hidden sm:inline">{playingDirectVideo ? 'Close Video' : 'Watch Intro'}</span>
+                       <span className="sm:hidden">{playingDirectVideo ? 'Close' : 'Intro'}</span>
+                     </button>
+                  )}
+                  <button 
+                    onClick={() => {
+                        setIsDirectLinkEntry(false);
+                        setPlayingDirectVideo(false);
+                    }}
+                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0"
+                    aria-label="Dismiss welcome message"
+                  >
+                    <X className="w-4 h-4 font-bold" />
+                  </button>
+                </div>
              </div>
+             
+             {playingDirectVideo && siteSettings.welcomeVideoUrl && (
+                <div className="aspect-video bg-black relative border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
+                   <video 
+                     className="absolute inset-0 w-full h-full object-contain" 
+                     src={siteSettings.welcomeVideoUrl} 
+                     controls 
+                     autoPlay
+                     playsInline
+                   />
+                </div>
+             )}
           </div>
         )}
 
