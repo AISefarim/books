@@ -549,20 +549,27 @@ export default function App() {
 
             {!isLoading && books.length > 0 && (
               <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative w-full md:w-96">
+                <div className="relative w-full md:w-96 lg:w-[28rem]">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
                     type="text"
                     placeholder="Search by title, author, or description..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-700 shadow-sm"
+                    className="w-full pl-12 pr-32 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-700 shadow-sm text-ellipsis"
                   />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50/50 border border-indigo-100 text-indigo-600 rounded-xl pointer-events-none shadow-sm backdrop-blur-sm">
+                     <BookOpen className="w-3.5 h-3.5 fill-indigo-200" />
+                     <span className="text-[11px] font-black uppercase tracking-wider">{selectedCategory ? filteredBooks.length : books.length} Sefarim</span>
+                  </div>
                 </div>
                 
                 <div className="flex flex-wrap gap-2 justify-center md:justify-end w-full md:w-auto">
                   <button
-                    onClick={() => setSelectedCategory(null)}
+                    onClick={() => {
+                        setSelectedCategory(null);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
                       selectedCategory === null
                         ? 'bg-indigo-600 text-white shadow-md'
@@ -574,7 +581,10 @@ export default function App() {
                   {categories.map(cat => (
                     <button
                       key={cat}
-                      onClick={() => setSelectedCategory(cat)}
+                      onClick={() => {
+                          setSelectedCategory(cat);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                       className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
                         selectedCategory === cat
                           ? 'bg-indigo-600 text-white shadow-md'
@@ -614,20 +624,27 @@ export default function App() {
           <>
             {!isLoading && (
               <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative w-full md:w-96">
+                <div className="relative w-full md:w-96 lg:w-[28rem]">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
                     type="text"
                     placeholder="Search videos..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-700 shadow-sm"
+                    className="w-full pl-12 pr-32 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-700 shadow-sm"
                   />
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50/50 border border-indigo-100 text-indigo-600 rounded-xl pointer-events-none shadow-sm backdrop-blur-sm">
+                     <PlayCircle className="w-3.5 h-3.5 fill-indigo-200" />
+                     <span className="text-[11px] font-black uppercase tracking-wider">{selectedCategory ? filteredVideos.length : videos.length} Videos</span>
+                  </div>
                 </div>
                 
                 <div className="flex flex-wrap gap-2 justify-center md:justify-end w-full md:w-auto">
                   <button
-                    onClick={() => setSelectedCategory(null)}
+                    onClick={() => {
+                        setSelectedCategory(null);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
                       selectedCategory === null
                         ? 'bg-indigo-600 text-white shadow-md'
@@ -639,7 +656,10 @@ export default function App() {
                   {videoCategories.map(cat => (
                     <button
                       key={cat}
-                      onClick={() => setSelectedCategory(cat)}
+                      onClick={() => {
+                          setSelectedCategory(cat);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
                       className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
                         selectedCategory === cat
                           ? 'bg-indigo-600 text-white shadow-md'
@@ -658,7 +678,10 @@ export default function App() {
                 {videoCategories.map(cat => (
                   <div 
                     key={cat}
-                    onClick={() => setSelectedCategory(cat)}
+                    onClick={() => {
+                        setSelectedCategory(cat);
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
                     className="bg-white rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col group cursor-pointer"
                   >
                     <div className="aspect-square rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
