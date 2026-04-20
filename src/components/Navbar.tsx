@@ -82,12 +82,14 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
               </a>
             </div>
           )}
-          <button
-            onClick={onToggleAdmin}
-            className="px-4 py-2.5 bg-slate-50 text-slate-700 rounded-xl font-bold hover:bg-slate-100 transition-all text-sm border border-slate-200 shadow-sm relative z-10"
-          >
-            {isAdmin ? 'Logout' : 'Admin'}
-          </button>
+          {isAdmin && (
+            <button
+              onClick={onToggleAdmin}
+              className="px-4 py-2.5 bg-rose-50 text-rose-600 rounded-xl font-bold hover:bg-rose-100 transition-all text-sm border border-rose-200 shadow-sm relative z-10"
+            >
+              Logout
+            </button>
+          )}
         </div>
         
         {/* Mobile quick actions */}
@@ -105,9 +107,6 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 WhatsApp
               </a>
             </div>
-          )}
-          {!isAdmin && (
-             <div className="w-6 h-6 rounded-full opacity-0 cursor-pointer relative z-10" onClick={onToggleAdmin}></div>
           )}
           {isAdmin && (
              <button onClick={onToggleAdmin} className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-full border border-rose-100 relative z-10">

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical, Play } from 'lucide-react';
+import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical, Play, Eye } from 'lucide-react';
 import { Video } from '../types';
 
 interface VideoCardProps {
@@ -113,9 +113,15 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
         </div>
         
         <div className="mt-auto pt-4 flex items-center justify-between">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
-            {new Date(video.createdAt).toLocaleDateString()}
-          </span>
+          <div className="flex items-center gap-3 text-[11px] font-bold text-slate-400 uppercase tracking-wider">
+            <span>{new Date(video.createdAt).toLocaleDateString()}</span>
+            {video.views !== undefined && (
+              <>
+                <span className="w-1 h-1 rounded-full bg-slate-200"></span>
+                <span className="flex items-center gap-1.5 text-indigo-400"><Eye className="w-3.5 h-3.5" />{video.views}</span>
+              </>
+            )}
+          </div>
           <button
             onClick={handleShare}
             className="text-slate-400 hover:text-indigo-600 transition-colors p-2 -mr-2 rounded-full hover:bg-slate-50"
