@@ -27,9 +27,9 @@ export function BookDetails({ book, onBack, onRead, onDownload }: BookDetailsPro
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <button 
         onClick={onBack}
-        className="mb-6 flex items-center gap-2 text-slate-500 hover:text-indigo-600 font-bold uppercase tracking-widest text-sm transition-colors"
+        className="mb-8 flex items-center gap-3 text-slate-600 hover:text-white hover:bg-slate-800 transition-all font-black uppercase tracking-widest text-sm bg-white px-6 py-3.5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-slate-200/60 group w-[fit-content]"
       >
-        <ChevronLeft className="w-5 h-5" /> Back to Library
+        <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Back to Library
       </button>
 
       <div className="relative bg-gradient-to-br from-indigo-900 to-slate-900 rounded-[3rem] overflow-hidden shadow-2xl text-white">

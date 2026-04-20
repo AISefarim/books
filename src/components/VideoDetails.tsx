@@ -58,9 +58,9 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
     <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
       <button
         onClick={onBack}
-        className="mb-8 flex items-center gap-2 text-slate-500 hover:text-indigo-600 transition-colors font-bold uppercase tracking-widest text-xs bg-white px-4 py-2 rounded-full shadow-sm border border-slate-100"
+        className="mb-8 flex items-center gap-3 text-slate-600 hover:text-white hover:bg-slate-800 transition-all font-black uppercase tracking-widest text-sm bg-white px-6 py-3.5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-slate-200/60 group"
       >
-        <ArrowLeft className="w-4 h-4" /> Back to Library
+        <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Back to Library
       </button>
 
       <div className="bg-white rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-100 mb-16 flex flex-col md:flex-row gap-8 items-center">
