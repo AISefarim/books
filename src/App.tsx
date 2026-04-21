@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark } from 'lucide-react';
 
 import { db, storage, auth } from './lib/firebase';
 import { Book, Video } from './types';
@@ -24,7 +24,7 @@ import { AddToHomescreen } from './components/AddToHomescreen';
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos'>('sefarim');
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'library'>('sefarim');
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -42,7 +42,28 @@ export default function App() {
   const [isPlayingWelcome, setIsPlayingWelcome] = useState(false);
   const [isDirectLinkEntry, setIsDirectLinkEntry] = useState(false);
   const [playingDirectVideo, setPlayingDirectVideo] = useState(false);
+  const [savedBookIds, setSavedBookIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('savedBookIds') || '[]'); } catch { return []; }
+  });
+  const [savedVideoIds, setSavedVideoIds] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('savedVideoIds') || '[]'); } catch { return []; }
+  });
   const hasCheckedSharedLink = React.useRef(false);
+
+  useEffect(() => {
+    localStorage.setItem('savedBookIds', JSON.stringify(savedBookIds));
+  }, [savedBookIds]);
+
+  useEffect(() => {
+    localStorage.setItem('savedVideoIds', JSON.stringify(savedVideoIds));
+  }, [savedVideoIds]);
+
+  const toggleSaveBook = (id: string) => {
+    setSavedBookIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
+  const toggleSaveVideo = (id: string) => {
+    setSavedVideoIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
+  };
 
   useEffect(() => {
     signInAnonymously(auth).catch((err) => {
@@ -51,7 +72,7 @@ export default function App() {
 
     const booksRef = collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim');
     const unsubscribeBooks = onSnapshot(booksRef, (snapshot) => {
-      const allDocs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }));
+      const allDocs = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
       
       const bookDocs = allDocs
         .filter(d => d.id !== '_site_settings_' && !d.isSettingsDoc && d.type !== 'video')
@@ -340,11 +361,21 @@ export default function App() {
   const strictVideoCategories = siteSettings.videoCategories || ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach"];
   const videoCategories = Array.from(new Set([...strictVideoCategories, ...videos.map(v => v.category)])).sort();
   const filteredVideos = videos.filter(v => {
-    const matchesCategory = selectedCategory ? v.category === selectedCategory : true;
+    const matchesCategory = selectedCategory ? (selectedCategory === 'Top Rated' ? true : v.category === selectedCategory) : true;
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = searchLower === '' || v.title.toLowerCase().includes(searchLower);
     return matchesCategory && matchesSearch;
   });
+
+  const displayedVideos = [...filteredVideos];
+  if (selectedCategory === 'Top Rated') {
+    displayedVideos.sort((a, b) => {
+      const ratingA = a.ratingsCount ? a.ratingsSum! / a.ratingsCount : 0;
+      const ratingB = b.ratingsCount ? b.ratingsSum! / b.ratingsCount : 0;
+      if (ratingB !== ratingA) return ratingB - ratingA;
+      return (b.ratingsCount || 0) - (a.ratingsCount || 0);
+    });
+  }
 
   const featuredBooks = books.filter(b => b.isFeatured);
 
@@ -524,12 +555,23 @@ export default function App() {
               }).catch(err => console.error("Failed to increment read count", err));
             }}
             onDownload={(url, title) => handleDownload(url, title, selectedBook.id)}
+            isSaved={savedBookIds.includes(selectedBook.id)}
+            onToggleSave={toggleSaveBook}
           />
         ) : selectedVideo ? (
           <VideoDetails
             video={selectedVideo}
             relatedVideos={(() => {
               const otherVideos = videos.filter(v => v.id !== selectedVideo.id);
+              
+              // Sort otherVideos by rating
+              otherVideos.sort((a, b) => {
+                const ratingA = a.ratingsCount ? a.ratingsSum! / a.ratingsCount : 0;
+                const ratingB = b.ratingsCount ? b.ratingsSum! / b.ratingsCount : 0;
+                if (ratingB !== ratingA) return ratingB - ratingA;
+                return (b.ratingsCount || 0) - (a.ratingsCount || 0);
+              });
+              
               const sameCat = otherVideos.filter(v => v.category === selectedVideo.category);
               const diffCat = otherVideos.filter(v => v.category !== selectedVideo.category);
               
@@ -544,6 +586,8 @@ export default function App() {
             onBack={handleHome}
             onSelectVideo={handleVideoSelect}
             categoryThumbnails={siteSettings.videoCategoryThumbnails}
+            isSaved={savedVideoIds.includes(selectedVideo.id)}
+            onToggleSave={toggleSaveVideo}
           />
         ) : activeTab === 'sefarim' ? (
           <>
@@ -568,8 +612,29 @@ export default function App() {
             )}
 
             {!isLoading && books.length > 0 && (
-              <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative w-full md:w-96 lg:w-[28rem]">
+              <>
+                <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-center justify-between bg-white pl-4 pr-4 py-3 sm:pl-5 sm:pr-5 sm:py-3.5 rounded-2xl border border-slate-200 shadow-sm max-w-2xl mx-auto md:mx-0">
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
+                    <div className="bg-indigo-50 p-2 rounded-xl border border-indigo-100 shrink-0">
+                      <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-600" />
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2 text-center sm:text-left">
+                      <h3 className="font-black text-slate-800 text-[15px] sm:text-base leading-tight">My Library</h3>
+                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium">{savedBookIds.length + savedVideoIds.length} saved items</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveTab('library');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="w-full sm:w-auto px-5 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-200 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
+                  >
+                    View Library
+                  </button>
+                </div>
+                <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+                  <div className="relative w-full md:w-96 lg:w-[28rem]">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
                     type="text"
@@ -616,6 +681,7 @@ export default function App() {
                   ))}
                 </div>
               </div>
+              </>
             )}
 
             <BookGrid
@@ -638,13 +704,36 @@ export default function App() {
                 if (book) handleDownload(url, title, book.id);
               }}
               onSelectBook={handleBookSelect}
+              savedBookIds={savedBookIds}
+              onToggleSave={toggleSaveBook}
             />
           </>
-        ) : (
+        ) : activeTab === 'videos' ? (
           <>
             {!isLoading && (
-              <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
-                <div className="relative w-full md:w-96 lg:w-[28rem]">
+              <>
+                <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-center justify-between bg-white pl-4 pr-4 py-3 sm:pl-5 sm:pr-5 sm:py-3.5 rounded-2xl border border-slate-200 shadow-sm max-w-2xl mx-auto md:mx-0">
+                  <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
+                    <div className="bg-indigo-50 p-2 rounded-xl border border-indigo-100 shrink-0">
+                      <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-600" />
+                    </div>
+                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2 text-center sm:text-left">
+                      <h3 className="font-black text-slate-800 text-[15px] sm:text-base leading-tight">My Library</h3>
+                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium">{savedBookIds.length + savedVideoIds.length} saved items</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveTab('library');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="w-full sm:w-auto px-5 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-200 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
+                  >
+                    View Library
+                  </button>
+                </div>
+                <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+                  <div className="relative w-full md:w-96 lg:w-[28rem]">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
                     type="text"
@@ -673,6 +762,19 @@ export default function App() {
                   >
                     All
                   </button>
+                  <button
+                    onClick={() => {
+                        setSelectedCategory('Top Rated');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${
+                      selectedCategory === 'Top Rated'
+                        ? 'bg-amber-400 text-amber-950 shadow-md border border-amber-500/20'
+                        : 'bg-white text-amber-600 hover:bg-amber-50 border border-amber-200'
+                    }`}
+                  >
+                    <Star className={`w-3.5 h-3.5 ${selectedCategory === 'Top Rated' ? 'fill-amber-950' : 'fill-amber-600'}`} /> Top Rated
+                  </button>
                   {videoCategories.map(cat => (
                     <button
                       key={cat}
@@ -691,6 +793,7 @@ export default function App() {
                   ))}
                 </div>
               </div>
+              </>
             )}
 
             {!searchQuery && !selectedCategory ? (
@@ -720,17 +823,90 @@ export default function App() {
               </div>
             ) : (
               <VideoGrid
-                videos={filteredVideos}
+                videos={displayedVideos}
                 isLoading={isLoading}
                 isAdmin={isAdmin}
                 onEdit={setEditingVideo}
                 onDelete={handleVideoDelete}
                 onSelectVideo={handleVideoSelect}
-                onReorder={selectedCategory ? handleVideoReorder : undefined}
+                onReorder={selectedCategory && selectedCategory !== 'Top Rated' ? handleVideoReorder : undefined}
                 categoryThumbnails={siteSettings.videoCategoryThumbnails}
+                savedVideoIds={savedVideoIds}
+                onToggleSave={toggleSaveVideo}
               />
             )}
           </>
+        ) : (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
+            <div className="text-center mb-16">
+              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight mb-4">
+                My Library
+              </h1>
+              <p className="text-slate-500 font-medium">Your personal collection of saved sefarim and videos.</p>
+            </div>
+
+            <div className="space-y-16">
+              <div>
+                <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-100 pb-4">
+                  Saved Sefarim ({savedBookIds.length})
+                </h2>
+                {savedBookIds.length === 0 ? (
+                  <div className="text-center py-12 bg-slate-50 rounded-[2rem] border border-slate-100 border-dashed">
+                    <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-400 font-medium tracking-wide">You haven't saved any sefarim yet.</p>
+                  </div>
+                ) : (
+                  <BookGrid
+                    books={books.filter(b => savedBookIds.includes(b.id))}
+                    isLoading={isLoading}
+                    isAdmin={isAdmin}
+                    onEdit={setEditingBook}
+                    onDelete={handleDeleteRequest}
+                    onRead={(url) => {
+                      const book = books.find(b => b.epub === url);
+                      if (book) {
+                        setReadingBook(book);
+                        updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
+                          readCount: increment(1)
+                        }).catch(err => console.error("Failed to increment read count", err));
+                      }
+                    }}
+                    onDownload={(url, title) => {
+                      const book = books.find(b => b.epub === url);
+                      if (book) handleDownload(url, title, book.id);
+                    }}
+                    onSelectBook={handleBookSelect}
+                    savedBookIds={savedBookIds}
+                    onToggleSave={toggleSaveBook}
+                  />
+                )}
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-100 pb-4">
+                  Saved Videos ({savedVideoIds.length})
+                </h2>
+                {savedVideoIds.length === 0 ? (
+                  <div className="text-center py-12 bg-slate-50 rounded-[2rem] border border-slate-100 border-dashed">
+                    <PlayCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <p className="text-slate-400 font-medium tracking-wide">You haven't saved any videos yet.</p>
+                  </div>
+                ) : (
+                  <VideoGrid
+                    videos={videos.filter(v => savedVideoIds.includes(v.id))}
+                    isLoading={isLoading}
+                    isAdmin={isAdmin}
+                    onEdit={setEditingVideo}
+                    onDelete={handleVideoDelete}
+                    onSelectVideo={handleVideoSelect}
+                    categoryThumbnails={siteSettings.videoCategoryThumbnails}
+                    savedVideoIds={savedVideoIds}
+                    onToggleSave={toggleSaveVideo}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </main>
 

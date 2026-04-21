@@ -29,9 +29,11 @@ interface VideoGridProps {
   onSelectVideo: (video: Video) => void;
   onReorder?: (reorderedVideos: Video[]) => void;
   categoryThumbnails?: Record<string, string>;
+  savedVideoIds?: string[];
+  onToggleSave?: (id: string, e: React.MouseEvent) => void;
 }
 
-function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo, categoryThumbnail }: any) {
+function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo, categoryThumbnail, isSaved, onToggleSave }: any) {
   const {
     attributes,
     listeners,
@@ -58,12 +60,14 @@ function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo,
         onSelect={() => onSelectVideo(video)}
         categoryThumbnail={categoryThumbnail}
         dragHandleProps={{ ...attributes, ...listeners }}
+        isSaved={isSaved}
+        onToggleSave={onToggleSave}
       />
     </div>
   );
 }
 
-export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSelectVideo, onReorder, categoryThumbnails }: VideoGridProps) {
+export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSelectVideo, onReorder, categoryThumbnails, savedVideoIds = [], onToggleSave }: VideoGridProps) {
   const [items, setItems] = useState(videos);
 
   useEffect(() => {
@@ -88,7 +92,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
       const oldIndex = items.findIndex((item) => item.id === active.id);
       const newIndex = items.findIndex((item) => item.id === over.id);
       
-      const newItems = arrayMove(items, oldIndex, newIndex);
+      const newItems = arrayMove(items, oldIndex, newIndex) as Video[];
       setItems(newItems);
       if (onReorder) {
         onReorder(newItems);
@@ -135,6 +139,8 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
             onDelete={onDelete}
             onSelectVideo={onSelectVideo}
             categoryThumbnail={categoryThumbnails?.[video.category]}
+            isSaved={savedVideoIds.includes(video.id)}
+            onToggleSave={onToggleSave}
           />
         ) : (
           <VideoCard
@@ -145,6 +151,8 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
             onDelete={onDelete}
             onSelect={() => onSelectVideo(video)}
             categoryThumbnail={categoryThumbnails?.[video.category]}
+            isSaved={savedVideoIds.includes(video.id)}
+            onToggleSave={onToggleSave}
           />
         )
       ))}

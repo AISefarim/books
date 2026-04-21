@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Download, ShoppingCart, ChevronLeft, Share2, Check } from 'lucide-react';
+import { BookOpen, Download, ShoppingCart, ChevronLeft, Share2, Check, Bookmark } from 'lucide-react';
 import { Book } from '../types';
 
 interface BookDetailsProps {
@@ -7,9 +7,11 @@ interface BookDetailsProps {
   onBack: () => void;
   onRead: (epubUrl: string) => void;
   onDownload: (epubUrl: string, title: string) => void;
+  isSaved?: boolean;
+  onToggleSave?: (id: string) => void;
 }
 
-export function BookDetails({ book, onBack, onRead, onDownload }: BookDetailsProps) {
+export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggleSave }: BookDetailsProps) {
   const [copied, setCopied] = React.useState(false);
 
   const handleShare = async () => {
@@ -99,6 +101,15 @@ export function BookDetails({ book, onBack, onRead, onDownload }: BookDetailsPro
                 {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Share2 className="w-5 h-5" />} 
                 {copied ? 'Copied!' : 'Share'}
               </button>
+              {onToggleSave && (
+                <button
+                  onClick={() => onToggleSave(book.id)}
+                  className={`backdrop-blur-md border px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 ${isSaved ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/30 hover:bg-indigo-500/30' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}
+                >
+                  <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-indigo-300' : ''}`} /> 
+                  {isSaved ? 'Saved' : 'Save'}
+                </button>
+              )}
             </div>
           </div>
           

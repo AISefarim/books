@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, ExternalLink, Download, Pencil, BookOpen, Share2, Check } from 'lucide-react';
+import { Trash2, ExternalLink, Download, Pencil, BookOpen, Share2, Check, Bookmark } from 'lucide-react';
 import { Book } from '../types';
 
 interface BookCardProps {
@@ -11,9 +11,11 @@ interface BookCardProps {
   onRead: (epubUrl: string) => void;
   onDownload: (epubUrl: string, title: string) => void;
   onSelect?: () => void;
+  isSaved?: boolean;
+  onToggleSave?: (id: string) => void;
 }
 
-export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, onSelect }: BookCardProps) {
+export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, onSelect, isSaved, onToggleSave }: BookCardProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async () => {
@@ -53,24 +55,35 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
           >
             {book.title}
           </h3>
-          {isAdmin && (
-            <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1">
+            {onToggleSave && (
               <button
-                onClick={() => onEdit(book)}
-                className="text-slate-300 hover:text-indigo-500 transition-colors p-2 bg-slate-50 hover:bg-indigo-50 rounded-full"
-                title="Edit Sefer"
+                onClick={(e) => { e.stopPropagation(); onToggleSave(book.id); }}
+                className={`transition-colors p-2 rounded-full hover:bg-slate-50 ${isSaved ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-300 hover:text-indigo-600'}`}
+                title={isSaved ? "Remove from Library" : "Save to Library"}
               >
-                <Pencil className="w-4 h-4" />
+                <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-indigo-600' : ''}`} />
               </button>
-              <button
-                onClick={() => onDelete(book.id, book.coverPath, book.epubPath)}
-                className="text-slate-300 hover:text-rose-500 transition-colors p-2 bg-slate-50 hover:bg-rose-50 rounded-full"
-                title="Delete Sefer"
-              >
-                <Trash2 className="w-4 h-4" />
-              </button>
-            </div>
-          )}
+            )}
+            {isAdmin && (
+              <>
+                <button
+                  onClick={() => onEdit(book)}
+                  className="text-slate-300 hover:text-indigo-500 transition-colors p-2 bg-slate-50 hover:bg-indigo-50 rounded-full"
+                  title="Edit Sefer"
+                >
+                  <Pencil className="w-4 h-4" />
+                </button>
+                <button
+                  onClick={() => onDelete(book.id, book.coverPath, book.epubPath)}
+                  className="text-slate-300 hover:text-rose-500 transition-colors p-2 bg-slate-50 hover:bg-rose-50 rounded-full"
+                  title="Delete Sefer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </>
+            )}
+          </div>
         </div>
         <div className="flex items-center justify-between mb-2">
           <p className="text-indigo-600 font-black text-xs uppercase tracking-tighter italic opacity-70">

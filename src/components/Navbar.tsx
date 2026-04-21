@@ -1,12 +1,12 @@
-import { BookOpen, Video, Library, MessageCircle } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Bookmark } from 'lucide-react';
 
 interface NavbarProps {
   isAdmin: boolean;
   onToggleAdmin: () => void;
   onHome: () => void;
   logoUrl?: string;
-  activeTab: 'sefarim' | 'videos';
-  onTabChange: (tab: 'sefarim' | 'videos') => void;
+  activeTab: 'sefarim' | 'videos' | 'library';
+  onTabChange: (tab: 'sefarim' | 'videos' | 'library') => void;
   whatsappUrl?: string;
 }
 
@@ -35,13 +35,13 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
         </div>
 
         {/* Global Navigation - Center */}
-        <div className="bg-slate-100/80 backdrop-blur p-1 rounded-full flex self-stretch md:self-auto shadow-inner border border-slate-200 w-full md:w-auto">
+        <div className="bg-slate-100/80 backdrop-blur p-1 rounded-full flex self-stretch md:self-auto shadow-inner border border-slate-200 overflow-x-auto custom-scrollbar">
           <button
             onClick={() => {
               onTabChange('sefarim');
               onHome();
             }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-full text-sm font-black uppercase tracking-widest transition-all ${
+            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap ${
               activeTab === 'sefarim' 
                 ? 'bg-white text-indigo-900 shadow-[0_2px_10px_-3px_rgba(6,181,227,0.3)] ring-1 ring-slate-200/50 scale-[1.02]' 
                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 scale-95'
@@ -55,7 +55,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
               onTabChange('videos');
               onHome();
             }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-2 rounded-full text-sm font-black uppercase tracking-widest transition-all ${
+            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-8 py-2.5 rounded-full text-sm font-black uppercase tracking-widest transition-all whitespace-nowrap ${
               activeTab === 'videos' 
                 ? 'bg-white text-indigo-900 shadow-[0_2px_10px_-3px_rgba(6,181,227,0.3)] ring-1 ring-slate-200/50 scale-[1.02]' 
                 : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 scale-95'

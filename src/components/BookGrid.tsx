@@ -12,9 +12,11 @@ interface BookGridProps {
   onRead: (epubUrl: string) => void;
   onDownload: (epubUrl: string, title: string) => void;
   onSelectBook: (book: Book) => void;
+  savedBookIds?: string[];
+  onToggleSave?: (id: string) => void;
 }
 
-export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook }: BookGridProps) {
+export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave }: BookGridProps) {
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
@@ -50,6 +52,8 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
           onRead={onRead}
           onDownload={onDownload}
           onSelect={() => onSelectBook(book)}
+          isSaved={savedBookIds.includes(book.id)}
+          onToggleSave={onToggleSave}
         />
       ))}
     </div>

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
-import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical, Play, Eye, Star } from 'lucide-react';
+import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical, Play, Eye, Star, Bookmark } from 'lucide-react';
 import { Video } from '../types';
 
 interface VideoCardProps {
+  key?: string | number;
   video: Video;
   isAdmin: boolean;
   onEdit: () => void;
@@ -10,9 +11,11 @@ interface VideoCardProps {
   onSelect: () => void;
   categoryThumbnail?: string;
   dragHandleProps?: Record<string, any>;
+  isSaved?: boolean;
+  onToggleSave?: (id: string, e: React.MouseEvent) => void;
 }
 
-export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, categoryThumbnail, dragHandleProps }: VideoCardProps) {
+export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, categoryThumbnail, dragHandleProps, isSaved, onToggleSave }: VideoCardProps) {
   const [copied, setCopied] = useState(false);
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -128,13 +131,27 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
               </>
             ) : null}
           </div>
-          <button
-            onClick={handleShare}
-            className="text-slate-400 hover:text-indigo-600 transition-colors p-2 -mr-2 rounded-full hover:bg-slate-50"
-            title="Copy Share Link"
-          >
-            {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4" />}
-          </button>
+          <div className="flex items-center gap-1 -mr-2">
+            {onToggleSave && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleSave(video.id, e);
+                }}
+                className={`transition-colors p-2 rounded-full hover:bg-slate-50 ${isSaved ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
+                title={isSaved ? "Remove from Library" : "Save to Library"}
+              >
+                <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-indigo-600' : ''}`} />
+              </button>
+            )}
+            <button
+              onClick={handleShare}
+              className="text-slate-400 hover:text-indigo-600 transition-colors p-2 rounded-full hover:bg-slate-50"
+              title="Copy Share Link"
+            >
+              {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4" />}
+            </button>
+          </div>
         </div>
       </div>
     </div>

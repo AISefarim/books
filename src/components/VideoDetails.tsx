@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send } from 'lucide-react';
+import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark } from 'lucide-react';
 import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Video } from '../types';
@@ -10,9 +10,11 @@ interface VideoDetailsProps {
   onBack: () => void;
   onSelectVideo: (video: Video) => void;
   categoryThumbnails?: Record<string, string>;
+  isSaved?: boolean;
+  onToggleSave?: (id: string, e?: React.MouseEvent) => void;
 }
 
-export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, categoryThumbnails }: VideoDetailsProps) {
+export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, categoryThumbnails, isSaved, onToggleSave }: VideoDetailsProps) {
   const [copied, setCopied] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(0);
   const [hasRated, setHasRated] = useState(() => {
@@ -172,6 +174,16 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
               {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />} 
               {copied ? 'Copied!' : 'Share Video'}
             </button>
+
+            {onToggleSave && (
+              <button
+                onClick={(e) => onToggleSave(video.id, e)}
+                className={`px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 transition-all border shadow-sm active:scale-95 ${isSaved ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+              >
+                <Bookmark className={`w-6 h-6 ${isSaved ? 'fill-indigo-700' : ''}`} /> 
+                {isSaved ? 'Saved' : 'Save'}
+              </button>
+            )}
           </div>
         </div>
       </div>
