@@ -613,14 +613,14 @@ export default function App() {
 
             {!isLoading && books.length > 0 && (
               <>
-                <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-center justify-between bg-white pl-4 pr-4 py-3 sm:pl-5 sm:pr-5 sm:py-3.5 rounded-2xl border border-slate-200 shadow-sm max-w-2xl mx-auto md:mx-0">
-                  <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
-                    <div className="bg-indigo-50 p-2 rounded-xl border border-indigo-100 shrink-0">
+                <div className="mb-6 flex flex-row gap-4 sm:gap-6 items-center justify-between bg-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-200 shadow-sm max-w-2xl mx-auto md:mx-0">
+                  <div className="flex items-center gap-3 w-auto justify-start">
+                    <div className="bg-indigo-50 p-2 rounded-xl border border-indigo-100 shrink-0 hidden sm:block">
                       <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-600" />
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2 text-center sm:text-left">
-                      <h3 className="font-black text-slate-800 text-[15px] sm:text-base leading-tight">My Library</h3>
-                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium">{savedBookIds.length + savedVideoIds.length} saved items</p>
+                    <div className="flex flex-row items-baseline gap-2 text-left">
+                      <h3 className="font-black text-slate-800 text-[14px] sm:text-base leading-tight">My Library</h3>
+                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium hidden sm:block">{savedBookIds.length + savedVideoIds.length} saved items</p>
                     </div>
                   </div>
                   <button
@@ -628,7 +628,7 @@ export default function App() {
                       setActiveTab('library');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="w-full sm:w-auto px-5 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-200 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
+                    className="w-auto px-4 py-1.5 sm:px-5 sm:py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-200 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
                   >
                     View Library
                   </button>
@@ -712,14 +712,14 @@ export default function App() {
           <>
             {!isLoading && (
               <>
-                <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-center justify-between bg-white pl-4 pr-4 py-3 sm:pl-5 sm:pr-5 sm:py-3.5 rounded-2xl border border-slate-200 shadow-sm max-w-2xl mx-auto md:mx-0">
-                  <div className="flex items-center gap-3 w-full sm:w-auto justify-center sm:justify-start">
-                    <div className="bg-indigo-50 p-2 rounded-xl border border-indigo-100 shrink-0">
+                <div className="mb-6 flex flex-row gap-4 sm:gap-6 items-center justify-between bg-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-200 shadow-sm max-w-2xl mx-auto md:mx-0">
+                  <div className="flex items-center gap-3 w-auto justify-start">
+                    <div className="bg-indigo-50 p-2 rounded-xl border border-indigo-100 shrink-0 hidden sm:block">
                       <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-600" />
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-baseline gap-0.5 sm:gap-2 text-center sm:text-left">
-                      <h3 className="font-black text-slate-800 text-[15px] sm:text-base leading-tight">My Library</h3>
-                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium">{savedBookIds.length + savedVideoIds.length} saved items</p>
+                    <div className="flex flex-row items-baseline gap-2 text-left">
+                      <h3 className="font-black text-slate-800 text-[14px] sm:text-base leading-tight">My Library</h3>
+                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium hidden sm:block">{savedBookIds.length + savedVideoIds.length} saved items</p>
                     </div>
                   </div>
                   <button
@@ -727,7 +727,7 @@ export default function App() {
                       setActiveTab('library');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="w-full sm:w-auto px-5 py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-200 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
+                    className="w-auto px-4 py-1.5 sm:px-5 sm:py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-200 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
                   >
                     View Library
                   </button>
