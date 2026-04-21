@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical, Play, Eye } from 'lucide-react';
+import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical, Play, Eye, Star } from 'lucide-react';
 import { Video } from '../types';
 
 interface VideoCardProps {
@@ -117,10 +117,16 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
             <span>{new Date(video.createdAt).toLocaleDateString()}</span>
             {video.views !== undefined && (
               <>
-                <span className="w-1 h-1 rounded-full bg-slate-200"></span>
+                <span className="w-1 h-1 rounded-full bg-slate-200 hidden sm:block"></span>
                 <span className="flex items-center gap-1.5 text-indigo-400"><Eye className="w-3.5 h-3.5" />{video.views}</span>
               </>
             )}
+            {video.ratingsCount ? (
+              <>
+                <span className="w-1 h-1 rounded-full bg-slate-200 hidden sm:block"></span>
+                <span className="flex items-center gap-1 text-amber-500 font-black"><Star className="w-3.5 h-3.5 fill-amber-500" />{(video.ratingsSum! / video.ratingsCount).toFixed(1)}</span>
+              </>
+            ) : null}
           </div>
           <button
             onClick={handleShare}
