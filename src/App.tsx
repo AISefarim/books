@@ -528,10 +528,22 @@ export default function App() {
         ) : selectedVideo ? (
           <VideoDetails
             video={selectedVideo}
-            relatedVideos={videos.filter(v => v.category === selectedVideo.category && v.id !== selectedVideo.id)}
+            relatedVideos={(() => {
+              const otherVideos = videos.filter(v => v.id !== selectedVideo.id);
+              const sameCat = otherVideos.filter(v => v.category === selectedVideo.category);
+              const diffCat = otherVideos.filter(v => v.category !== selectedVideo.category);
+              
+              const mixed = [];
+              const maxLen = Math.max(sameCat.length, diffCat.length);
+              for (let i = 0; i < maxLen; i++) {
+                if (i < diffCat.length) mixed.push(diffCat[i]);
+                if (i < sameCat.length) mixed.push(sameCat[i]);
+              }
+              return mixed.slice(0, 9);
+            })()}
             onBack={handleHome}
             onSelectVideo={handleVideoSelect}
-            categoryThumbnail={siteSettings.videoCategoryThumbnails?.[selectedVideo.category]}
+            categoryThumbnails={siteSettings.videoCategoryThumbnails}
           />
         ) : activeTab === 'sefarim' ? (
           <>

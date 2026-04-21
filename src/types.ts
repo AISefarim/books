@@ -27,4 +27,7 @@ export interface Video {
   views?: number;
   type?: 'video';
   order?: number;
+  ratingsSum?: number;
+  ratingsCount?: number;
+  comments?: { id: string, name: string, text: string, createdAt: number }[];
 }

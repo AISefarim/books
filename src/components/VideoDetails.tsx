@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye } from 'lucide-react';
+import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send } from 'lucide-react';
+import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
+import { db } from '../lib/firebase';
 import { Video } from '../types';
 
 interface VideoDetailsProps {
@@ -7,11 +9,56 @@ interface VideoDetailsProps {
   relatedVideos: Video[];
   onBack: () => void;
   onSelectVideo: (video: Video) => void;
-  categoryThumbnail?: string;
+  categoryThumbnails?: Record<string, string>;
 }
 
-export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, categoryThumbnail }: VideoDetailsProps) {
+export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, categoryThumbnails }: VideoDetailsProps) {
   const [copied, setCopied] = useState(false);
+  const [hoveredStar, setHoveredStar] = useState(0);
+  const [hasRated, setHasRated] = useState(() => {
+    return localStorage.getItem(`rated_video_${video.id}`) === 'true';
+  });
+  
+  const [commentName, setCommentName] = useState('');
+  const [commentText, setCommentText] = useState('');
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+
+  const handleRate = async (rating: number) => {
+    if (hasRated) return;
+    setHasRated(true);
+    localStorage.setItem(`rated_video_${video.id}`, 'true');
+    try {
+      await updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', video.id), {
+        ratingsSum: increment(rating),
+        ratingsCount: increment(1)
+      });
+    } catch (e) {
+      console.error("Error rating video", e);
+    }
+  };
+
+  const handleCommentSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    setIsSubmittingComment(true);
+    try {
+      await updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', video.id), {
+        comments: arrayUnion({
+          id: Date.now().toString() + Math.random().toString(36).substring(2),
+          name: commentName.trim() || 'Anonymous',
+          text: commentText.trim(),
+          createdAt: Date.now()
+        })
+      });
+      setCommentText('');
+    } catch (error) {
+      console.error("Error submitting comment", error);
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
+  const currentRating = video.ratingsCount ? (video.ratingsSum! / video.ratingsCount).toFixed(1) : 'New';
 
   const getCategoryEmoji = (category: string) => {
     if (category.toLowerCase().includes('daf')) return '📖';
@@ -65,14 +112,24 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
 
       <div className="bg-white rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-100 mb-16 flex flex-col md:flex-row gap-8 items-center">
         {/* Left side: Thumbnail / Graphic */}
-        <div className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-50 flex items-center justify-center overflow-hidden shadow-inner border-4 border-slate-50 relative group">
-          {categoryThumbnail ? (
-            <img src={categoryThumbnail} alt={video.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" />
+        <a 
+          href={video.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-50 flex items-center justify-center overflow-hidden shadow-inner border-4 border-slate-50 relative group cursor-pointer block"
+        >
+          {categoryThumbnails?.[video.category] ? (
+            <img src={categoryThumbnails[video.category]} alt={video.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" />
           ) : (
             <PlayCircle className="w-24 h-24 text-indigo-200" />
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-        </div>
+          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+             <div className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-all duration-300">
+                <Play className="w-8 h-8 text-indigo-600 fill-indigo-600 ml-1" />
+             </div>
+          </div>
+        </a>
 
         {/* Right side: Info and Actions */}
         <div className="flex flex-col gap-6 w-full md:w-2/3">
@@ -119,6 +176,94 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
         </div>
       </div>
 
+      {/* Ratings and Comments Section */}
+      <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 mb-16 max-w-4xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-8 border-b border-slate-100">
+          <div>
+             <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 tracking-tight">
+                <Star className="w-5 h-5 text-amber-400 fill-amber-400" /> 
+                {currentRating} Rating
+             </h3>
+             <p className="text-slate-400 text-sm mt-1">{video.ratingsCount || 0} reviews</p>
+          </div>
+          <div className="flex items-center gap-1">
+             {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => handleRate(star)}
+                  onMouseEnter={() => setHoveredStar(star)}
+                  onMouseLeave={() => setHoveredStar(0)}
+                  disabled={hasRated}
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
+                    hasRated 
+                      ? 'cursor-default opacity-50' 
+                      : 'hover:bg-slate-50 active:scale-95'
+                  }`}
+                >
+                  <Star 
+                    className={`w-6 h-6 transition-all ${
+                       (hoveredStar || (video.ratingsCount ? Math.round(video.ratingsSum! / video.ratingsCount) : 0)) >= star
+                         ? 'text-amber-400 fill-amber-400'
+                         : 'text-slate-200'
+                    }`} 
+                  />
+                </button>
+             ))}
+          </div>
+        </div>
+
+        <div className="space-y-6">
+           <h3 className="font-bold text-slate-900 flex items-center gap-2">
+              <MessageSquare className="w-5 h-5 text-indigo-500" />
+              Comments ({video.comments?.length || 0})
+           </h3>
+           
+           <form onSubmit={handleCommentSubmit} className="flex flex-col gap-3">
+              <input 
+                type="text" 
+                placeholder="Your name (optional)" 
+                value={commentName}
+                onChange={e => setCommentName(e.target.value)}
+                className="w-full md:w-64 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
+              />
+              <div className="relative">
+                <textarea 
+                  placeholder="Share your thoughts on this Daf..." 
+                  value={commentText}
+                  onChange={e => setCommentText(e.target.value)}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 min-h-[100px] text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors resize-none"
+                />
+                <button 
+                  type="submit"
+                  disabled={isSubmittingComment || !commentText.trim()}
+                  className="absolute bottom-4 right-4 bg-indigo-600 text-white rounded-xl p-2 md:px-4 md:py-2 flex items-center gap-2 text-sm font-bold uppercase tracking-wider hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-md active:scale-95"
+                >
+                  <span className="hidden md:block">Post Comment</span>
+                  <Send className="w-4 h-4" />
+                </button>
+              </div>
+           </form>
+
+           <div className="mt-8 space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+              {(!video.comments || video.comments.length === 0) ? (
+                 <p className="text-slate-400 text-sm text-center py-8">Be the first to share your thoughts!</p>
+              ) : (
+                 [...video.comments].sort((a, b) => b.createdAt - a.createdAt).map(comment => (
+                   <div key={comment.id} className="bg-slate-50/50 border border-slate-100 rounded-2xl p-5 fade-in">
+                      <div className="flex justify-between items-baseline mb-2">
+                         <span className="font-bold text-slate-900">{comment.name}</span>
+                         <span className="text-xs text-slate-400 font-medium">
+                           {new Date(comment.createdAt).toLocaleDateString()}
+                         </span>
+                      </div>
+                      <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{comment.text}</p>
+                   </div>
+                 ))
+              )}
+           </div>
+        </div>
+      </div>
+
       {/* Up Next Spotlight Card */}
       {upNextVideo && (
         <div className="mt-16 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-200 fill-mode-both">
@@ -136,16 +281,16 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
             className="group cursor-pointer bg-slate-900 rounded-[2.5rem] overflow-hidden relative shadow-2xl hover:shadow-indigo-500/20 transition-all duration-500 border border-slate-800 flex flex-col md:flex-row min-h-[300px]"
           >
             {/* Background blur layer */}
-            {categoryThumbnail && (
+            {categoryThumbnails?.[upNextVideo.category] && (
                 <div className="absolute inset-0 opacity-20 hidden md:block">
-                  <img src={categoryThumbnail} alt="" className="w-full h-full object-cover blur-3xl opacity-50" />
+                  <img src={categoryThumbnails[upNextVideo.category]} alt="" className="w-full h-full object-cover blur-3xl opacity-50" />
                 </div>
             )}
             
             {/* Left Image Area */}
             <div className="w-full md:w-5/12 lg:w-4/12 relative bg-black shrink-0 overflow-hidden aspect-video md:aspect-auto">
-                {categoryThumbnail ? (
-                  <img src={categoryThumbnail} alt={upNextVideo.category} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" />
+                {categoryThumbnails?.[upNextVideo.category] ? (
+                  <img src={categoryThumbnails[upNextVideo.category]} alt={upNextVideo.category} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" />
                 ) : (
                    <div className="w-full h-full flex items-center justify-center bg-indigo-900/60 "><PlayCircle className="w-20 h-20 text-indigo-400 opacity-50" /></div>
                 )}
@@ -186,7 +331,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
       {otherRelated.length > 0 && (
         <div className="mt-12 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-300 fill-mode-both">
           <h3 className="text-lg font-bold text-slate-500 uppercase tracking-widest mb-6">
-            More from {video.category}
+            More to Watch
           </h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -198,9 +343,9 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
                 style={{ animationDelay: `${idx * 100}ms` }}
               >
                 <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 mb-4 shadow-md group-hover:shadow-xl transition-all duration-300 transform group-hover:-translate-y-1">
-                  {categoryThumbnail ? (
+                  {categoryThumbnails?.[v.category] ? (
                     <img 
-                      src={categoryThumbnail} 
+                      src={categoryThumbnails[v.category]} 
                       alt={v.category} 
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" 
                     />
