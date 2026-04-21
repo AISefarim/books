@@ -370,10 +370,18 @@ export default function App() {
   const displayedVideos = [...filteredVideos];
   if (selectedCategory === 'Top Rated') {
     displayedVideos.sort((a, b) => {
-      const ratingA = a.ratingsCount ? a.ratingsSum! / a.ratingsCount : 0;
-      const ratingB = b.ratingsCount ? b.ratingsSum! / b.ratingsCount : 0;
-      if (ratingB !== ratingA) return ratingB - ratingA;
-      return (b.ratingsCount || 0) - (a.ratingsCount || 0);
+      const getScore = (v: typeof a) => {
+        const rating = v.ratingsCount ? v.ratingsSum! / v.ratingsCount : 0;
+        const volume = (v.views || 0) + (v.ratingsCount || 0);
+        // Bayesian average approximating true top rated (with 5 views/ratings as confidence threshold)
+        return (volume * rating) / (volume + 5);
+      };
+      
+      const scoreA = getScore(a);
+      const scoreB = getScore(b);
+      
+      if (scoreB !== scoreA) return scoreB - scoreA;
+      return (b.views || 0) - (a.views || 0);
     });
   }
 
@@ -564,12 +572,19 @@ export default function App() {
             relatedVideos={(() => {
               const otherVideos = videos.filter(v => v.id !== selectedVideo.id);
               
-              // Sort otherVideos by rating
+              // Sort otherVideos by Bayesian average rating (factoring in views/ratings count)
               otherVideos.sort((a, b) => {
-                const ratingA = a.ratingsCount ? a.ratingsSum! / a.ratingsCount : 0;
-                const ratingB = b.ratingsCount ? b.ratingsSum! / b.ratingsCount : 0;
-                if (ratingB !== ratingA) return ratingB - ratingA;
-                return (b.ratingsCount || 0) - (a.ratingsCount || 0);
+                const getScore = (v: typeof a) => {
+                  const rating = v.ratingsCount ? v.ratingsSum! / v.ratingsCount : 0;
+                  const volume = (v.views || 0) + (v.ratingsCount || 0);
+                  return (volume * rating) / (volume + 5);
+                };
+                
+                const scoreA = getScore(a);
+                const scoreB = getScore(b);
+                
+                if (scoreB !== scoreA) return scoreB - scoreA;
+                return (b.views || 0) - (a.views || 0);
               });
               
               const sameCat = otherVideos.filter(v => v.category === selectedVideo.category);
