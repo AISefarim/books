@@ -1,4 +1,5 @@
 import { BookOpen, Video, Library, MessageCircle, Bookmark } from 'lucide-react';
+import { ActiveUsers } from './ActiveUsers';
 
 interface NavbarProps {
   isAdmin: boolean;
@@ -30,7 +31,10 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
           )}
           <div>
             <h1 className="text-xl font-black text-slate-900 tracking-tighter group-hover:text-indigo-600 transition-colors leading-tight">AI SEFARIM</h1>
-            <p className="text-[9px] text-indigo-600 font-black uppercase tracking-widest leading-tight">Digital ספריה</p>
+            <div className="flex items-center gap-2 mt-0.5">
+              <p className="text-[9px] text-indigo-600 font-black uppercase tracking-widest leading-tight border-r border-slate-300 pr-2">Digital ספריה</p>
+              <ActiveUsers />
+            </div>
           </div>
         </div>
 
