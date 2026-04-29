@@ -622,9 +622,11 @@ export default function App() {
             relatedVideos={(() => {
               const otherVideos = videos.filter(v => v.id !== selectedVideo.id);
               
-              // Sort otherVideos by Bayesian average rating (factoring in views/ratings count)
-              otherVideos.sort((a, b) => {
-                const getScore = (v: typeof a) => {
+              const sameCat = otherVideos.filter(v => v.category === selectedVideo.category);
+              const diffCat = otherVideos.filter(v => v.category !== selectedVideo.category);
+              
+              const sortByScore = (a: Video, b: Video) => {
+                const getScore = (v: Video) => {
                   const rating = v.ratingsCount ? v.ratingsSum! / v.ratingsCount : 0;
                   const volume = (v.views || 0) + (v.ratingsCount || 0);
                   return (volume * rating) / (volume + 5);
@@ -635,17 +637,22 @@ export default function App() {
                 
                 if (scoreB !== scoreA) return scoreB - scoreA;
                 return (b.views || 0) - (a.views || 0);
-              });
+              };
+
+              diffCat.sort(sortByScore);
+
+              const currentOrder = typeof selectedVideo.order === 'number' ? selectedVideo.order : -1;
+              const nextInSeries = sameCat.filter(v => typeof v.order === 'number' && v.order > currentOrder)
+                                          .sort((a, b) => (a.order as number) - (b.order as number));
+              const previousInSeries = sameCat.filter(v => typeof v.order === 'number' && v.order <= currentOrder)
+                                              .sort((a, b) => (a.order as number) - (b.order as number));
+              const noOrderSameCat = sameCat.filter(v => typeof v.order !== 'number')
+                                            .sort(sortByScore);
+
+              const sameCatOrdered = [...nextInSeries, ...previousInSeries, ...noOrderSameCat];
               
-              const sameCat = otherVideos.filter(v => v.category === selectedVideo.category);
-              const diffCat = otherVideos.filter(v => v.category !== selectedVideo.category);
-              
-              const mixed = [];
-              const maxLen = Math.max(sameCat.length, diffCat.length);
-              for (let i = 0; i < maxLen; i++) {
-                if (i < diffCat.length) mixed.push(diffCat[i]);
-                if (i < sameCat.length) mixed.push(sameCat[i]);
-              }
+              // Fill with same category first, then if we need more, add diff cat
+              const mixed = [...sameCatOrdered, ...diffCat];
               return mixed.slice(0, 9);
             })()}
             onBack={handleHome}
