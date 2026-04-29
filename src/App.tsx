@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2 } from 'lucide-react';
 
 import { db, storage, auth } from './lib/firebase';
 import { Book, Video } from './types';
@@ -24,7 +24,7 @@ import { AddToHomescreen } from './components/AddToHomescreen';
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'library'>('sefarim');
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'library'>('videos');
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -105,12 +105,18 @@ export default function App() {
         const params = new URLSearchParams(window.location.search);
         let sharedBookId = params.get('book');
         let sharedVideoId = params.get('video');
+        let sharedCategory = params.get('category');
+        let sharedTab = params.get('tab') as 'sefarim' | 'videos' | 'library' | null;
         
         const pathParts = window.location.pathname.split('/');
         if (pathParts[1] === 'v' && pathParts[2]) {
           sharedVideoId = pathParts[2];
         } else if (pathParts[1] === 'b' && pathParts[2]) {
           sharedBookId = pathParts[2];
+        } else if (pathParts[1] === 'c' && pathParts[2]) {
+          sharedCategory = decodeURIComponent(pathParts[2]);
+          if (pathParts[3] === 'videos') sharedTab = 'videos';
+          if (pathParts[3] === 'sefarim') sharedTab = 'sefarim';
         }
         
         if (sharedBookId) {
@@ -129,6 +135,11 @@ export default function App() {
             updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', videoToOpen.id), {
               views: increment(1)
             }).catch(err => console.error("Failed to increment video views", err));
+          }
+        } else if (sharedCategory) {
+          setSelectedCategory(sharedCategory);
+          if (sharedTab) {
+            setActiveTab(sharedTab as 'sefarim' | 'videos' | 'library');
           }
         }
       }
@@ -238,12 +249,18 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       let sharedBookId = params.get('book');
       let sharedVideoId = params.get('video');
+      let sharedCategory = params.get('category');
+      let sharedTab = params.get('tab');
       
       const pathParts = window.location.pathname.split('/');
       if (pathParts[1] === 'v' && pathParts[2]) {
         sharedVideoId = pathParts[2];
       } else if (pathParts[1] === 'b' && pathParts[2]) {
         sharedBookId = pathParts[2];
+      } else if (pathParts[1] === 'c' && pathParts[2]) {
+        sharedCategory = decodeURIComponent(pathParts[2]);
+        if (pathParts[3] === 'videos') sharedTab = 'videos';
+        if (pathParts[3] === 'sefarim') sharedTab = 'sefarim';
       }
       
       if (sharedBookId) {
@@ -258,9 +275,17 @@ export default function App() {
           setSelectedVideo(videoToOpen);
           setActiveTab('videos');
         }
+      } else if (sharedCategory) {
+        setSelectedCategory(sharedCategory);
+        if (sharedTab) {
+          setActiveTab(sharedTab as 'sefarim' | 'videos');
+        }
+        setSelectedBook(null);
+        setSelectedVideo(null);
       } else {
         setSelectedBook(null);
         setSelectedVideo(null);
+        setSelectedCategory(null);
         setIsDirectLinkEntry(false);
         setPlayingDirectVideo(false);
       }
@@ -344,6 +369,29 @@ export default function App() {
       updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', update.id), {
         order: update.order
       }).catch(err => console.error("Failed to update order", err));
+    }
+  };
+
+  const handleCategoryShare = async (tab: 'sefarim' | 'videos') => {
+    if (!selectedCategory) return;
+    const url = `${window.location.origin}/c/${encodeURIComponent(selectedCategory)}/${tab}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${selectedCategory} ${tab === 'videos' ? 'Videos' : 'Sefarim'}`,
+          url: url
+        });
+        return;
+      } catch (err) {
+        console.log('Share API failed, falling back to clipboard.', err);
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setStatus({ message: 'Category link copied to clipboard!', type: 'success' });
+      setTimeout(() => setStatus(null), 3000);
+    } catch (err) {
+      console.error('Failed to copy link', err);
     }
   };
 
@@ -665,6 +713,14 @@ export default function App() {
                 </div>
                 
                 <div className="flex flex-wrap gap-2 justify-center md:justify-end w-full md:w-auto">
+                  {selectedCategory && (
+                    <button
+                      onClick={() => handleCategoryShare('sefarim')}
+                      className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 mr-2 shadow-sm"
+                    >
+                      <Share2 className="w-3.5 h-3.5" /> Share Category
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                         setSelectedCategory(null);
@@ -764,6 +820,14 @@ export default function App() {
                 </div>
                 
                 <div className="flex flex-wrap gap-2 justify-center md:justify-end w-full md:w-auto">
+                  {selectedCategory && selectedCategory !== 'Top Rated' && (
+                    <button
+                      onClick={() => handleCategoryShare('videos')}
+                      className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 mr-2 shadow-sm"
+                    >
+                      <Share2 className="w-3.5 h-3.5" /> Share Category
+                    </button>
+                  )}
                   <button
                     onClick={() => {
                         setSelectedCategory(null);
