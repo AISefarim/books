@@ -314,7 +314,7 @@ export default function App() {
     url.searchParams.set('book', book.id);
     url.searchParams.delete('video');
     window.history.pushState({}, '', url.toString());
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
   };
 
   const handleVideoSelect = (video: Video) => {
@@ -325,7 +325,7 @@ export default function App() {
     url.searchParams.set('video', video.id);
     url.searchParams.delete('book');
     window.history.pushState({}, '', url.toString());
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo(0, 0);
 
     // Increment view count in firestore
     updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', video.id), {

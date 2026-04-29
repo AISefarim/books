@@ -14,6 +14,10 @@ interface BookDetailsProps {
 export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggleSave }: BookDetailsProps) {
   const [copied, setCopied] = React.useState(false);
 
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [book.id]);
+
   const handleShare = async () => {
     const url = `${window.location.origin}/b/${book.id}`;
     try {

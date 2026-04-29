@@ -25,6 +25,10 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
   const [commentText, setCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
 
+  React.useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [video.id]);
+
   const handleRate = async (rating: number) => {
     if (hasRated) return;
     setHasRated(true);
