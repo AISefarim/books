@@ -12,6 +12,7 @@ import { BookGrid } from './components/BookGrid';
 import { FeaturedBooks } from './components/FeaturedBooks';
 import { BookDetails } from './components/BookDetails';
 import { VideoGrid } from './components/VideoGrid';
+import { CategorySelect } from './components/CategorySelect';
 import { VideoDetails } from './components/VideoDetails';
 import { LoginModal } from './components/LoginModal';
 import { EpubReader } from './components/EpubReader';
@@ -397,7 +398,7 @@ export default function App() {
     }
   };
 
-  const categories = Array.from(new Set(books.map(b => b.category || 'Uncategorized'))).sort();
+  const categories = Array.from(new Set(books.map(b => b.category || 'Uncategorized'))).sort() as string[];
   const filteredBooks = books.filter(b => {
     const matchesCategory = selectedCategory ? (b.category || 'Uncategorized') === selectedCategory : true;
     const searchLower = searchQuery.toLowerCase();
@@ -409,7 +410,7 @@ export default function App() {
   });
 
   const strictVideoCategories = siteSettings.videoCategories || ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach"];
-  const videoCategories = Array.from(new Set([...strictVideoCategories, ...videos.map(v => v.category)])).sort();
+  const videoCategories = Array.from(new Set([...strictVideoCategories, ...videos.map(v => v.category)])).sort() as string[];
   const filteredVideos = videos.filter(v => {
     const matchesCategory = selectedCategory ? (selectedCategory === 'Top Rated' ? true : v.category === selectedCategory) : true;
     const searchLower = searchQuery.toLowerCase();
@@ -737,19 +738,14 @@ export default function App() {
                       <Share2 className="w-4 h-4" /> Share Category
                     </button>
                   )}
-                  <select
-                    value={selectedCategory || ''}
-                    onChange={(e) => {
-                      setSelectedCategory(e.target.value === '' ? null : e.target.value);
+                  <CategorySelect
+                    categories={categories}
+                    selectedCategory={selectedCategory}
+                    onSelect={(cat) => {
+                      setSelectedCategory(cat);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="w-full sm:w-64 px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-slate-700 shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 cursor-pointer text-sm"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
               </>
@@ -828,20 +824,28 @@ export default function App() {
                       <Share2 className="w-4 h-4" /> Share Category
                     </button>
                   )}
-                  <select
-                    value={selectedCategory || ''}
-                    onChange={(e) => {
-                      setSelectedCategory(e.target.value === '' ? null : e.target.value);
+                  <button
+                    onClick={() => {
+                        setSelectedCategory(selectedCategory === 'Top Rated' ? null : 'Top Rated');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 w-full sm:w-auto shadow-sm ${
+                      selectedCategory === 'Top Rated'
+                        ? 'bg-amber-400 text-amber-950 border-2 border-amber-500'
+                        : 'bg-white text-amber-600 hover:bg-amber-50 border-2 border-amber-200'
+                    }`}
+                  >
+                    <Star className={`w-4 h-4 ${selectedCategory === 'Top Rated' ? 'fill-amber-950 text-amber-950' : 'fill-amber-600 text-amber-600'}`} /> 
+                    Top Rated
+                  </button>
+                  <CategorySelect
+                    categories={videoCategories}
+                    selectedCategory={selectedCategory === 'Top Rated' ? null : selectedCategory}
+                    onSelect={(cat) => {
+                      setSelectedCategory(cat);
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="w-full sm:w-64 px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-slate-700 shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 cursor-pointer text-sm"
-                  >
-                    <option value="">All Categories</option>
-                    <option value="Top Rated">⭐ Top Rated</option>
-                    {videoCategories.map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                  </select>
+                  />
                 </div>
               </div>
               </>
