@@ -132,6 +132,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
     const title = formData.get('title') as string;
     const url = formData.get('url') as string;
     const category = formData.get('category') as string;
+    const folder = formData.get('folder') as string;
     const orderStr = formData.get('order') as string;
     const order = orderStr ? parseInt(orderStr, 10) : undefined;
 
@@ -141,6 +142,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
         title,
         url,
         category,
+        folder,
         createdAt: timestamp,
         views: 0,
         type: 'video'
@@ -321,12 +323,17 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                   ))}
                 </select>
                 <input
-                  name="order"
-                  type="number"
+                  name="folder"
                   className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
-                  placeholder="Rank Order (1 is highest)"
+                  placeholder="Subfolder (optional)"
                 />
               </div>
+              <input
+                name="order"
+                type="number"
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                placeholder="Rank Order (1 is highest)"
+              />
 
               <button
                 type="submit"

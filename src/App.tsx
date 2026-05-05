@@ -24,7 +24,7 @@ import { AddToHomescreen } from './components/AddToHomescreen';
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'library'>('videos');
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'library'>('sefarim');
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -79,8 +79,8 @@ export default function App() {
         .map(d => d as Book);
         
       bookDocs.sort((a, b) => {
-        const orderA = a.order ?? 999;
-        const orderB = b.order ?? 999;
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
         if (orderA !== orderB) return orderA - orderB;
         return (b.createdAt || 0) - (a.createdAt || 0);
       });
@@ -92,8 +92,8 @@ export default function App() {
         .map(d => d as unknown as Video);
         
       videoDocs.sort((a, b) => {
-        const orderA = a.order ?? 999;
-        const orderB = b.order ?? 999;
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
         if (orderA !== orderB) return orderA - orderB;
         return (b.createdAt || 0) - (a.createdAt || 0);
       });
@@ -438,6 +438,12 @@ export default function App() {
   const featuredBooks = books.filter(b => b.isFeatured);
 
   const bannerUrl = siteSettings.bannerUrl || "https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr";
+  
+  const totalViews = React.useMemo(() => {
+    const videoViews = videos.reduce((acc, v) => acc + (v.views || 0), 0);
+    const bookReads = books.reduce((acc, b) => acc + (b.readCount || 0), 0);
+    return videoViews + bookReads;
+  }, [videos, books]);
 
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
@@ -449,6 +455,7 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         whatsappUrl={bannerUrl}
+        totalViews={totalViews}
       />
 
       {/* Welcome Video Section (Only on main dashboard) */}
@@ -721,44 +728,28 @@ export default function App() {
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap gap-2 justify-center md:justify-end w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row gap-3 items-center justify-center md:justify-end w-full md:w-auto">
                   {selectedCategory && (
                     <button
                       onClick={() => handleCategoryShare('sefarim')}
-                      className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 mr-2 shadow-sm"
+                      className="px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 shadow-sm w-full sm:w-auto justify-center"
                     >
-                      <Share2 className="w-3.5 h-3.5" /> Share Category
+                      <Share2 className="w-4 h-4" /> Share Category
                     </button>
                   )}
-                  <button
-                    onClick={() => {
-                        setSelectedCategory(null);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                  <select
+                    value={selectedCategory || ''}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value === '' ? null : e.target.value);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
-                      selectedCategory === null
-                        ? 'bg-indigo-600 text-white shadow-md'
-                        : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
-                    }`}
+                    className="w-full sm:w-64 px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-slate-700 shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 cursor-pointer text-sm"
                   >
-                    All
-                  </button>
-                  {categories.map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => {
-                          setSelectedCategory(cat);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
-                        selectedCategory === cat
-                          ? 'bg-indigo-600 text-white shadow-md'
-                          : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
+                    <option value="">All Categories</option>
+                    {categories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               </>
@@ -828,57 +819,29 @@ export default function App() {
                   </div>
                 </div>
                 
-                <div className="flex flex-wrap gap-2 justify-center md:justify-end w-full md:w-auto">
+                <div className="flex flex-col sm:flex-row gap-3 items-center justify-center md:justify-end w-full md:w-auto">
                   {selectedCategory && selectedCategory !== 'Top Rated' && (
                     <button
                       onClick={() => handleCategoryShare('videos')}
-                      className="px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 mr-2 shadow-sm"
+                      className="px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 shadow-sm w-full sm:w-auto justify-center"
                     >
-                      <Share2 className="w-3.5 h-3.5" /> Share Category
+                      <Share2 className="w-4 h-4" /> Share Category
                     </button>
                   )}
-                  <button
-                    onClick={() => {
-                        setSelectedCategory(null);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                  <select
+                    value={selectedCategory || ''}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value === '' ? null : e.target.value);
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
-                      selectedCategory === null
-                        ? 'bg-indigo-600 text-white shadow-md'
-                        : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
-                    }`}
+                    className="w-full sm:w-64 px-4 py-3 bg-white border-2 border-slate-200 rounded-xl font-bold text-slate-700 shadow-sm focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 cursor-pointer text-sm"
                   >
-                    All
-                  </button>
-                  <button
-                    onClick={() => {
-                        setSelectedCategory('Top Rated');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${
-                      selectedCategory === 'Top Rated'
-                        ? 'bg-amber-400 text-amber-950 shadow-md border border-amber-500/20'
-                        : 'bg-white text-amber-600 hover:bg-amber-50 border border-amber-200'
-                    }`}
-                  >
-                    <Star className={`w-3.5 h-3.5 ${selectedCategory === 'Top Rated' ? 'fill-amber-950' : 'fill-amber-600'}`} /> Top Rated
-                  </button>
-                  {videoCategories.map(cat => (
-                    <button
-                      key={cat}
-                      onClick={() => {
-                          setSelectedCategory(cat);
-                          window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest transition-all ${
-                        selectedCategory === cat
-                          ? 'bg-indigo-600 text-white shadow-md'
-                          : 'bg-white text-slate-500 hover:bg-slate-100 border border-slate-200'
-                      }`}
-                    >
-                      {cat}
-                    </button>
-                  ))}
+                    <option value="">All Categories</option>
+                    <option value="Top Rated">⭐ Top Rated</option>
+                    {videoCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
                 </div>
               </div>
               </>
@@ -917,6 +880,11 @@ export default function App() {
                 onEdit={setEditingVideo}
                 onDelete={handleVideoDelete}
                 onSelectVideo={handleVideoSelect}
+                onMoveToFolder={(videoId, newFolder) => {
+                  updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', videoId), {
+                    folder: newFolder === 'Main Directory' ? '' : newFolder
+                  }).catch(err => console.error("Failed to move video to folder", err));
+                }}
                 onReorder={selectedCategory && selectedCategory !== 'Top Rated' ? handleVideoReorder : undefined}
                 categoryThumbnails={siteSettings.videoCategoryThumbnails}
                 savedVideoIds={savedVideoIds}

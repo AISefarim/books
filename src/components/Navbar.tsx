@@ -1,5 +1,4 @@
-import { BookOpen, Video, Library, MessageCircle, Bookmark } from 'lucide-react';
-import { ActiveUsers } from './ActiveUsers';
+import { BookOpen, Video, Library, MessageCircle, Bookmark, Eye } from 'lucide-react';
 
 interface NavbarProps {
   isAdmin: boolean;
@@ -9,9 +8,10 @@ interface NavbarProps {
   activeTab: 'sefarim' | 'videos' | 'library';
   onTabChange: (tab: 'sefarim' | 'videos' | 'library') => void;
   whatsappUrl?: string;
+  totalViews?: number;
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalViews = 0 }: NavbarProps) {
   return (
     <nav className="bg-white/85 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -33,7 +33,10 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
             <h1 className="text-xl font-black text-slate-900 tracking-tighter group-hover:text-indigo-600 transition-colors leading-tight">AI SEFARIM</h1>
             <div className="flex items-center gap-2 mt-0.5">
               <p className="text-[9px] text-indigo-600 font-black uppercase tracking-widest leading-tight border-r border-slate-300 pr-2">Digital ספריה</p>
-              <ActiveUsers />
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">
+                <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
+                {totalViews.toLocaleString()} Views
+              </div>
             </div>
           </div>
         </div>

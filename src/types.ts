@@ -23,6 +23,7 @@ export interface Video {
   title: string;
   url: string;
   category: string;
+  folder?: string;
   createdAt: number;
   views?: number;
   type?: 'video';

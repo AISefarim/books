@@ -13,6 +13,7 @@ export function EditVideoModal({ video, videoCategories, onSave, onClose }: Edit
   const [title, setTitle] = useState(video.title);
   const [url, setUrl] = useState(video.url);
   const [category, setCategory] = useState(video.category || '');
+  const [folder, setFolder] = useState(video.folder || '');
   const [order, setOrder] = useState(video.order?.toString() || '');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -24,6 +25,7 @@ export function EditVideoModal({ video, videoCategories, onSave, onClose }: Edit
         title,
         url,
         category,
+        folder,
       };
       
       const parsedOrder = order ? parseInt(order, 10) : undefined;
@@ -97,6 +99,16 @@ export function EditVideoModal({ video, videoCategories, onSave, onClose }: Edit
               </select>
             </div>
             <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Subfolder</label>
+              <input
+                type="text"
+                value={folder}
+                onChange={(e) => setFolder(e.target.value)}
+                placeholder="Optional subfolder name..."
+                className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+              />
+            </div>
+            <div className="space-y-2 md:col-span-2">
               <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Rank Order (1 is highest)</label>
               <input
                 type="number"
