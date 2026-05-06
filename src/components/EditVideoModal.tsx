@@ -5,15 +5,17 @@ import { Video } from '../types';
 interface EditVideoModalProps {
   video: Video;
   videoCategories: string[];
-  videoFolders?: string[];
+  videos?: Video[];
   onSave: (id: string, updatedData: Partial<Video>) => Promise<void>;
   onClose: () => void;
 }
 
-export function EditVideoModal({ video, videoCategories, videoFolders = [], onSave, onClose }: EditVideoModalProps) {
+export function EditVideoModal({ video, videoCategories, videos = [], onSave, onClose }: EditVideoModalProps) {
   const [title, setTitle] = useState(video.title);
   const [url, setUrl] = useState(video.url);
   const [category, setCategory] = useState(video.category || '');
+  
+  const videoFolders = Array.from(new Set(videos.filter(v => !category || v.category === category).map(v => v.folder || ''))).filter(f => f !== '') as string[];
   
   // Initialize with appropriate folder state
   const isExistingFolder = videoFolders.includes(video.folder || '');

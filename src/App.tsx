@@ -589,7 +589,7 @@ export default function App() {
           </div>
         )}
 
-        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} videoFolders={Array.from(new Set(videos.map(v => v.folder || ''))).filter(f => f !== '') as string[]} />}
+        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} videos={videos} />}
 
         {isDirectLinkEntry && (selectedBook || selectedVideo) && (
           <div className="mb-6 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-4">
@@ -1094,7 +1094,7 @@ export default function App() {
         <EditVideoModal
           video={editingVideo}
           videoCategories={strictVideoCategories}
-          videoFolders={Array.from(new Set(videos.map(v => v.folder || ''))).filter(f => f !== '') as string[]}
+          videos={videos}
           onSave={handleVideoEditSave}
           onClose={() => setEditingVideo(null)}
         />

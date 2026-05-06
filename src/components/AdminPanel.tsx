@@ -4,16 +4,17 @@ import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
 import { compressImage } from '../lib/imageUtils';
+import { Video } from '../types';
 
 interface AdminPanelProps {
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
   onOpenSettings: () => void;
   activeTab: 'sefarim' | 'videos';
   videoCategories: string[];
-  videoFolders?: string[];
+  videos?: Video[];
 }
 
-export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videoFolders = [] }: AdminPanelProps) {
+export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videos = [] }: AdminPanelProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState({ label: '', percent: 0 });
@@ -21,9 +22,12 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
   
   const [selectedFolder, setSelectedFolder] = useState('');
   const [newFolderInput, setNewFolderInput] = useState('');
+  const [selectedVideoCat, setSelectedVideoCat] = useState('');
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const epubInputRef = useRef<HTMLInputElement>(null);
+
+  const videoFolders = Array.from(new Set(videos.filter(v => !selectedVideoCat || v.category === selectedVideoCat).map(v => v.folder || ''))).filter(f => f !== '') as string[];
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -326,6 +330,8 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                 <select
                   name="category"
                   required
+                  value={selectedVideoCat}
+                  onChange={(e) => setSelectedVideoCat(e.target.value)}
                   className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
                 >
                   <option value="">Select Category...</option>
