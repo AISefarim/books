@@ -395,6 +395,20 @@ export default function App() {
     }
   };
 
+  const handleFolderReorder = async (reorderedFolders: string[]) => {
+    try {
+      showStatus('Saving folder order...', 'success');
+      await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_'), {
+        videoFolderOrder: reorderedFolders,
+        isSettingsDoc: true
+      }, { merge: true });
+      showStatus('Folder order saved', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showStatus(`Failed to update folder order: ${err.message}`, 'error');
+    }
+  };
+
   const handleCategoryShare = async (tab: 'sefarim' | 'videos') => {
     if (!selectedCategory) return;
     const url = `${window.location.origin}/c/${encodeURIComponent(selectedCategory)}/${tab}`;
@@ -943,8 +957,10 @@ export default function App() {
                   }).catch(err => console.error("Failed to move video to folder", err));
                 }}
                 onReorder={selectedCategory && selectedCategory !== 'Top Rated' ? handleVideoReorder : undefined}
+                onFolderReorder={selectedCategory && selectedCategory !== 'Top Rated' ? handleFolderReorder : undefined}
                 categoryThumbnails={siteSettings.videoCategoryThumbnails}
                 folderThumbnails={siteSettings.videoFolderThumbnails}
+                folderOrder={siteSettings.videoFolderOrder}
                 onUpdateFolderThumbnail={handleUpdateFolderThumbnail}
                 savedVideoIds={savedVideoIds}
                 onToggleSave={toggleSaveVideo}
