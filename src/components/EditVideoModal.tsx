@@ -5,15 +5,21 @@ import { Video } from '../types';
 interface EditVideoModalProps {
   video: Video;
   videoCategories: string[];
+  videoFolders?: string[];
   onSave: (id: string, updatedData: Partial<Video>) => Promise<void>;
   onClose: () => void;
 }
 
-export function EditVideoModal({ video, videoCategories, onSave, onClose }: EditVideoModalProps) {
+export function EditVideoModal({ video, videoCategories, videoFolders = [], onSave, onClose }: EditVideoModalProps) {
   const [title, setTitle] = useState(video.title);
   const [url, setUrl] = useState(video.url);
   const [category, setCategory] = useState(video.category || '');
-  const [folder, setFolder] = useState(video.folder || '');
+  
+  // Initialize with appropriate folder state
+  const isExistingFolder = videoFolders.includes(video.folder || '');
+  const [selectedFolder, setSelectedFolder] = useState((!video.folder || isExistingFolder) ? (video.folder || '') : 'new');
+  const [newFolderInput, setNewFolderInput] = useState((!isExistingFolder && video.folder) ? video.folder : '');
+  
   const [order, setOrder] = useState(video.order?.toString() || '');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -21,11 +27,20 @@ export function EditVideoModal({ video, videoCategories, onSave, onClose }: Edit
     e.preventDefault();
     setIsSaving(true);
     try {
+      const folderStateValue = selectedFolder === 'new' ? newFolderInput : selectedFolder;
+      const finalFolder = folderStateValue.trim();
+
+      if (!finalFolder) {
+        alert("Please select or specify a folder");
+        setIsSaving(false);
+        return;
+      }
+    
       const updatedData: Partial<Video> = {
         title,
         url,
         category,
-        folder,
+        folder: finalFolder,
       };
       
       const parsedOrder = order ? parseInt(order, 10) : undefined;
@@ -100,13 +115,32 @@ export function EditVideoModal({ video, videoCategories, onSave, onClose }: Edit
             </div>
             <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Subfolder</label>
-              <input
-                type="text"
-                value={folder}
-                onChange={(e) => setFolder(e.target.value)}
-                placeholder="Optional subfolder name..."
-                className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
-              />
+              <div className="space-y-3">
+                <select
+                  required={selectedFolder !== 'new'}
+                  value={selectedFolder}
+                  onChange={(e) => setSelectedFolder(e.target.value)}
+                  className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium appearance-none cursor-pointer"
+                >
+                  <option value="">Select Folder...</option>
+                  {videoFolders.map(f => (
+                    <option key={f} value={f}>{f}</option>
+                  ))}
+                  <option value="new">+ Create New Folder</option>
+                </select>
+                
+                {selectedFolder === 'new' && (
+                  <input
+                    type="text"
+                    required
+                    value={newFolderInput}
+                    onChange={(e) => setNewFolderInput(e.target.value)}
+                    placeholder="Enter new folder name..."
+                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium animate-in slide-in-from-top-2"
+                    autoFocus
+                  />
+                )}
+              </div>
             </div>
             <div className="space-y-2 md:col-span-2">
               <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Rank Order (1 is highest)</label>

@@ -1,16 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { Video } from '../types';
 import { VideoCard } from './VideoCard';
-import { PlayCircle, Folder, Plus } from 'lucide-react';
+import { PlayCircle, Folder, Plus, ArrowLeft, CheckSquare, Square } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
+  pointerWithin,
   KeyboardSensor,
   PointerSensor,
   useSensor,
   useSensors,
-  useDroppable,
-  DragEndEvent
+  DragEndEvent,
 } from '@dnd-kit/core';
 import {
   arrayMove,
@@ -31,11 +31,12 @@ interface VideoGridProps {
   onReorder?: (reorderedVideos: Video[]) => void;
   onMoveToFolder?: (videoId: string, newFolder: string) => void;
   categoryThumbnails?: Record<string, string>;
+  folderThumbnails?: Record<string, string>;
   savedVideoIds?: string[];
   onToggleSave?: (id: string, e: React.MouseEvent) => void;
 }
 
-function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo, categoryThumbnail, isSaved, onToggleSave }: any) {
+function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo, categoryThumbnail, isSaved, onToggleSave, isSelected, onToggleSelect }: any) {
   const {
     attributes,
     listeners,
@@ -53,48 +54,58 @@ function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo,
   };
 
   return (
-    <div ref={setNodeRef} style={style}>
-      <VideoCard
-        video={video}
-        isAdmin={isAdmin}
-        onEdit={() => onEdit(video)}
-        onDelete={onDelete}
-        onSelect={() => onSelectVideo(video)}
-        categoryThumbnail={categoryThumbnail}
-        dragHandleProps={{ ...attributes, ...listeners }}
-        isSaved={isSaved}
-        onToggleSave={onToggleSave}
-      />
+    <div ref={setNodeRef} style={style} className="relative group/wrapper">
+      {isAdmin && onToggleSelect && (
+        <div 
+          className="absolute top-4 right-4 z-[60] bg-white/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-200 cursor-pointer hover:scale-110 active:scale-95 transition-all text-slate-400 hover:text-indigo-600"
+          onClick={(e) => {
+            e.stopPropagation();
+            onToggleSelect(video.id);
+          }}
+        >
+          {isSelected ? (
+            <CheckSquare className="w-5 h-5 text-indigo-600" />
+          ) : (
+            <Square className="w-5 h-5" />
+          )}
+        </div>
+      )}
+      <div className={isSelected ? 'ring-4 ring-indigo-500/50 rounded-[1.5rem] scale-95 transition-transform' : 'transition-transform'}>
+        <VideoCard
+          video={video}
+          isAdmin={isAdmin}
+          onEdit={() => onEdit(video)}
+          onDelete={onDelete}
+          onSelect={() => onSelectVideo(video)}
+          categoryThumbnail={categoryThumbnail}
+          dragHandleProps={{ ...attributes, ...listeners }}
+          isSaved={isSaved}
+          onToggleSave={onToggleSave}
+        />
+      </div>
     </div>
   );
 }
 
-export const FolderDropZone: React.FC<{ folder: string }> = ({ folder }) => {
-  const { isOver, setNodeRef } = useDroppable({
-    id: `folder_${folder}`,
-    data: { type: 'folder', folder }
-  });
-
-  return (
-    <div 
-      ref={setNodeRef} 
-      className={`px-4 py-3 rounded-xl border-2 flex items-center gap-2 font-bold transition-all ${
-        isOver ? 'border-indigo-500 bg-indigo-50 text-indigo-700 scale-105' : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300'
-      }`}
-    >
-      <Folder className={`w-4 h-4 ${isOver ? 'text-indigo-500' : 'text-slate-400'}`} /> 
-      {folder || 'Main Directory'}
-    </div>
-  );
-}
-
-export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSelectVideo, onReorder, onMoveToFolder, categoryThumbnails, savedVideoIds = [], onToggleSave }: VideoGridProps) {
+export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSelectVideo, onReorder, onMoveToFolder, categoryThumbnails, folderThumbnails, savedVideoIds = [], onToggleSave }: VideoGridProps) {
   const [items, setItems] = useState(videos);
+  const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
+  const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
   const [newFolderInput, setNewFolderInput] = useState('');
 
   useEffect(() => {
     setItems(videos);
   }, [videos]);
+  
+  // Clear selection when folder changes
+  useEffect(() => {
+    setSelectedVideos([]);
+  }, [selectedFolder]);
+
+  const folders = (Array.from(new Set(items.map(v => v.folder || ''))) as string[]).sort();
+  const allFolders = folders.includes('') ? folders : ['', ...folders];
+
+  const currentFolderItems = items.filter(v => (v.folder || '') === (selectedFolder || ''));
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -109,30 +120,32 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
 
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
-
     if (!over) return;
 
-    if (over.data.current?.type === 'folder') {
-      const folderName = over.data.current.folder;
-      if (onMoveToFolder) {
-        onMoveToFolder(String(active.id), folderName);
-      }
-      return;
-    }
-
     if (active.id !== over.id) {
-      const oldIndex = items.findIndex((item) => item.id === active.id);
-      const newIndex = items.findIndex((item) => item.id === over.id);
+      const oldIndex = currentFolderItems.findIndex((item) => item.id === active.id);
+      const newIndex = currentFolderItems.findIndex((item) => item.id === over.id);
       
-      const newItems = arrayMove(items, oldIndex, newIndex) as Video[];
-      setItems(newItems);
-      if (onReorder) {
-        onReorder(newItems);
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const newCurrentItems = arrayMove(currentFolderItems, oldIndex, newIndex) as Video[];
+        // Merge back into all items to preserve order of other folders
+        const otherItems = items.filter(v => (v.folder || '') !== (selectedFolder || ''));
+        const newItems = [...newCurrentItems, ...otherItems];
+        setItems(newItems);
+        if (onReorder) {
+          onReorder(newItems);
+        }
       }
     }
   };
 
-  const folders = (Array.from(new Set(items.map(v => v.folder || ''))) as string[]).sort();
+  const handleToggleSelect = (videoId: string) => {
+    setSelectedVideos(prev => 
+      prev.includes(videoId) 
+        ? prev.filter(id => id !== videoId)
+        : [...prev, videoId]
+    );
+  };
 
   if (isLoading) {
     return (
@@ -161,55 +174,192 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
     );
   }
 
-  // Group items by folder
-  const groupedItems = items.reduce((acc, video) => {
-    const folder = video.folder || '';
-    if (!acc[folder]) acc[folder] = [];
-    acc[folder].push(video);
-    return acc;
-  }, {} as Record<string, Video[]>);
+  // Folder Level View
+  if (selectedFolder === null) {
+    return (
+      <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {allFolders.map(f => {
+            const count = items.filter(v => (v.folder || '') === f).length;
+            const displayName = f || 'Other';
+            const hasThumbnail = !!folderThumbnails?.[f];
+            
+            return (
+              <div 
+                key={f}
+                onClick={() => setSelectedFolder(f)}
+                className={`bg-white rounded-[2rem] aspect-square p-8 border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-100 cursor-pointer hover:-translate-y-2 transition-all duration-300 flex flex-col ${hasThumbnail ? 'items-start justify-end text-left' : 'items-center justify-center text-center'} group relative overflow-hidden`}
+              >
+                {hasThumbnail ? (
+                  <div className="absolute inset-0 z-0">
+                    <img src={folderThumbnails[f]} alt={displayName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300"></div>
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 z-0 bg-slate-50/50 group-hover:bg-indigo-50/10 transition-colors duration-500"></div>
+                )}
+                
+                {!hasThumbnail && (
+                  <div className="relative z-10 w-24 h-24 mb-6 bg-indigo-50/80 backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border border-indigo-100/50 group-hover:border-indigo-600 shadow-inner">
+                    <Folder className="w-10 h-10 text-indigo-400 group-hover:text-white transition-colors duration-300" />
+                  </div>
+                )}
+                
+                <div className={`relative z-10 w-full ${hasThumbnail ? 'mt-auto' : ''}`}>
+                  <h3 className={`text-2xl sm:text-3xl font-black tracking-tight leading-tight px-1 ${hasThumbnail ? 'text-white' : 'text-slate-800'}`}>
+                    {displayName}
+                  </h3>
+                  <p className={`text-xs font-bold mt-3 uppercase tracking-widest inline-block px-4 py-1.5 rounded-full backdrop-blur-sm ${hasThumbnail ? 'text-white/90 bg-white/20 hover:bg-white/30' : 'text-slate-500 bg-slate-100 group-hover:bg-indigo-100 group-hover:text-indigo-600'} transition-colors`}>
+                    {count} {count === 1 ? 'Video' : 'Videos'}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
 
+  // Videos inside a selected folder
   const gridContent = (
-    <div className="space-y-12">
-      {folders.map((folder) => (
-        <div key={`group_${folder}`}>
-          {folders.length > 1 && (
-            <h3 className="text-lg font-black text-slate-800 uppercase tracking-tighter mb-6 flex items-center gap-2">
-              <Folder className="w-5 h-5 text-indigo-500" />
-              {folder || 'Main Directory'}
-            </h3>
-          )}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {groupedItems[folder].map((video) => (
-              isAdmin && onReorder ? (
-                <SortableVideoWrapper
-                  key={video.id}
-                  video={video}
-                  isAdmin={isAdmin}
-                  onEdit={onEdit}
-                  onDelete={onDelete}
-                  onSelectVideo={onSelectVideo}
-                  categoryThumbnail={categoryThumbnails?.[video.category]}
-                  isSaved={savedVideoIds.includes(video.id)}
-                  onToggleSave={onToggleSave}
-                />
-              ) : (
-                <VideoCard
-                  key={video.id}
-                  video={video}
-                  isAdmin={isAdmin}
-                  onEdit={() => onEdit(video)}
-                  onDelete={onDelete}
-                  onSelect={() => onSelectVideo(video)}
-                  categoryThumbnail={categoryThumbnails?.[video.category]}
-                  isSaved={savedVideoIds.includes(video.id)}
-                  onToggleSave={onToggleSave}
-                />
-              )
-            ))}
+    <div className="space-y-8 animate-in slide-in-from-right-4 fade-in duration-300">
+      
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-50 border border-slate-100 p-4 rounded-3xl">
+        <button 
+          onClick={() => setSelectedFolder(null)}
+          className="px-5 py-2.5 bg-white text-slate-600 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-100 hover:text-slate-900 transition-colors border-2 border-slate-200 flex items-center gap-2 shadow-sm shrink-0 w-fit"
+        >
+          <ArrowLeft className="w-4 h-4" /> All Folders
+        </button>
+        <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight px-2 border-l-2 border-slate-200">
+          {selectedFolder || 'Other'}
+        </h2>
+        <div className="flex-1"></div>
+        {isAdmin && selectedVideos.length > 0 && (
+          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm shrink-0">
+             <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl">{selectedVideos.length} Selected</span>
+             <button
+               onClick={() => setSelectedVideos(currentFolderItems.map(v => v.id))}
+               className="text-[10px] font-black text-slate-500 hover:text-slate-800 uppercase tracking-widest px-3"
+             >Select All</button>
+          </div>
+        )}
+        {isAdmin && selectedVideos.length === 0 && (
+          <div className="shrink-0">
+            <button
+               onClick={() => setSelectedVideos(currentFolderItems.map(v => v.id))}
+               className="text-[10px] font-black text-slate-500 hover:text-slate-800 uppercase tracking-widest bg-white border border-slate-200 px-4 py-2.5 rounded-full shadow-sm hover:shadow"
+            >Select All</button>
+          </div>
+        )}
+      </div>
+
+      {currentFolderItems.length === 0 ? (
+        <div className="py-20 text-center">
+          <div className="bg-slate-50 p-12 rounded-3xl border border-slate-100 inline-block border-dashed">
+            <Folder className="w-12 h-12 text-slate-200 mx-auto mb-4" />
+            <p className="text-slate-400 font-bold">This folder is empty</p>
           </div>
         </div>
-      ))}
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-24">
+          {currentFolderItems.map((video) => (
+            isAdmin && onReorder ? (
+              <SortableVideoWrapper
+                key={video.id}
+                video={video}
+                isAdmin={isAdmin}
+                onEdit={onEdit}
+                onDelete={onDelete}
+                onSelectVideo={onSelectVideo}
+                categoryThumbnail={categoryThumbnails?.[video.category]}
+                isSaved={savedVideoIds.includes(video.id)}
+                onToggleSave={onToggleSave}
+                isSelected={selectedVideos.includes(video.id)}
+                onToggleSelect={handleToggleSelect}
+              />
+            ) : (
+              <div key={video.id} className="relative group/wrapper">
+                 {isAdmin && (
+                    <div 
+                      className="absolute top-4 right-4 z-[60] bg-white/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-200 cursor-pointer hover:scale-110 active:scale-95 transition-all text-slate-400 hover:text-indigo-600 opacity-0 group-hover/wrapper:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleToggleSelect(video.id);
+                      }}
+                    >
+                      {selectedVideos.includes(video.id) ? (
+                        <CheckSquare className="w-5 h-5 text-indigo-600" />
+                      ) : (
+                        <Square className="w-5 h-5" />
+                      )}
+                    </div>
+                  )}
+                  <div className={selectedVideos.includes(video.id) ? 'ring-4 ring-indigo-500/50 rounded-[1.5rem] scale-95 transition-transform' : 'transition-transform'}>
+                    <VideoCard
+                      video={video}
+                      isAdmin={isAdmin}
+                      onEdit={() => onEdit(video)}
+                      onDelete={onDelete}
+                      onSelect={() => onSelectVideo(video)}
+                      categoryThumbnail={categoryThumbnails?.[video.category]}
+                      isSaved={savedVideoIds.includes(video.id)}
+                      onToggleSave={onToggleSave}
+                    />
+                  </div>
+              </div>
+            )
+          ))}
+        </div>
+      )}
+
+      {/* Floating Bulk Action Bar */}
+      {isAdmin && selectedVideos.length > 0 && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 bg-slate-900 border border-slate-700 p-2 pr-4 pl-2 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-center gap-4 z-[100] animate-in slide-in-from-bottom-8 fade-in">
+           <div className="px-4 py-2.5 bg-indigo-600 text-white rounded-xl font-black text-sm whitespace-nowrap">{selectedVideos.length} Selected</div>
+           
+           <div className="flex items-center gap-3">
+             <span className="text-slate-400 text-xs font-bold uppercase tracking-widest hidden sm:block whitespace-nowrap">Move to</span>
+             <select 
+               className="bg-slate-800 text-white font-bold text-sm px-4 py-2.5 rounded-xl border border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 appearance-none min-w-[160px] sm:min-w-[200px]"
+               value=""
+               onChange={(e) => {
+                 const targetFolder = e.target.value;
+                 if (targetFolder === '_create_new_') {
+                   const promptFolder = prompt("Enter new folder name:");
+                   if (promptFolder && promptFolder.trim() && onMoveToFolder) {
+                     selectedVideos.forEach(id => {
+                       onMoveToFolder(id, promptFolder.trim());
+                     });
+                     setSelectedVideos([]);
+                   }
+                   e.target.value = '';
+                 } else if (targetFolder && onMoveToFolder) {
+                   // Move items
+                   selectedVideos.forEach(id => {
+                     onMoveToFolder(id, targetFolder);
+                   });
+                   setSelectedVideos([]);
+                 }
+               }}
+             >
+               <option value="">Choose Folder...</option>
+               {allFolders.filter(f => f !== (selectedFolder || '')).map(f => (
+                 <option key={f} value={f}>{f || 'Other'}</option>
+               ))}
+               <option value="_create_new_">✨ New Folder...</option>
+             </select>
+           </div>
+           
+           <button 
+             onClick={() => setSelectedVideos([])} 
+             className="p-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-xl transition-colors shrink-0"
+           >
+             Cancel
+           </button>
+        </div>
+      )}
     </div>
   );
 
@@ -217,38 +367,13 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
     return (
       <DndContext 
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={pointerWithin}
         onDragEnd={handleDragEnd}
       >
         <SortableContext 
-          items={items.map(v => v.id)}
+          items={currentFolderItems.map(v => v.id)}
           strategy={rectSortingStrategy}
         >
-          {isAdmin && onMoveToFolder && (
-            <div className="mb-8 p-4 bg-slate-100 rounded-2xl border border-slate-200">
-              <div className="flex items-center justify-between mb-3 text-sm font-bold text-slate-500 uppercase tracking-widest">
-                <span>Drag Videos Here to organize</span>
-              </div>
-              <div className="flex flex-wrap gap-3">
-                {folders.map(f => (
-                  <FolderDropZone key={f} folder={f} />
-                ))}
-                
-                <div className="flex items-center gap-2">
-                  <input 
-                    type="text" 
-                    value={newFolderInput}
-                    onChange={(e) => setNewFolderInput(e.target.value)}
-                    placeholder="New folder..."
-                    className="w-32 px-3 py-2.5 bg-white border border-slate-300 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  />
-                  {newFolderInput && (
-                    <FolderDropZone folder={newFolderInput} />
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
           {gridContent}
         </SortableContext>
       </DndContext>

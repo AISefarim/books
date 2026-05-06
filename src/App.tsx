@@ -12,7 +12,6 @@ import { BookGrid } from './components/BookGrid';
 import { FeaturedBooks } from './components/FeaturedBooks';
 import { BookDetails } from './components/BookDetails';
 import { VideoGrid } from './components/VideoGrid';
-import { CategorySelect } from './components/CategorySelect';
 import { VideoDetails } from './components/VideoDetails';
 import { LoginModal } from './components/LoginModal';
 import { EpubReader } from './components/EpubReader';
@@ -553,7 +552,7 @@ export default function App() {
           </div>
         )}
 
-        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} />}
+        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} videoFolders={Array.from(new Set(videos.map(v => v.folder || ''))).filter(f => f !== '') as string[]} />}
 
         {isDirectLinkEntry && (selectedBook || selectedVideo) && (
           <div className="mb-6 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-4">
@@ -713,7 +712,8 @@ export default function App() {
                     View Library
                   </button>
                 </div>
-                <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="mb-10 space-y-4">
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                   <div className="relative w-full md:w-96 lg:w-[28rem]">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
@@ -738,15 +738,30 @@ export default function App() {
                       <Share2 className="w-4 h-4" /> Share Category
                     </button>
                   )}
-                  <CategorySelect
-                    categories={categories}
-                    selectedCategory={selectedCategory}
-                    onSelect={(cat) => {
-                      setSelectedCategory(cat);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                  />
                 </div>
+              </div>
+
+              <div className="flex overflow-x-auto gap-2 pb-2 custom-scrollbar">
+                <button
+                   onClick={() => setSelectedCategory(null)}
+                   className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
+                     selectedCategory === null 
+                       ? 'bg-slate-900 text-white shadow-md' 
+                       : 'bg-white text-slate-500 hover:bg-slate-100 border-2 border-slate-200'
+                   }`}
+                >All Sefarim</button>
+                {categories.map(cat => (
+                  <button
+                     key={cat}
+                     onClick={() => setSelectedCategory(cat)}
+                     className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
+                       selectedCategory === cat 
+                         ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-600 ring-offset-1' 
+                         : 'bg-white text-slate-500 hover:bg-slate-100 border-2 border-slate-200'
+                     }`}
+                  >{cat}</button>
+                ))}
+              </div>
               </div>
               </>
             )}
@@ -799,7 +814,8 @@ export default function App() {
                     View Library
                   </button>
                 </div>
-                <div className="mb-8 flex flex-col md:flex-row gap-4 items-center justify-between">
+                <div className="mb-10 space-y-4">
+                <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
                   <div className="relative w-full md:w-96 lg:w-[28rem]">
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
@@ -824,29 +840,44 @@ export default function App() {
                       <Share2 className="w-4 h-4" /> Share Category
                     </button>
                   )}
-                  <button
+                </div>
+              </div>
+
+              <div className="flex overflow-x-auto gap-2 pb-2 custom-scrollbar">
+                <button
+                   onClick={() => setSelectedCategory(null)}
+                   className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
+                     selectedCategory === null 
+                       ? 'bg-slate-900 text-white shadow-md' 
+                       : 'bg-white text-slate-500 hover:bg-slate-100 border-2 border-slate-200'
+                   }`}
+                >All Videos</button>
+                <button
                     onClick={() => {
                         setSelectedCategory(selectedCategory === 'Top Rated' ? null : 'Top Rated');
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className={`px-4 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all flex items-center justify-center gap-2 w-full sm:w-auto shadow-sm ${
+                    className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all flex items-center gap-1.5 border-2 ${
                       selectedCategory === 'Top Rated'
-                        ? 'bg-amber-400 text-amber-950 border-2 border-amber-500'
-                        : 'bg-white text-amber-600 hover:bg-amber-50 border-2 border-amber-200'
+                        ? 'bg-amber-400 text-amber-950 border-amber-500 shadow-md ring-2 ring-amber-400 ring-offset-1'
+                        : 'bg-white text-amber-600 hover:bg-amber-50 border-amber-200 hover:border-amber-300'
                     }`}
                   >
-                    <Star className={`w-4 h-4 ${selectedCategory === 'Top Rated' ? 'fill-amber-950 text-amber-950' : 'fill-amber-600 text-amber-600'}`} /> 
+                    <Star className={`w-3.5 h-3.5 ${selectedCategory === 'Top Rated' ? 'fill-amber-950 text-amber-950' : 'fill-amber-600 text-amber-600'}`} /> 
                     Top Rated
-                  </button>
-                  <CategorySelect
-                    categories={videoCategories}
-                    selectedCategory={selectedCategory === 'Top Rated' ? null : selectedCategory}
-                    onSelect={(cat) => {
-                      setSelectedCategory(cat);
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                  />
-                </div>
+                </button>
+                {videoCategories.map(cat => (
+                  <button
+                     key={cat}
+                     onClick={() => setSelectedCategory(cat)}
+                     className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
+                       selectedCategory === cat 
+                         ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-600 ring-offset-1' 
+                         : 'bg-white text-slate-500 hover:bg-slate-100 border-2 border-slate-200'
+                     }`}
+                  >{cat}</button>
+                ))}
+              </div>
               </div>
               </>
             )}
@@ -886,11 +917,13 @@ export default function App() {
                 onSelectVideo={handleVideoSelect}
                 onMoveToFolder={(videoId, newFolder) => {
                   updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', videoId), {
-                    folder: newFolder === 'Main Directory' ? '' : newFolder
+                    folder: newFolder === 'Other' ? '' : newFolder,
+                    order: 0
                   }).catch(err => console.error("Failed to move video to folder", err));
                 }}
                 onReorder={selectedCategory && selectedCategory !== 'Top Rated' ? handleVideoReorder : undefined}
                 categoryThumbnails={siteSettings.videoCategoryThumbnails}
+                folderThumbnails={siteSettings.videoFolderThumbnails}
                 savedVideoIds={savedVideoIds}
                 onToggleSave={toggleSaveVideo}
               />
@@ -960,6 +993,7 @@ export default function App() {
                     onDelete={handleVideoDelete}
                     onSelectVideo={handleVideoSelect}
                     categoryThumbnails={siteSettings.videoCategoryThumbnails}
+                    folderThumbnails={siteSettings.videoFolderThumbnails}
                     savedVideoIds={savedVideoIds}
                     onToggleSave={toggleSaveVideo}
                   />
@@ -1018,6 +1052,7 @@ export default function App() {
         <EditVideoModal
           video={editingVideo}
           videoCategories={strictVideoCategories}
+          videoFolders={Array.from(new Set(videos.map(v => v.folder || ''))).filter(f => f !== '') as string[]}
           onSave={handleVideoEditSave}
           onClose={() => setEditingVideo(null)}
         />
@@ -1026,6 +1061,7 @@ export default function App() {
       {showSettingsModal && (
         <SiteSettingsModal
           currentSettings={siteSettings}
+          videoFolders={Array.from(new Set(videos.map(v => v.folder || ''))).filter(f => f !== '') as string[]}
           onClose={() => setShowSettingsModal(false)}
           onStatusMessage={showStatus}
         />

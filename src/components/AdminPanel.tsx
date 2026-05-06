@@ -9,13 +9,17 @@ interface AdminPanelProps {
   onOpenSettings: () => void;
   activeTab: 'sefarim' | 'videos';
   videoCategories: string[];
+  videoFolders?: string[];
 }
 
-export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories }: AdminPanelProps) {
+export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videoFolders = [] }: AdminPanelProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState({ label: '', percent: 0 });
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
+  
+  const [selectedFolder, setSelectedFolder] = useState('');
+  const [newFolderInput, setNewFolderInput] = useState('');
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const epubInputRef = useRef<HTMLInputElement>(null);
@@ -136,13 +140,22 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
     const orderStr = formData.get('order') as string;
     const order = orderStr ? parseInt(orderStr, 10) : undefined;
 
+    const folderStateValue = selectedFolder === 'new' ? newFolderInput : selectedFolder;
+    const finalFolder = folderStateValue.trim();
+
+    if (!finalFolder) {
+      onStatusMessage("Please select or specify a folder", "error");
+      setIsUploading(false);
+      return;
+    }
+
     try {
       const timestamp = Date.now();
       const docData: any = {
         title,
         url,
         category,
-        folder,
+        folder: finalFolder,
         createdAt: timestamp,
         views: 0,
         type: 'video'
@@ -156,6 +169,8 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
 
       onStatusMessage('Video published successfully!', 'success');
       formRef.current?.reset();
+      setSelectedFolder('');
+      setNewFolderInput('');
       setIsFormVisible(false);
     } catch (err: any) {
       console.error('Video Upload Error:', err);
@@ -322,11 +337,34 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                     <option key={cat} value={cat}>{cat}</option>
                   ))}
                 </select>
-                <input
-                  name="folder"
-                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
-                  placeholder="Subfolder (optional)"
-                />
+                
+                <div className="space-y-3">
+                  <select
+                    name="folder_select"
+                    required={selectedFolder !== 'new'}
+                    value={selectedFolder}
+                    onChange={(e) => setSelectedFolder(e.target.value)}
+                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
+                  >
+                    <option value="">Select Folder...</option>
+                    {videoFolders.map(folder => (
+                      <option key={folder} value={folder}>{folder}</option>
+                    ))}
+                    <option value="new">+ Create New Folder</option>
+                  </select>
+                  
+                  {selectedFolder === 'new' && (
+                    <input
+                      name="new_folder"
+                      required
+                      value={newFolderInput}
+                      onChange={(e) => setNewFolderInput(e.target.value)}
+                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white animate-in slide-in-from-top-2"
+                      placeholder="Enter new folder name"
+                      autoFocus
+                    />
+                  )}
+                </div>
               </div>
               <input
                 name="order"
