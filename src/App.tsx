@@ -948,6 +948,7 @@ export default function App() {
                 onUpdateFolderThumbnail={handleUpdateFolderThumbnail}
                 savedVideoIds={savedVideoIds}
                 onToggleSave={toggleSaveVideo}
+                disableFolders={selectedCategory === 'Top Rated'}
               />
             )}
           </>

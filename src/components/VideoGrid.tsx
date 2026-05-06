@@ -35,6 +35,7 @@ interface VideoGridProps {
   onUpdateFolderThumbnail?: (folder: string, file: File) => void;
   savedVideoIds?: string[];
   onToggleSave?: (id: string, e: React.MouseEvent) => void;
+  disableFolders?: boolean;
 }
 
 function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo, categoryThumbnail, isSaved, onToggleSave, isSelected, onToggleSelect }: any) {
@@ -88,7 +89,7 @@ function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo,
   );
 }
 
-export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSelectVideo, onReorder, onMoveToFolder, categoryThumbnails, folderThumbnails, onUpdateFolderThumbnail, savedVideoIds = [], onToggleSave }: VideoGridProps) {
+export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSelectVideo, onReorder, onMoveToFolder, categoryThumbnails, folderThumbnails, onUpdateFolderThumbnail, savedVideoIds = [], onToggleSave, disableFolders }: VideoGridProps) {
   const [items, setItems] = useState(videos);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
@@ -103,10 +104,10 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
     setSelectedVideos([]);
   }, [selectedFolder]);
 
-  const folders = (Array.from(new Set(items.map(v => v.folder || ''))) as string[]).filter(f => f !== '').sort();
+  const folders = disableFolders ? [] : (Array.from(new Set(items.map(v => v.folder || ''))) as string[]).filter(f => f !== '').sort();
   const allFolders = folders;
 
-  const currentFolderItems = items.filter(v => (v.folder || '') === (selectedFolder || ''));
+  const currentFolderItems = disableFolders ? items : items.filter(v => (v.folder || '') === (selectedFolder || ''));
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -176,7 +177,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
   }
 
   // Folder Level View + Loose Videos
-  if (selectedFolder === null) {
+  if (selectedFolder === null && !disableFolders) {
     const looseVideos = items.filter(v => !(v.folder || ''));
     
     return (
@@ -285,35 +286,41 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
   const gridContent = (
     <div className="space-y-8 animate-in slide-in-from-right-4 fade-in duration-300">
       
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-50 border border-slate-100 p-4 rounded-3xl">
-        <button 
-          onClick={() => setSelectedFolder(null)}
-          className="px-5 py-2.5 bg-white text-slate-600 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-100 hover:text-slate-900 transition-colors border-2 border-slate-200 flex items-center gap-2 shadow-sm shrink-0 w-fit"
-        >
-          <ArrowLeft className="w-4 h-4" /> All Folders
-        </button>
-        <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight px-2 border-l-2 border-slate-200">
-          {selectedFolder || 'Other'}
-        </h2>
-        <div className="flex-1"></div>
-        {isAdmin && selectedVideos.length > 0 && (
-          <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm shrink-0">
-             <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl">{selectedVideos.length} Selected</span>
-             <button
-               onClick={() => setSelectedVideos(currentFolderItems.map(v => v.id))}
-               className="text-[10px] font-black text-slate-500 hover:text-slate-800 uppercase tracking-widest px-3"
-             >Select All</button>
-          </div>
-        )}
-        {isAdmin && selectedVideos.length === 0 && (
-          <div className="shrink-0">
-            <button
-               onClick={() => setSelectedVideos(currentFolderItems.map(v => v.id))}
-               className="text-[10px] font-black text-slate-500 hover:text-slate-800 uppercase tracking-widest bg-white border border-slate-200 px-4 py-2.5 rounded-full shadow-sm hover:shadow"
-            >Select All</button>
-          </div>
-        )}
-      </div>
+      {(isAdmin || !disableFolders) && (
+        <div className={`flex flex-col sm:flex-row sm:items-center gap-4 ${!disableFolders ? 'bg-slate-50 border border-slate-100 p-4 rounded-3xl' : 'justify-end mb-4'}`}>
+          {!disableFolders && (
+            <>
+              <button 
+                onClick={() => setSelectedFolder(null)}
+                className="px-5 py-2.5 bg-white text-slate-600 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-100 hover:text-slate-900 transition-colors border-2 border-slate-200 flex items-center gap-2 shadow-sm shrink-0 w-fit"
+              >
+                <ArrowLeft className="w-4 h-4" /> All Folders
+              </button>
+              <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight px-2 border-l-2 border-slate-200">
+                {selectedFolder || 'Other'}
+              </h2>
+              <div className="flex-1"></div>
+            </>
+          )}
+          {isAdmin && selectedVideos.length > 0 && (
+            <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm shrink-0">
+               <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl">{selectedVideos.length} Selected</span>
+               <button
+                 onClick={() => setSelectedVideos(currentFolderItems.map(v => v.id))}
+                 className="text-[10px] font-black text-slate-500 hover:text-slate-800 uppercase tracking-widest px-3"
+               >Select All</button>
+            </div>
+          )}
+          {isAdmin && selectedVideos.length === 0 && (
+            <div className="shrink-0">
+              <button
+                 onClick={() => setSelectedVideos(currentFolderItems.map(v => v.id))}
+                 className="text-[10px] font-black text-slate-500 hover:text-slate-800 uppercase tracking-widest bg-white border border-slate-200 px-4 py-2.5 rounded-full shadow-sm hover:shadow"
+              >Select All</button>
+            </div>
+          )}
+        </div>
+      )}
 
       {currentFolderItems.length === 0 ? (
         <div className="py-20 text-center">
