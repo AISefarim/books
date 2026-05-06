@@ -3,6 +3,7 @@ import { Plus, Image as ImageIcon, Loader2, Settings } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
+import { compressImage } from '../lib/imageUtils';
 
 interface AdminPanelProps {
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
@@ -88,10 +89,11 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
 
     try {
       const timestamp = Date.now();
-      const coverPath = `sefarim/cover_${timestamp}_${coverFile.name}`;
+      const compressedCover = await compressImage(coverFile, 600, 0.8);
+      const coverPath = `sefarim/cover_${timestamp}_${compressedCover.name}`;
       const epubPath = `sefarim/epub_${timestamp}_${epubFile.name}`;
 
-      const coverUrl = await uploadWithProgress(coverFile, coverPath, 'Uploading Cover...');
+      const coverUrl = await uploadWithProgress(compressedCover, coverPath, 'Uploading Cover...');
       const epubUrl = await uploadWithProgress(epubFile, epubPath, 'Uploading Sefer...');
 
       const docData: any = {

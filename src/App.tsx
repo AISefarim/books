@@ -6,6 +6,7 @@ import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCirc
 
 import { db, storage, auth } from './lib/firebase';
 import { Book, Video } from './types';
+import { compressImage } from './lib/imageUtils';
 import { Navbar } from './components/Navbar';
 import { AdminPanel } from './components/AdminPanel';
 import { BookGrid } from './components/BookGrid';
@@ -194,8 +195,9 @@ export default function App() {
   const handleUpdateFolderThumbnail = async (folder: string, file: File) => {
     try {
       showStatus('Uploading folder thumbnail...', 'success');
-      const storageRef = ref(storage, `settings/folder_${folder.replace(/\s+/g, '_')}_${Date.now()}_${file.name}`);
-      const uploadTask = await uploadBytesResumable(storageRef, file);
+      const compressedFile = await compressImage(file, 600, 0.7);
+      const storageRef = ref(storage, `settings/folder_${folder.replace(/\s+/g, '_')}_${Date.now()}_${compressedFile.name}`);
+      const uploadTask = await uploadBytesResumable(storageRef, compressedFile);
       const url = await getDownloadURL(uploadTask.ref);
 
       const newThumbnails = { ...(siteSettings.videoFolderThumbnails || {}), [folder]: url };

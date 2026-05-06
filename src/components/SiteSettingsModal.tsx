@@ -3,6 +3,7 @@ import { X, Save, Loader2, Image as ImageIcon, Video as VideoIcon } from 'lucide
 import { doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
+import { compressImage } from '../lib/imageUtils';
 
 interface SiteSettingsModalProps {
   currentSettings: { 
@@ -79,8 +80,9 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
       const logoFile = logoInputRef.current?.files?.[0];
 
       if (logoFile) {
-        const storageRef = ref(storage, `settings/logo_${Date.now()}_${logoFile.name}`);
-        const uploadTask = await uploadBytesResumable(storageRef, logoFile);
+        const compressedLogo = await compressImage(logoFile, 400, 0.7);
+        const storageRef = ref(storage, `settings/logo_${Date.now()}_${compressedLogo.name}`);
+        const uploadTask = await uploadBytesResumable(storageRef, compressedLogo);
         finalLogoUrl = await getDownloadURL(uploadTask.ref);
       }
 
@@ -99,8 +101,9 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
         const fileInput = categoryInputRefs.current[category];
         const file = fileInput?.files?.[0];
         if (file) {
-          const storageRef = ref(storage, `settings/category_${category.replace(/\s+/g, '_')}_${Date.now()}_${file.name}`);
-          const uploadTask = await uploadBytesResumable(storageRef, file);
+          const compressedFile = await compressImage(file, 600, 0.7);
+          const storageRef = ref(storage, `settings/category_${category.replace(/\s+/g, '_')}_${Date.now()}_${compressedFile.name}`);
+          const uploadTask = await uploadBytesResumable(storageRef, compressedFile);
           finalCategoryThumbnails[category] = await getDownloadURL(uploadTask.ref);
         }
       }
