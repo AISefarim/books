@@ -17,7 +17,7 @@ export function EditVideoModal({ video, videoCategories, videoFolders = [], onSa
   
   // Initialize with appropriate folder state
   const isExistingFolder = videoFolders.includes(video.folder || '');
-  const [selectedFolder, setSelectedFolder] = useState((!video.folder || isExistingFolder) ? (video.folder || '') : 'new');
+  const [selectedFolder, setSelectedFolder] = useState((!video.folder) ? '_none_' : (isExistingFolder ? video.folder : 'new'));
   const [newFolderInput, setNewFolderInput] = useState((!isExistingFolder && video.folder) ? video.folder : '');
   
   const [order, setOrder] = useState(video.order?.toString() || '');
@@ -27,14 +27,8 @@ export function EditVideoModal({ video, videoCategories, videoFolders = [], onSa
     e.preventDefault();
     setIsSaving(true);
     try {
-      const folderStateValue = selectedFolder === 'new' ? newFolderInput : selectedFolder;
-      const finalFolder = folderStateValue.trim();
-
-      if (!finalFolder) {
-        alert("Please select or specify a folder");
-        setIsSaving(false);
-        return;
-      }
+    const folderStateValue = selectedFolder === 'new' ? newFolderInput : selectedFolder;
+    const finalFolder = folderStateValue === '_none_' ? '' : folderStateValue.trim();
     
       const updatedData: Partial<Video> = {
         title,
@@ -117,12 +111,13 @@ export function EditVideoModal({ video, videoCategories, videoFolders = [], onSa
               <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Subfolder</label>
               <div className="space-y-3">
                 <select
-                  required={selectedFolder !== 'new'}
+                  required
                   value={selectedFolder}
                   onChange={(e) => setSelectedFolder(e.target.value)}
                   className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium appearance-none cursor-pointer"
                 >
-                  <option value="">Select Folder...</option>
+                  <option value="" disabled>Select Folder...</option>
+                  <option value="_none_">No Folder (Grid View)</option>
                   {videoFolders.map(f => (
                     <option key={f} value={f}>{f}</option>
                   ))}

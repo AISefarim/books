@@ -141,13 +141,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
     const order = orderStr ? parseInt(orderStr, 10) : undefined;
 
     const folderStateValue = selectedFolder === 'new' ? newFolderInput : selectedFolder;
-    const finalFolder = folderStateValue.trim();
-
-    if (!finalFolder) {
-      onStatusMessage("Please select or specify a folder", "error");
-      setIsUploading(false);
-      return;
-    }
+    const finalFolder = folderStateValue === '_none_' ? '' : folderStateValue.trim();
 
     try {
       const timestamp = Date.now();
@@ -341,12 +335,13 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                 <div className="space-y-3">
                   <select
                     name="folder_select"
-                    required={selectedFolder !== 'new'}
+                    required
                     value={selectedFolder}
                     onChange={(e) => setSelectedFolder(e.target.value)}
                     className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
                   >
-                    <option value="">Select Folder...</option>
+                    <option value="" disabled>Select Folder...</option>
+                    <option value="_none_">No Folder (Grid View)</option>
                     {videoFolders.map(folder => (
                       <option key={folder} value={folder}>{folder}</option>
                     ))}

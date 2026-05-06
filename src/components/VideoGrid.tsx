@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Video } from '../types';
 import { VideoCard } from './VideoCard';
-import { PlayCircle, Folder, Plus, ArrowLeft, CheckSquare, Square } from 'lucide-react';
+import { PlayCircle, Folder, Plus, ArrowLeft, CheckSquare, Square, Upload } from 'lucide-react';
 import {
   DndContext,
   closestCenter,
@@ -32,6 +32,7 @@ interface VideoGridProps {
   onMoveToFolder?: (videoId: string, newFolder: string) => void;
   categoryThumbnails?: Record<string, string>;
   folderThumbnails?: Record<string, string>;
+  onUpdateFolderThumbnail?: (folder: string, file: File) => void;
   savedVideoIds?: string[];
   onToggleSave?: (id: string, e: React.MouseEvent) => void;
 }
@@ -87,7 +88,7 @@ function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo,
   );
 }
 
-export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSelectVideo, onReorder, onMoveToFolder, categoryThumbnails, folderThumbnails, savedVideoIds = [], onToggleSave }: VideoGridProps) {
+export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSelectVideo, onReorder, onMoveToFolder, categoryThumbnails, folderThumbnails, onUpdateFolderThumbnail, savedVideoIds = [], onToggleSave }: VideoGridProps) {
   const [items, setItems] = useState(videos);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
@@ -102,8 +103,8 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
     setSelectedVideos([]);
   }, [selectedFolder]);
 
-  const folders = (Array.from(new Set(items.map(v => v.folder || ''))) as string[]).sort();
-  const allFolders = folders.includes('') ? folders : ['', ...folders];
+  const folders = (Array.from(new Set(items.map(v => v.folder || ''))) as string[]).filter(f => f !== '').sort();
+  const allFolders = folders;
 
   const currentFolderItems = items.filter(v => (v.folder || '') === (selectedFolder || ''));
 
@@ -174,49 +175,108 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
     );
   }
 
-  // Folder Level View
+  // Folder Level View + Loose Videos
   if (selectedFolder === null) {
+    const looseVideos = items.filter(v => !(v.folder || ''));
+    
     return (
-      <div className="space-y-8 animate-in fade-in zoom-in-95 duration-300">
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {allFolders.map(f => {
-            const count = items.filter(v => (v.folder || '') === f).length;
-            const displayName = f || 'Other';
-            const hasThumbnail = !!folderThumbnails?.[f];
-            
-            return (
-              <div 
-                key={f}
-                onClick={() => setSelectedFolder(f)}
-                className={`bg-white rounded-[2rem] aspect-square p-8 border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-100 cursor-pointer hover:-translate-y-2 transition-all duration-300 flex flex-col ${hasThumbnail ? 'items-start justify-end text-left' : 'items-center justify-center text-center'} group relative overflow-hidden`}
-              >
-                {hasThumbnail ? (
-                  <div className="absolute inset-0 z-0">
-                    <img src={folderThumbnails[f]} alt={displayName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  </div>
-                ) : (
-                  <div className="absolute inset-0 z-0 bg-slate-50/50 group-hover:bg-indigo-50/10 transition-colors duration-500"></div>
-                )}
+      <div className="space-y-12 animate-in fade-in zoom-in-95 duration-300">
+        {allFolders.length > 0 && (
+          <div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              {allFolders.map(f => {
+                const count = items.filter(v => (v.folder || '') === f).length;
+                const displayName = f;
+                const hasThumbnail = !!folderThumbnails?.[f];
                 
-                {!hasThumbnail && (
-                  <div className="relative z-10 w-24 h-24 mb-6 bg-indigo-50/80 backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border border-indigo-100/50 group-hover:border-indigo-600 shadow-inner">
-                    <Folder className="w-10 h-10 text-indigo-400 group-hover:text-white transition-colors duration-300" />
+                return (
+                  <div 
+                    key={f}
+                    onClick={() => setSelectedFolder(f)}
+                    className={`bg-white rounded-[2rem] aspect-square p-8 border border-slate-100 shadow-sm hover:shadow-2xl hover:shadow-indigo-500/10 hover:border-indigo-100 cursor-pointer hover:-translate-y-2 transition-all duration-300 flex flex-col ${hasThumbnail ? 'items-start justify-end text-left' : 'items-center justify-center text-center'} group relative overflow-hidden`}
+                  >
+                    {isAdmin && onUpdateFolderThumbnail && (
+                      <div className="absolute top-4 right-4 z-20">
+                        <label 
+                          className="cursor-pointer bg-white/90 backdrop-blur-md hover:bg-indigo-600 hover:text-white text-slate-500 p-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
+                          onClick={(e) => e.stopPropagation()}
+                          title="Upload Folder Cover"
+                        >
+                          <Upload className="w-5 h-5" />
+                          <input 
+                            type="file" 
+                            className="hidden" 
+                            accept="image/*" 
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) onUpdateFolderThumbnail(f, e.target.files[0]);
+                            }} 
+                          />
+                        </label>
+                      </div>
+                    )}
+                    
+                    {hasThumbnail ? (
+                      <div className="absolute inset-0 z-0">
+                        <img src={folderThumbnails[f]} alt={displayName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-slate-900/40 to-transparent opacity-90 group-hover:opacity-100 transition-opacity duration-300"></div>
+                      </div>
+                    ) : (
+                      <div className="absolute inset-0 z-0 bg-slate-50/50 group-hover:bg-indigo-50/10 transition-colors duration-500"></div>
+                    )}
+                    
+                    {!hasThumbnail && (
+                      <div className="relative z-10 w-24 h-24 mb-6 bg-indigo-50/80 backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border border-indigo-100/50 group-hover:border-indigo-600 shadow-inner">
+                        <Folder className="w-10 h-10 text-indigo-400 group-hover:text-white transition-colors duration-300" />
+                      </div>
+                    )}
+                    
+                    <div className={`relative z-10 w-full ${hasThumbnail ? 'mt-auto' : ''}`}>
+                      <h3 className={`text-2xl sm:text-3xl font-black tracking-tight leading-tight px-1 ${hasThumbnail ? 'text-white' : 'text-slate-800'}`}>
+                        {displayName}
+                      </h3>
+                      <p className={`text-xs font-bold mt-3 uppercase tracking-widest inline-block px-4 py-1.5 rounded-full backdrop-blur-sm ${hasThumbnail ? 'text-white/90 bg-white/20 hover:bg-white/30' : 'text-slate-500 bg-slate-100 group-hover:bg-indigo-100 group-hover:text-indigo-600'} transition-colors`}>
+                        {count} {count === 1 ? 'Video' : 'Videos'}
+                      </p>
+                    </div>
                   </div>
-                )}
-                
-                <div className={`relative z-10 w-full ${hasThumbnail ? 'mt-auto' : ''}`}>
-                  <h3 className={`text-2xl sm:text-3xl font-black tracking-tight leading-tight px-1 ${hasThumbnail ? 'text-white' : 'text-slate-800'}`}>
-                    {displayName}
-                  </h3>
-                  <p className={`text-xs font-bold mt-3 uppercase tracking-widest inline-block px-4 py-1.5 rounded-full backdrop-blur-sm ${hasThumbnail ? 'text-white/90 bg-white/20 hover:bg-white/30' : 'text-slate-500 bg-slate-100 group-hover:bg-indigo-100 group-hover:text-indigo-600'} transition-colors`}>
-                    {count} {count === 1 ? 'Video' : 'Videos'}
-                  </p>
+                );
+              })}
+            </div>
+          </div>
+        )}
+        
+        {looseVideos.length > 0 && (
+          <div>
+            {allFolders.length > 0 && <h3 className="text-xl font-black text-slate-800 tracking-tight leading-tight px-4 mb-6 border-l-4 border-indigo-500 rounded-sm">Other Videos</h3>}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {looseVideos.map(video => (
+                <div key={video.id} className="relative group/wrapper">
+                  {isAdmin && (
+                    <div 
+                      className="absolute top-4 right-4 z-[60] bg-white/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-200 cursor-pointer hover:scale-110 active:scale-95 transition-all text-slate-400 hover:text-indigo-600 opacity-0 group-hover/wrapper:opacity-100"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        // Bulk select would go here if we want to enable it for root view
+                      }}
+                    >
+                      {/* Selection UI omitted for root view to keep it simple, but we still apply hover wrapper */}
+                    </div>
+                  )}
+                  <VideoCard
+                    video={video}
+                    isAdmin={isAdmin}
+                    onEdit={() => onEdit(video)}
+                    onDelete={onDelete}
+                    onSelect={() => onSelectVideo(video)}
+                    categoryThumbnail={categoryThumbnails?.[video.category]}
+                    isSaved={savedVideoIds.includes(video.id)}
+                    onToggleSave={onToggleSave}
+                  />
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -335,6 +395,12 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
                      setSelectedVideos([]);
                    }
                    e.target.value = '';
+                 } else if (targetFolder === '_remove_folder_' && onMoveToFolder) {
+                   // Move to grid
+                   selectedVideos.forEach(id => {
+                     onMoveToFolder(id, '');
+                   });
+                   setSelectedVideos([]);
                  } else if (targetFolder && onMoveToFolder) {
                    // Move items
                    selectedVideos.forEach(id => {
@@ -344,10 +410,11 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
                  }
                }}
              >
-               <option value="">Choose Folder...</option>
+               <option value="" disabled>Choose Folder...</option>
                {allFolders.filter(f => f !== (selectedFolder || '')).map(f => (
-                 <option key={f} value={f}>{f || 'Other'}</option>
+                 <option key={f} value={f}>{f}</option>
                ))}
+               <option value="_remove_folder_">Move to Grid (Remove from folder)</option>
                <option value="_create_new_">✨ New Folder...</option>
              </select>
            </div>

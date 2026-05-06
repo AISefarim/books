@@ -10,27 +10,23 @@ interface SiteSettingsModalProps {
     logoUrl?: string,
     videoCategories?: string[],
     videoCategoryThumbnails?: Record<string, string>,
-    videoFolderThumbnails?: Record<string, string>,
     welcomeVideoUrl?: string
   };
-  videoFolders: string[];
   onClose: () => void;
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
 }
 
-export function SiteSettingsModal({ currentSettings, videoFolders, onClose, onStatusMessage }: SiteSettingsModalProps) {
+export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }: SiteSettingsModalProps) {
   const [bannerUrl, setBannerUrl] = useState(currentSettings.bannerUrl || 'https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr');
   const [logoPreview, setLogoPreview] = useState<string | null>(currentSettings.logoUrl || null);
   const [welcomeVideoPreview, setWelcomeVideoPreview] = useState<string | null>(currentSettings.welcomeVideoUrl || null);
   const [categoryThumbnails, setCategoryThumbnails] = useState<Record<string, string>>(currentSettings.videoCategoryThumbnails || {});
-  const [folderThumbnails, setFolderThumbnails] = useState<Record<string, string>>(currentSettings.videoFolderThumbnails || {});
   const [categories, setCategories] = useState<string[]>(currentSettings.videoCategories || ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach"]);
   const [newCategory, setNewCategory] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const welcomeVideoInputRef = useRef<HTMLInputElement>(null);
   const categoryInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
-  const folderInputRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const handleAddCategory = () => {
     if (newCategory.trim() && !categories.includes(newCategory.trim())) {
@@ -75,17 +71,6 @@ export function SiteSettingsModal({ currentSettings, videoFolders, onClose, onSt
     }
   };
 
-  const handleFolderThumbnailChange = (folder: string, e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        setFolderThumbnails(prev => ({ ...prev, [folder]: ev.target?.result as string }));
-      };
-      reader.readAsDataURL(file);
-    }
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
@@ -120,25 +105,12 @@ export function SiteSettingsModal({ currentSettings, videoFolders, onClose, onSt
         }
       }
 
-      const finalFolderThumbnails = { ...folderThumbnails };
-      
-      for (const folder of videoFolders) {
-        const fileInput = folderInputRefs.current[folder];
-        const file = fileInput?.files?.[0];
-        if (file) {
-          const storageRef = ref(storage, `settings/folder_${folder.replace(/\s+/g, '_')}_${Date.now()}_${file.name}`);
-          const uploadTask = await uploadBytesResumable(storageRef, file);
-          finalFolderThumbnails[folder] = await getDownloadURL(uploadTask.ref);
-        }
-      }
-
       await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_'), {
         bannerUrl,
         logoUrl: finalLogoUrl,
         welcomeVideoUrl: finalWelcomeVideoUrl,
         videoCategories: categories,
         videoCategoryThumbnails: finalCategoryThumbnails,
-        videoFolderThumbnails: finalFolderThumbnails,
         isSettingsDoc: true
       }, { merge: true });
 
@@ -237,35 +209,6 @@ export function SiteSettingsModal({ currentSettings, videoFolders, onClose, onSt
               className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
             />
             <p className="text-[11px] font-medium text-slate-400 pl-2">This is the link used for the top WhatsApp buttons.</p>
-          </div>
-
-          <div className="space-y-3 border-t border-slate-100 pt-6">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Video Folder Thumbnails (Optional)</label>
-            {videoFolders.length === 0 ? (
-              <p className="text-sm text-slate-400 italic ml-2 mb-4">No folders created yet. Create folders when adding or editing videos.</p>
-            ) : (
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
-                {videoFolders.map(folder => (
-                  <div key={folder} className="flex flex-col gap-2 relative group">
-                    <div className="aspect-square rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative shadow-inner">
-                      {folderThumbnails[folder] ? (
-                        <img src={folderThumbnails[folder]} alt={folder} className="w-full h-full object-cover" />
-                      ) : (
-                        <ImageIcon className="w-8 h-8 text-slate-300" />
-                      )}
-                      <input
-                        type="file"
-                        ref={el => folderInputRefs.current[folder] = el}
-                        onChange={(e) => handleFolderThumbnailChange(folder, e)}
-                        accept="image/*"
-                        className="absolute inset-0 opacity-0 cursor-pointer"
-                      />
-                    </div>
-                    <span className="text-[10px] font-black text-slate-600 text-center uppercase tracking-widest truncate px-1">{folder || 'Other'}</span>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
 
           <div className="space-y-3 border-t border-slate-100 pt-6">

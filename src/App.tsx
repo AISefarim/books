@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment } from 'firebase/firestore';
-import { ref, deleteObject } from 'firebase/storage';
+import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
+import { ref, deleteObject, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
 import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2 } from 'lucide-react';
 
@@ -188,6 +188,27 @@ export default function App() {
       } catch (e: any) {
         showStatus(`Delete Error: ${e.message}`, 'error');
       }
+    }
+  };
+
+  const handleUpdateFolderThumbnail = async (folder: string, file: File) => {
+    try {
+      showStatus('Uploading folder thumbnail...', 'success');
+      const storageRef = ref(storage, `settings/folder_${folder.replace(/\s+/g, '_')}_${Date.now()}_${file.name}`);
+      const uploadTask = await uploadBytesResumable(storageRef, file);
+      const url = await getDownloadURL(uploadTask.ref);
+
+      const newThumbnails = { ...(siteSettings.videoFolderThumbnails || {}), [folder]: url };
+
+      await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_'), {
+        videoFolderThumbnails: newThumbnails,
+        isSettingsDoc: true
+      }, { merge: true });
+
+      showStatus('Folder thumbnail updated!', 'success');
+    } catch (err: any) {
+      console.error(err);
+      showStatus(`Failed to update folder thumbnail: ${err.message}`, 'error');
     }
   };
 
@@ -917,13 +938,14 @@ export default function App() {
                 onSelectVideo={handleVideoSelect}
                 onMoveToFolder={(videoId, newFolder) => {
                   updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', videoId), {
-                    folder: newFolder === 'Other' ? '' : newFolder,
+                    folder: newFolder,
                     order: 0
                   }).catch(err => console.error("Failed to move video to folder", err));
                 }}
                 onReorder={selectedCategory && selectedCategory !== 'Top Rated' ? handleVideoReorder : undefined}
                 categoryThumbnails={siteSettings.videoCategoryThumbnails}
                 folderThumbnails={siteSettings.videoFolderThumbnails}
+                onUpdateFolderThumbnail={handleUpdateFolderThumbnail}
                 savedVideoIds={savedVideoIds}
                 onToggleSave={toggleSaveVideo}
               />
@@ -994,6 +1016,7 @@ export default function App() {
                     onSelectVideo={handleVideoSelect}
                     categoryThumbnails={siteSettings.videoCategoryThumbnails}
                     folderThumbnails={siteSettings.videoFolderThumbnails}
+                    onUpdateFolderThumbnail={handleUpdateFolderThumbnail}
                     savedVideoIds={savedVideoIds}
                     onToggleSave={toggleSaveVideo}
                   />
@@ -1061,7 +1084,6 @@ export default function App() {
       {showSettingsModal && (
         <SiteSettingsModal
           currentSettings={siteSettings}
-          videoFolders={Array.from(new Set(videos.map(v => v.folder || ''))).filter(f => f !== '') as string[]}
           onClose={() => setShowSettingsModal(false)}
           onStatusMessage={showStatus}
         />
