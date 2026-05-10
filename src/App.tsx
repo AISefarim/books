@@ -664,10 +664,8 @@ export default function App() {
           <VideoDetails
             video={selectedVideo}
             relatedVideos={(() => {
-              const otherVideos = videos.filter(v => v.id !== selectedVideo.id);
-              
-              const sameCat = otherVideos.filter(v => (v.folder || '') === (selectedVideo.folder || ''));
-              const diffCat = otherVideos.filter(v => (v.folder || '') !== (selectedVideo.folder || ''));
+              const allInFolder = videos.filter(v => (v.folder || '') === (selectedVideo.folder || ''));
+              const diffCat = videos.filter(v => (v.folder || '') !== (selectedVideo.folder || '')).filter(v => v.id !== selectedVideo.id);
               
               const sortByScore = (a: Video, b: Video) => {
                 const getScore = (v: Video) => {
@@ -685,15 +683,16 @@ export default function App() {
 
               diffCat.sort(sortByScore);
 
-              const currentOrder = typeof selectedVideo.order === 'number' ? selectedVideo.order : -1;
-              const nextInSeries = sameCat.filter(v => typeof v.order === 'number' && v.order > currentOrder)
-                                          .sort((a, b) => (a.order as number) - (b.order as number));
-              const previousInSeries = sameCat.filter(v => typeof v.order === 'number' && v.order <= currentOrder)
-                                              .sort((a, b) => (a.order as number) - (b.order as number));
-              const noOrderSameCat = sameCat.filter(v => typeof v.order !== 'number')
-                                            .sort(sortByScore);
-
-              const sameCatOrdered = [...nextInSeries, ...previousInSeries, ...noOrderSameCat];
+              const currentIndex = allInFolder.findIndex(v => v.id === selectedVideo.id);
+              
+              let sameCatOrdered: Video[] = [];
+              if (currentIndex !== -1) {
+                const nextInSeries = allInFolder.slice(currentIndex + 1);
+                const previousInSeries = allInFolder.slice(0, currentIndex).reverse(); // closest first if needed? No, let's just reverse so immediate previous is first
+                sameCatOrdered = [...nextInSeries, ...previousInSeries];
+              } else {
+                sameCatOrdered = allInFolder.filter(v => v.id !== selectedVideo.id);
+              }
               
               const mixed = [...sameCatOrdered, ...diffCat];
               return mixed.slice(0, 9);
