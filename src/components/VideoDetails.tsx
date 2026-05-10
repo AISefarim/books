@@ -10,11 +10,12 @@ interface VideoDetailsProps {
   onBack: () => void;
   onSelectVideo: (video: Video) => void;
   categoryThumbnails?: Record<string, string>;
+  folderThumbnails?: Record<string, string>;
   isSaved?: boolean;
   onToggleSave?: (id: string, e?: React.MouseEvent) => void;
 }
 
-export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, categoryThumbnails, isSaved, onToggleSave }: VideoDetailsProps) {
+export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, categoryThumbnails, folderThumbnails, isSaved, onToggleSave }: VideoDetailsProps) {
   const [copied, setCopied] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(0);
   const [hasRated, setHasRated] = useState(() => {
@@ -124,8 +125,8 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
           rel="noopener noreferrer"
           className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-50 flex items-center justify-center overflow-hidden shadow-inner border-4 border-slate-50 relative group cursor-pointer block"
         >
-          {categoryThumbnails?.[video.category] ? (
-            <img src={categoryThumbnails[video.category]} alt={video.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" />
+          {((video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]) ? (
+            <img src={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]} alt={video.folder || video.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" />
           ) : (
             <PlayCircle className="w-24 h-24 text-indigo-200" />
           )}
@@ -297,16 +298,16 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
             className="group cursor-pointer bg-slate-900 rounded-[2.5rem] overflow-hidden relative shadow-2xl hover:shadow-indigo-500/20 transition-all duration-500 border border-slate-800 flex flex-col md:flex-row min-h-[300px]"
           >
             {/* Background blur layer */}
-            {categoryThumbnails?.[upNextVideo.category] && (
+            {((upNextVideo.folder && folderThumbnails?.[upNextVideo.folder]) || categoryThumbnails?.[upNextVideo.category]) && (
                 <div className="absolute inset-0 opacity-20 hidden md:block">
-                  <img src={categoryThumbnails[upNextVideo.category]} alt="" className="w-full h-full object-cover blur-3xl opacity-50" />
+                  <img src={(upNextVideo.folder && folderThumbnails?.[upNextVideo.folder]) || categoryThumbnails?.[upNextVideo.category]} alt="" className="w-full h-full object-cover blur-3xl opacity-50" />
                 </div>
             )}
             
             {/* Left Image Area */}
             <div className="w-full md:w-5/12 lg:w-4/12 relative bg-black shrink-0 overflow-hidden aspect-video md:aspect-auto">
-                {categoryThumbnails?.[upNextVideo.category] ? (
-                  <img src={categoryThumbnails[upNextVideo.category]} alt={upNextVideo.category} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" />
+                {((upNextVideo.folder && folderThumbnails?.[upNextVideo.folder]) || categoryThumbnails?.[upNextVideo.category]) ? (
+                  <img src={(upNextVideo.folder && folderThumbnails?.[upNextVideo.folder]) || categoryThumbnails?.[upNextVideo.category]} alt={upNextVideo.folder || upNextVideo.category} className="w-full h-full object-cover opacity-80 group-hover:scale-105 transition-transform duration-700" />
                 ) : (
                    <div className="w-full h-full flex items-center justify-center bg-indigo-900/60 "><PlayCircle className="w-20 h-20 text-indigo-400 opacity-50" /></div>
                 )}
@@ -359,10 +360,10 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
                 style={{ animationDelay: `${idx * 100}ms` }}
               >
                 <div className="relative aspect-video rounded-2xl overflow-hidden bg-slate-900 mb-4 shadow-md group-hover:shadow-xl transition-all duration-300 transform group-hover:-translate-y-1">
-                  {categoryThumbnails?.[v.category] ? (
+                  {((v.folder && folderThumbnails?.[v.folder]) || categoryThumbnails?.[v.category]) ? (
                     <img 
-                      src={categoryThumbnails[v.category]} 
-                      alt={v.category} 
+                      src={(v.folder && folderThumbnails?.[v.folder]) || categoryThumbnails?.[v.category]} 
+                      alt={v.folder || v.category} 
                       className="w-full h-full object-cover opacity-80 group-hover:opacity-100 group-hover:scale-110 transition-all duration-700" 
                     />
                   ) : (

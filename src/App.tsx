@@ -666,8 +666,8 @@ export default function App() {
             relatedVideos={(() => {
               const otherVideos = videos.filter(v => v.id !== selectedVideo.id);
               
-              const sameCat = otherVideos.filter(v => v.category === selectedVideo.category);
-              const diffCat = otherVideos.filter(v => v.category !== selectedVideo.category);
+              const sameCat = otherVideos.filter(v => (v.folder || '') === (selectedVideo.folder || ''));
+              const diffCat = otherVideos.filter(v => (v.folder || '') !== (selectedVideo.folder || ''));
               
               const sortByScore = (a: Video, b: Video) => {
                 const getScore = (v: Video) => {
@@ -695,13 +695,13 @@ export default function App() {
 
               const sameCatOrdered = [...nextInSeries, ...previousInSeries, ...noOrderSameCat];
               
-              // Fill with same category first, then if we need more, add diff cat
               const mixed = [...sameCatOrdered, ...diffCat];
               return mixed.slice(0, 9);
             })()}
             onBack={handleHome}
             onSelectVideo={handleVideoSelect}
             categoryThumbnails={siteSettings.videoCategoryThumbnails}
+            folderThumbnails={siteSettings.videoFolderThumbnails}
             isSaved={savedVideoIds.includes(selectedVideo.id)}
             onToggleSave={toggleSaveVideo}
           />
