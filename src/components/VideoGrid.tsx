@@ -292,7 +292,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
     const looseVideos = items.filter(v => !(v.folder || ''));
     
     const foldersGrid = (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {allFolders.map(f => {
           if (isAdmin && onFolderReorder) {
             return (
@@ -407,7 +407,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
                     onEdit={() => onEdit(video)}
                     onDelete={onDelete}
                     onSelect={() => onSelectVideo(video)}
-                    categoryThumbnail={categoryThumbnails?.[video.category]}
+                    categoryThumbnail={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]}
                     isSaved={savedVideoIds.includes(video.id)}
                     onToggleSave={onToggleSave}
                   />
@@ -478,7 +478,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
                 onEdit={onEdit}
                 onDelete={onDelete}
                 onSelectVideo={onSelectVideo}
-                categoryThumbnail={categoryThumbnails?.[video.category]}
+                categoryThumbnail={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]}
                 isSaved={savedVideoIds.includes(video.id)}
                 onToggleSave={onToggleSave}
                 isSelected={selectedVideos.includes(video.id)}
@@ -508,7 +508,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
                       onEdit={() => onEdit(video)}
                       onDelete={onDelete}
                       onSelect={() => onSelectVideo(video)}
-                      categoryThumbnail={categoryThumbnails?.[video.category]}
+                      categoryThumbnail={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]}
                       isSaved={savedVideoIds.includes(video.id)}
                       onToggleSave={onToggleSave}
                     />
