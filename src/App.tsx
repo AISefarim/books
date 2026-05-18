@@ -443,7 +443,7 @@ export default function App() {
       b.author.toLowerCase().includes(searchLower) || 
       b.desc.toLowerCase().includes(searchLower);
     return matchesCategory && matchesSearch;
-  });
+  }).sort((a, b) => (b.readCount || 0) - (a.readCount || 0));
 
   const strictVideoCategories = siteSettings.videoCategories || ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach"];
   const videoCategories = Array.from(new Set([...strictVideoCategories, ...videos.map(v => v.category)])).sort() as string[];
@@ -476,12 +476,6 @@ export default function App() {
 
   const bannerUrl = siteSettings.bannerUrl || "https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr";
   
-  const totalViews = React.useMemo(() => {
-    const videoViews = videos.reduce((acc, v) => acc + (v.views || 0), 0);
-    const bookReads = books.reduce((acc, b) => acc + (b.readCount || 0), 0);
-    return videoViews + bookReads;
-  }, [videos, books]);
-
   return (
     <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
       <Navbar 
@@ -492,7 +486,8 @@ export default function App() {
         activeTab={activeTab}
         onTabChange={setActiveTab}
         whatsappUrl={bannerUrl}
-        totalViews={totalViews}
+        totalBooks={books.length}
+        totalVideos={videos.length}
       />
 
       {/* Welcome Video Section (Only on main dashboard) */}

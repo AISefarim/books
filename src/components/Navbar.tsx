@@ -8,16 +8,17 @@ interface NavbarProps {
   activeTab: 'sefarim' | 'videos' | 'library';
   onTabChange: (tab: 'sefarim' | 'videos' | 'library') => void;
   whatsappUrl?: string;
-  totalViews?: number;
+  totalBooks?: number;
+  totalVideos?: number;
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalViews = 0 }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0 }: NavbarProps) {
   return (
     <nav className="bg-white/85 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
         {/* Logo Section */}
         <div 
-          className="flex items-center gap-3 cursor-pointer group self-start md:self-auto"
+          className="flex items-center gap-3 cursor-pointer group self-start md:self-auto pr-28 md:pr-0"
           onClick={() => {
             onHome();
           }}
@@ -32,10 +33,13 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
           <div>
             <h1 className="text-xl font-black text-slate-900 tracking-tighter group-hover:text-indigo-600 transition-colors leading-tight">AI SEFARIM</h1>
             <div className="flex items-center gap-2 mt-0.5">
-              <p className="text-[9px] text-indigo-600 font-black uppercase tracking-widest leading-tight border-r border-slate-300 pr-2">Digital ספריה</p>
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest border-r border-slate-300 pr-2">
+                <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-500" />
+                {totalBooks.toLocaleString()} <span className="hidden sm:inline">Sefarim</span>
+              </div>
               <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-500 uppercase tracking-widest">
-                <Eye className="w-3 h-3 sm:w-3.5 sm:h-3.5" />
-                {totalViews.toLocaleString()} Views
+                <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-500" />
+                {totalVideos.toLocaleString()} <span className="hidden sm:inline">Videos</span>
               </div>
             </div>
           </div>
