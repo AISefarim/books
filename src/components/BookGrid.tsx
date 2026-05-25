@@ -16,9 +16,10 @@ interface BookGridProps {
   onToggleSave?: (id: string) => void;
   seriesThumbnails?: Record<string, string>;
   onUpdateSeriesThumbnail?: (series: string, file: File) => void;
+  onAddBookToSeries?: (series: string) => void;
 }
 
-export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail }: BookGridProps) {
+export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries }: BookGridProps) {
   const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
 
   if (isLoading) {
@@ -135,16 +136,27 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
 
   return (
     <div className="space-y-8 animate-in slide-in-from-right-4 fade-in duration-300">
-      <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-50 border border-slate-100 p-4 rounded-3xl">
-        <button 
-          onClick={() => setSelectedSeries(null)}
-          className="px-5 py-2.5 bg-white text-slate-600 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-100 hover:text-slate-900 transition-colors border-2 border-slate-200 flex items-center gap-2 shadow-sm shrink-0 w-fit"
-        >
-          <ArrowLeft className="w-4 h-4" /> All Series
-        </button>
-        <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight px-2 border-l-2 border-slate-200">
-          {selectedSeries}
-        </h2>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 border border-slate-100 p-4 rounded-3xl">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <button 
+            onClick={() => setSelectedSeries(null)}
+            className="px-5 py-2.5 bg-white text-slate-600 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-100 hover:text-slate-900 transition-colors border-2 border-slate-200 flex items-center gap-2 shadow-sm shrink-0 w-fit"
+          >
+            <ArrowLeft className="w-4 h-4" /> All Series
+          </button>
+          <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight px-2 border-l-2 border-slate-200">
+            {selectedSeries}
+          </h2>
+        </div>
+        
+        {isAdmin && onAddBookToSeries && selectedSeries && (
+          <button
+            onClick={() => onAddBookToSeries(selectedSeries)}
+            className="px-5 py-2.5 bg-indigo-600 text-white rounded-full font-black uppercase tracking-widest text-xs hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm shadow-indigo-600/20 shrink-0 w-fit"
+          >
+            <Upload className="w-4 h-4" /> Add Book to Series
+          </button>
+        )}
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">

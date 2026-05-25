@@ -51,6 +51,7 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('savedVideoIds') || '[]'); } catch { return []; }
   });
   const hasCheckedSharedLink = React.useRef(false);
+  const [triggerAddBookToSeries, setTriggerAddBookToSeries] = useState<{series: string, timestamp: number} | null>(null);
 
   useEffect(() => {
     localStorage.setItem('savedBookIds', JSON.stringify(savedBookIds));
@@ -628,7 +629,7 @@ export default function App() {
           </div>
         )}
 
-        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} videos={videos} books={books} />}
+        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} videos={videos} books={books} triggerAddBookToSeries={triggerAddBookToSeries} />}
 
         {isDirectLinkEntry && (selectedBook || selectedVideo) && (
           <div className="mb-6 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-4">
@@ -866,6 +867,10 @@ export default function App() {
               onToggleSave={toggleSaveBook}
               seriesThumbnails={siteSettings.seriesThumbnails}
               onUpdateSeriesThumbnail={handleUpdateSeriesThumbnail}
+              onAddBookToSeries={(series) => {
+                setTriggerAddBookToSeries({ series, timestamp: Date.now() });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
             />
           </>
         ) : activeTab === 'videos' ? (

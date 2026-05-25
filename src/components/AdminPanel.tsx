@@ -9,13 +9,14 @@ import { Video, Book } from '../types';
 interface AdminPanelProps {
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
   onOpenSettings: () => void;
-  activeTab: 'sefarim' | 'videos' | 'library' | 'images';
+  activeTab: 'sefarim' | 'videos' | 'library' | 'images' | 'audio';
   videoCategories: string[];
   videos?: Video[];
   books?: Book[];
+  triggerAddBookToSeries?: { series: string, timestamp: number } | null;
 }
 
-export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videos = [], books = [] }: AdminPanelProps) {
+export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videos = [], books = [], triggerAddBookToSeries }: AdminPanelProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState({ label: '', percent: 0 });
@@ -27,6 +28,15 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
 
   const [selectedBookSeries, setSelectedBookSeries] = useState('_none_');
   const [newBookSeriesInput, setNewBookSeriesInput] = useState('');
+
+  React.useEffect(() => {
+    if (triggerAddBookToSeries) {
+      if (activeTab === 'sefarim') {
+        setIsFormVisible(true);
+        setSelectedBookSeries(triggerAddBookToSeries.series);
+      }
+    }
+  }, [triggerAddBookToSeries, activeTab]);
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const epubInputRef = useRef<HTMLInputElement>(null);
