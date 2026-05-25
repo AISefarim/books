@@ -17,9 +17,11 @@ interface BookGridProps {
   seriesThumbnails?: Record<string, string>;
   onUpdateSeriesThumbnail?: (series: string, file: File) => void;
   onAddBookToSeries?: (series: string) => void;
+  onAddExistingBookToSeries?: (series: string) => void;
+  searchQuery?: string;
 }
 
-export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries }: BookGridProps) {
+export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries, onAddExistingBookToSeries, searchQuery }: BookGridProps) {
   const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
 
   if (isLoading) {
@@ -46,6 +48,32 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
   }
 
   const seriesNames = Array.from(new Set(books.map(b => b.series || ''))).filter(s => s !== '').sort();
+
+  if (searchQuery) {
+    return (
+      <div className="space-y-12 animate-in fade-in zoom-in-95 duration-300">
+        <h3 className="text-xl font-black text-slate-800 tracking-tight leading-tight px-4 mb-6 border-l-4 border-indigo-500 rounded-sm">
+          Search Results ({books.length})
+        </h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+          {books.map((book) => (
+            <BookCard
+              key={book.id}
+              book={book}
+              isAdmin={isAdmin}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onRead={onRead}
+              onDownload={onDownload}
+              onSelect={() => onSelectBook(book)}
+              isSaved={savedBookIds.includes(book.id)}
+              onToggleSave={onToggleSave}
+            />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (selectedSeries === null) {
     const standaloneBooks = books.filter(b => !(b.series || ''));
@@ -150,12 +178,22 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
         </div>
         
         {isAdmin && onAddBookToSeries && selectedSeries && (
-          <button
-            onClick={() => onAddBookToSeries(selectedSeries)}
-            className="px-5 py-2.5 bg-indigo-600 text-white rounded-full font-black uppercase tracking-widest text-xs hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm shadow-indigo-600/20 shrink-0 w-fit"
-          >
-            <Upload className="w-4 h-4" /> Add Book to Series
-          </button>
+          <div className="flex items-center gap-3">
+            {onAddExistingBookToSeries && (
+              <button
+                onClick={() => onAddExistingBookToSeries(selectedSeries)}
+                className="px-5 py-2.5 bg-white text-indigo-600 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-50 transition-colors flex items-center gap-2 border-2 border-indigo-100 shadow-sm shrink-0 w-fit"
+              >
+                <BookIcon className="w-4 h-4" /> Add Existing
+              </button>
+            )}
+            <button
+              onClick={() => onAddBookToSeries(selectedSeries)}
+              className="px-5 py-2.5 bg-indigo-600 text-white rounded-full font-black uppercase tracking-widest text-xs hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm shadow-indigo-600/20 shrink-0 w-fit"
+            >
+              <Upload className="w-4 h-4" /> Upload New
+            </button>
+          </div>
         )}
       </div>
 

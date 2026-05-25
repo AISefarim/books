@@ -21,6 +21,7 @@ import { EditBookModal } from './components/EditBookModal';
 import { EditVideoModal } from './components/EditVideoModal';
 import { SiteSettingsModal } from './components/SiteSettingsModal';
 import { AddToHomescreen } from './components/AddToHomescreen';
+import { AddExistingBookModal } from './components/AddExistingBookModal';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -52,6 +53,7 @@ export default function App() {
   });
   const hasCheckedSharedLink = React.useRef(false);
   const [triggerAddBookToSeries, setTriggerAddBookToSeries] = useState<{series: string, timestamp: number} | null>(null);
+  const [addExistingSeriesModal, setAddExistingSeriesModal] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('savedBookIds', JSON.stringify(savedBookIds));
@@ -867,10 +869,12 @@ export default function App() {
               onToggleSave={toggleSaveBook}
               seriesThumbnails={siteSettings.seriesThumbnails}
               onUpdateSeriesThumbnail={handleUpdateSeriesThumbnail}
+              searchQuery={searchQuery}
               onAddBookToSeries={(series) => {
                 setTriggerAddBookToSeries({ series, timestamp: Date.now() });
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
+              onAddExistingBookToSeries={(series) => setAddExistingSeriesModal(series)}
             />
           </>
         ) : activeTab === 'videos' ? (
@@ -1152,6 +1156,15 @@ export default function App() {
           book={editingBook}
           onSave={handleEditSave}
           onClose={() => setEditingBook(null)}
+        />
+      )}
+
+      {addExistingSeriesModal && (
+        <AddExistingBookModal
+          series={addExistingSeriesModal}
+          books={books}
+          onClose={() => setAddExistingSeriesModal(null)}
+          onSuccess={() => { showStatus(`Book added to ${addExistingSeriesModal} successfully`, 'success'); }}
         />
       )}
 
