@@ -2,10 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment, setDoc } from 'firebase/firestore';
 import { ref, deleteObject, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2 } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones } from 'lucide-react';
 
 import { db, storage, auth } from './lib/firebase';
-import { Book, Video } from './types';
+import { Book, Video, Audio } from './types';
 import { compressImage } from './lib/imageUtils';
 import { Navbar } from './components/Navbar';
 import { AdminPanel } from './components/AdminPanel';
@@ -25,7 +25,8 @@ import { AddToHomescreen } from './components/AddToHomescreen';
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'library'>('sefarim');
+  const [audios, setAudios] = useState<Audio[]>([]);
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'library' | 'audio'>('sefarim');
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -38,7 +39,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
-  const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string>, welcomeVideoUrl?: string }>({});
+  const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string>, welcomeVideoUrl?: string, videoFolderThumbnails?: Record<string, string>, videoFolderOrder?: string[], seriesThumbnails?: Record<string, string> }>({});
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPlayingWelcome, setIsPlayingWelcome] = useState(false);
   const [isDirectLinkEntry, setIsDirectLinkEntry] = useState(false);
@@ -76,7 +77,7 @@ export default function App() {
       const allDocs = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
       
       const bookDocs = allDocs
-        .filter(d => d.id !== '_site_settings_' && !d.isSettingsDoc && d.type !== 'video')
+        .filter(d => d.id !== '_site_settings_' && !d.isSettingsDoc && d.type !== 'video' && d.type !== 'image')
         .map(d => d as Book);
         
       bookDocs.sort((a, b) => {
@@ -99,6 +100,18 @@ export default function App() {
         return (b.createdAt || 0) - (a.createdAt || 0);
       });
       setVideos(videoDocs);
+
+      const audioDocs = allDocs
+        .filter(d => d.type === 'audio')
+        .map(d => d as unknown as Audio);
+        
+      audioDocs.sort((a, b) => {
+        const orderA = a.order ?? 0;
+        const orderB = b.order ?? 0;
+        if (orderA !== orderB) return orderA - orderB;
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      });
+      setAudios(audioDocs);
 
       // Check for shared links
       if (!hasCheckedSharedLink.current && (bookDocs.length > 0 || videoDocs.length > 0)) {
@@ -189,6 +202,37 @@ export default function App() {
       } catch (e: any) {
         showStatus(`Delete Error: ${e.message}`, 'error');
       }
+    }
+  };
+
+  const handleAudioDelete = async (id: string, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (window.confirm('Are you sure you want to delete this audio?')) {
+      try {
+        await deleteDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', id));
+        showStatus('Audio deleted successfully.', 'success');
+      } catch (e: any) {
+        showStatus(`Delete Error: ${e.message}`, 'error');
+      }
+    }
+  };
+
+  const handleUpdateSeriesThumbnail = async (series: string, file: File) => {
+    try {
+      showStatus('Uploading series thumbnail...', 'success');
+      const compressedImage = await compressImage(file, 800, 0.8);
+      const thumbnailPath = `settings/series_${Date.now()}_${compressedImage.name}`;
+      const url = await uploadWithProgress(compressedImage, thumbnailPath, 'Uploading thumbnail...');
+      
+      const newThumbnails = { ...(siteSettings.seriesThumbnails || {}), [series]: url };
+      await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_'), {
+        ...siteSettings,
+        seriesThumbnails: newThumbnails
+      }, { merge: true });
+      
+      showStatus('Series thumbnail updated!', 'success');
+    } catch (err: any) {
+      showStatus(`Error updating thumbnail: ${err.message}`, 'error');
     }
   };
 
@@ -584,7 +628,7 @@ export default function App() {
           </div>
         )}
 
-        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} videos={videos} />}
+        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} videos={videos} books={books} />}
 
         {isDirectLinkEntry && (selectedBook || selectedVideo) && (
           <div className="mb-6 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-4">
@@ -659,8 +703,9 @@ export default function App() {
           <VideoDetails
             video={selectedVideo}
             relatedVideos={(() => {
-              const allInFolder = videos.filter(v => (v.folder || '') === (selectedVideo.folder || ''));
-              const diffCat = videos.filter(v => (v.folder || '') !== (selectedVideo.folder || '')).filter(v => v.id !== selectedVideo.id);
+              const targetList = selectedVideo.type === 'audio' ? (audios as unknown as Video[]) : videos;
+              const allInFolder = targetList.filter(v => (v.folder || '') === (selectedVideo.folder || ''));
+              const diffCat = targetList.filter(v => (v.folder || '') !== (selectedVideo.folder || '')).filter(v => v.id !== selectedVideo.id);
               
               const sortByScore = (a: Video, b: Video) => {
                 const getScore = (v: Video) => {
@@ -819,6 +864,8 @@ export default function App() {
               onSelectBook={handleBookSelect}
               savedBookIds={savedBookIds}
               onToggleSave={toggleSaveBook}
+              seriesThumbnails={siteSettings.seriesThumbnails}
+              onUpdateSeriesThumbnail={handleUpdateSeriesThumbnail}
             />
           </>
         ) : activeTab === 'videos' ? (
@@ -964,6 +1011,23 @@ export default function App() {
               />
             )}
           </>
+        ) : activeTab === 'audio' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto px-4 md:px-0">
+            <div className="flex items-center gap-3 w-auto justify-start mb-6">
+              <Headphones className="w-4 h-4 text-slate-400" />
+              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-l border-slate-300 pl-3">Audio Library</span>
+            </div>
+            {/* Using VideoGrid for Audio items by casting them since they share the same structure */}
+            <VideoGrid
+              videos={audios as unknown as Video[]}
+              isLoading={isLoading}
+              isAdmin={isAdmin}
+              onEdit={() => {}} // No edit modal for audio right now
+              onDelete={handleAudioDelete}
+              onSelectVideo={handleVideoSelect}
+              mediaLabel="Audio"
+            />
+          </div>
         ) : (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
             <div className="text-center mb-16">
@@ -1006,6 +1070,8 @@ export default function App() {
                     onSelectBook={handleBookSelect}
                     savedBookIds={savedBookIds}
                     onToggleSave={toggleSaveBook}
+                    seriesThumbnails={siteSettings.seriesThumbnails}
+                    onUpdateSeriesThumbnail={handleUpdateSeriesThumbnail}
                   />
                 )}
               </div>

@@ -1,5 +1,5 @@
-import React from 'react';
-import { Book as BookIcon } from 'lucide-react';
+import React, { useState } from 'react';
+import { Book as BookIcon, Folder, ArrowLeft, Upload } from 'lucide-react';
 import { Book } from '../types';
 import { BookCard } from './BookCard';
 
@@ -14,9 +14,13 @@ interface BookGridProps {
   onSelectBook: (book: Book) => void;
   savedBookIds?: string[];
   onToggleSave?: (id: string) => void;
+  seriesThumbnails?: Record<string, string>;
+  onUpdateSeriesThumbnail?: (series: string, file: File) => void;
 }
 
-export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave }: BookGridProps) {
+export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail }: BookGridProps) {
+  const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
@@ -40,22 +44,125 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
     );
   }
 
+  const seriesNames = Array.from(new Set(books.map(b => b.series || ''))).filter(s => s !== '').sort();
+
+  if (selectedSeries === null) {
+    const standaloneBooks = books.filter(b => !(b.series || ''));
+
+    return (
+      <div className="space-y-12 animate-in fade-in zoom-in-95 duration-300">
+        {seriesNames.length > 0 && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+            {seriesNames.map(seriesName => {
+              const count = books.filter(b => (b.series || '') === seriesName).length;
+              return (
+                <div 
+                  key={seriesName}
+                  onClick={() => setSelectedSeries(seriesName)}
+                  className="group cursor-pointer flex flex-col h-full"
+                >
+                  <div className="relative aspect-[3/4] rounded-[2rem] overflow-hidden bg-slate-50 mb-4 shadow-sm border border-slate-100 group-hover:shadow-2xl group-hover:-translate-y-1 transition-all duration-300 flex items-center justify-center">
+                    {seriesThumbnails?.[seriesName] ? (
+                      <>
+                        <img src={seriesThumbnails[seriesName]} alt={seriesName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                      </>
+                    ) : (
+                      <div className="w-24 h-24 bg-indigo-50/80 backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border border-indigo-100/50 group-hover:border-indigo-600 shadow-inner">
+                        <Folder className="w-10 h-10 text-indigo-400 group-hover:text-white transition-colors duration-300 pointer-events-none" />
+                      </div>
+                    )}
+                    
+                    {isAdmin && onUpdateSeriesThumbnail && (
+                      <div className="absolute top-3 right-3 z-[60]" onClick={e => e.stopPropagation()}>
+                        <label className="cursor-pointer bg-white/90 backdrop-blur-md p-2 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-white shadow-sm border border-slate-200 flex items-center justify-center transition-colors">
+                          <Upload className="w-4 h-4" />
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                onUpdateSeriesThumbnail(seriesName, e.target.files[0]);
+                              }
+                            }} 
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
+                  
+                  <div className="px-2">
+                    <h3 className="text-lg font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">
+                      {seriesName}
+                    </h3>
+                    <p className="text-[10px] font-bold mt-1 uppercase tracking-widest text-slate-500">
+                      {count} {count === 1 ? 'Book' : 'Books'}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+        
+        {standaloneBooks.length > 0 && (
+          <div>
+            {seriesNames.length > 0 && <h3 className="text-xl font-black text-slate-800 tracking-tight leading-tight px-4 mb-6 border-l-4 border-indigo-500 rounded-sm">Other Books</h3>}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+              {standaloneBooks.map((book) => (
+                <BookCard
+                  key={book.id}
+                  book={book}
+                  isAdmin={isAdmin}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onRead={onRead}
+                  onDownload={onDownload}
+                  onSelect={() => onSelectBook(book)}
+                  isSaved={savedBookIds.includes(book.id)}
+                  onToggleSave={onToggleSave}
+                />
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const seriesBooks = books.filter(b => (b.series || '') === selectedSeries);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
-      {books.map((book) => (
-        <BookCard
-          key={book.id}
-          book={book}
-          isAdmin={isAdmin}
-          onEdit={onEdit}
-          onDelete={onDelete}
-          onRead={onRead}
-          onDownload={onDownload}
-          onSelect={() => onSelectBook(book)}
-          isSaved={savedBookIds.includes(book.id)}
-          onToggleSave={onToggleSave}
-        />
-      ))}
+    <div className="space-y-8 animate-in slide-in-from-right-4 fade-in duration-300">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4 bg-slate-50 border border-slate-100 p-4 rounded-3xl">
+        <button 
+          onClick={() => setSelectedSeries(null)}
+          className="px-5 py-2.5 bg-white text-slate-600 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-100 hover:text-slate-900 transition-colors border-2 border-slate-200 flex items-center gap-2 shadow-sm shrink-0 w-fit"
+        >
+          <ArrowLeft className="w-4 h-4" /> All Series
+        </button>
+        <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight px-2 border-l-2 border-slate-200">
+          {selectedSeries}
+        </h2>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+        {seriesBooks.map((book) => (
+          <BookCard
+            key={book.id}
+            book={book}
+            isAdmin={isAdmin}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onRead={onRead}
+            onDownload={onDownload}
+            onSelect={() => onSelectBook(book)}
+            isSaved={savedBookIds.includes(book.id)}
+            onToggleSave={onToggleSave}
+          />
+        ))}
+      </div>
     </div>
   );
 }

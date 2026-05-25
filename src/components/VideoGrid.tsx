@@ -38,6 +38,7 @@ interface VideoGridProps {
   savedVideoIds?: string[];
   onToggleSave?: (id: string, e: React.MouseEvent) => void;
   disableFolders?: boolean;
+  mediaLabel?: 'Video' | 'Audio';
 }
 
 function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo, categoryThumbnail, isSaved, onToggleSave, isSelected, onToggleSelect }: any) {
@@ -173,7 +174,7 @@ function SortableFolderWrapper({ folder, items, folderThumbnails, isAdmin, onUpd
   );
 }
 
-export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSelectVideo, onReorder, onFolderReorder, onMoveToFolder, categoryThumbnails, folderThumbnails, folderOrder, onUpdateFolderThumbnail, savedVideoIds = [], onToggleSave, disableFolders }: VideoGridProps) {
+export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSelectVideo, onReorder, onFolderReorder, onMoveToFolder, categoryThumbnails, folderThumbnails, folderOrder, onUpdateFolderThumbnail, savedVideoIds = [], onToggleSave, disableFolders, mediaLabel = 'Video' }: VideoGridProps) {
   const [items, setItems] = useState(videos);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedVideos, setSelectedVideos] = useState<string[]>([]);
@@ -354,7 +355,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
                   {displayName}
                 </h3>
                 <p className="text-xs font-bold mt-2 uppercase tracking-widest text-slate-500">
-                  {count} {count === 1 ? 'Video' : 'Videos'}
+                  {count} {count === 1 ? mediaLabel : `${mediaLabel}s`}
                 </p>
               </div>
             </div>
@@ -386,7 +387,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
         
         {looseVideos.length > 0 && (
           <div>
-            {allFolders.length > 0 && <h3 className="text-xl font-black text-slate-800 tracking-tight leading-tight px-4 mb-6 border-l-4 border-indigo-500 rounded-sm">Other Videos</h3>}
+            {allFolders.length > 0 && <h3 className="text-xl font-black text-slate-800 tracking-tight leading-tight px-4 mb-6 border-l-4 border-indigo-500 rounded-sm">Other {mediaLabel}s</h3>}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {looseVideos.map(video => (
                 <div key={video.id} className="relative group/wrapper">

@@ -5,6 +5,7 @@ export interface Book {
   desc: string;
   buyLink: string;
   category?: string;
+  series?: string;
   cover: string;
   epub: string;
   coverPath: string;
@@ -18,6 +19,17 @@ export interface Book {
   type?: 'sefer' | 'video';
 }
 
+export interface Audio {
+  id: string;
+  title: string;
+  url: string;
+  category?: string;
+  folder?: string;
+  createdAt: number;
+  order?: number;
+  type?: 'audio';
+}
+
 export interface Video {
   id: string;
   title: string;
@@ -26,7 +38,7 @@ export interface Video {
   folder?: string;
   createdAt: number;
   views?: number;
-  type?: 'video';
+  type?: 'video' | 'audio';
   order?: number;
   ratingsSum?: number;
   ratingsCount?: number;

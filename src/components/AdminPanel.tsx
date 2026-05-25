@@ -4,17 +4,18 @@ import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
 import { compressImage } from '../lib/imageUtils';
-import { Video } from '../types';
+import { Video, Book } from '../types';
 
 interface AdminPanelProps {
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
   onOpenSettings: () => void;
-  activeTab: 'sefarim' | 'videos';
+  activeTab: 'sefarim' | 'videos' | 'library' | 'images';
   videoCategories: string[];
   videos?: Video[];
+  books?: Book[];
 }
 
-export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videos = [] }: AdminPanelProps) {
+export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videos = [], books = [] }: AdminPanelProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState({ label: '', percent: 0 });
@@ -24,10 +25,15 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
   const [newFolderInput, setNewFolderInput] = useState('');
   const [selectedVideoCat, setSelectedVideoCat] = useState('');
 
+  const [selectedBookSeries, setSelectedBookSeries] = useState('_none_');
+  const [newBookSeriesInput, setNewBookSeriesInput] = useState('');
+
   const coverInputRef = useRef<HTMLInputElement>(null);
   const epubInputRef = useRef<HTMLInputElement>(null);
+  const audioInputRef = useRef<HTMLInputElement>(null);
 
   const videoFolders = Array.from(new Set(videos.filter(v => !selectedVideoCat || v.category === selectedVideoCat).map(v => v.folder || ''))).filter(f => f !== '') as string[];
+  const bookSeriesList = Array.from(new Set(books.map(b => b.series || ''))).filter(s => s !== '') as string[];
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,6 +97,9 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
     const orderStr = formData.get('order') as string;
     const order = orderStr ? parseInt(orderStr, 10) : undefined;
 
+    const seriesStateValue = selectedBookSeries === 'new' ? newBookSeriesInput : selectedBookSeries;
+    const finalSeries = seriesStateValue === '_none_' ? '' : seriesStateValue.trim();
+
     try {
       const timestamp = Date.now();
       const compressedCover = await compressImage(coverFile, 600, 0.8);
@@ -104,6 +113,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
         title,
         author,
         category: category || 'Uncategorized',
+        series: finalSeries,
         desc,
         buyLink,
         cover: coverUrl,
@@ -122,6 +132,8 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
       onStatusMessage('Sefer published successfully to the cloud!', 'success');
       formRef.current?.reset();
       setCoverPreview(null);
+      setSelectedBookSeries('_none_');
+      setNewBookSeriesInput('');
       if (epubInputRef.current) epubInputRef.current.value = '';
       setIsFormVisible(false);
     } catch (err: any) {
@@ -132,6 +144,56 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
     } finally {
       setIsUploading(false);
       setProgress({ label: '', percent: 0 });
+    }
+  };
+
+  const handleAudioSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    
+    const audioFile = audioInputRef.current?.files?.[0];
+    if (!audioFile) {
+      onStatusMessage('Please select an audio file (MP3)!', 'error');
+      return;
+    }
+
+    setIsUploading(true);
+    const formData = new FormData(e.currentTarget);
+    const title = formData.get('title') as string;
+    const category = formData.get('category') as string;
+    const folder = formData.get('folder') as string;
+    
+    const folderStateValue = selectedFolder === 'new' ? newFolderInput : selectedFolder;
+    const finalFolder = folderStateValue === '_none_' ? '' : folderStateValue.trim();
+
+    try {
+      const timestamp = Date.now();
+      const audioPath = `audio/${timestamp}_${audioFile.name}`;
+      
+      const audioUrl = await uploadWithProgress(audioFile, audioPath, 'Uploading Audio...');
+
+      const docData: any = {
+        title,
+        url: audioUrl,
+        category,
+        folder: finalFolder,
+        createdAt: timestamp,
+        type: 'audio',
+        audioPath
+      };
+
+      await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim'), docData);
+
+      onStatusMessage('Audio published successfully!', 'success');
+      formRef.current?.reset();
+      if (audioInputRef.current) audioInputRef.current.value = '';
+      setSelectedFolder('');
+      setNewFolderInput('');
+      setIsFormVisible(false);
+    } catch (err: any) {
+      console.error(err);
+      onStatusMessage(`Error: ${err.message}`, 'error');
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -197,7 +259,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
               onClick={() => setIsFormVisible(!isFormVisible)}
               className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
             >
-              <Plus className="w-5 h-5" /> New {activeTab === 'sefarim' ? 'Sefer' : 'Video'}
+              <Plus className="w-5 h-5" /> New {activeTab === 'sefarim' ? 'Sefer' : activeTab === 'videos' ? 'Video' : 'Image'}
             </button>
           </div>
         </div>
@@ -231,7 +293,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                 className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-lg bg-white"
                 placeholder="Title (*כותרת*)"
               />
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:col-span-2">
                 <input
                   name="author"
                   required
@@ -243,6 +305,34 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                   className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
                   placeholder="Category (e.g. Halacha)"
                 />
+                
+                <div className="space-y-3">
+                  <select
+                    name="series_select"
+                    value={selectedBookSeries}
+                    onChange={(e) => setSelectedBookSeries(e.target.value)}
+                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
+                  >
+                    <option value="" disabled>Select Series... (Optional)</option>
+                    <option value="_none_">No Series (Standalone)</option>
+                    {bookSeriesList.map(seriesItem => (
+                      <option key={seriesItem} value={seriesItem}>{seriesItem}</option>
+                    ))}
+                    <option value="new">+ Create New Series</option>
+                  </select>
+                  
+                  {selectedBookSeries === 'new' && (
+                    <input
+                      name="new_series"
+                      required
+                      value={newBookSeriesInput}
+                      onChange={(e) => setNewBookSeriesInput(e.target.value)}
+                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white animate-in slide-in-from-top-2"
+                      placeholder="Enter new series name"
+                      autoFocus
+                    />
+                  )}
+                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <input
@@ -387,6 +477,85 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                   </>
                 ) : (
                   'Publish Video'
+                )}
+              </button>
+            </div>
+          </form>
+        )}
+
+        {isFormVisible && activeTab === 'audio' && (
+          <form ref={formRef} onSubmit={handleAudioSubmit} className="grid grid-cols-1 gap-8 mt-6 p-8 bg-slate-50 rounded-3xl border border-slate-100">
+            <div className="space-y-5">
+              <input
+                name="title"
+                required
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-lg bg-white"
+                placeholder="Audio Title"
+              />
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <input
+                  name="category"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                  placeholder="Category (Optional)"
+                />
+                
+                <div className="space-y-3">
+                  <select
+                    name="folder_select"
+                    value={selectedFolder}
+                    onChange={(e) => setSelectedFolder(e.target.value)}
+                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
+                  >
+                    <option value="" disabled>Select Folder... (Optional)</option>
+                    <option value="_none_">No Folder (Standalone track)</option>
+                    {videoFolders.map(folder => (
+                      <option key={folder} value={folder}>{folder}</option>
+                    ))}
+                    <option value="new">+ Create New Folder</option>
+                  </select>
+                  
+                  {selectedFolder === 'new' && (
+                    <input
+                      name="new_folder"
+                      required
+                      value={newFolderInput}
+                      onChange={(e) => setNewFolderInput(e.target.value)}
+                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white animate-in slide-in-from-top-2"
+                      placeholder="Enter new folder name"
+                      autoFocus
+                    />
+                  )}
+                </div>
+              </div>
+
+              <div className="relative bg-white p-4 rounded-2xl ring-1 ring-slate-200 flex items-center justify-center group hover:bg-indigo-50 transition-colors">
+                <span className={`text-xs font-black uppercase tracking-widest ${audioInputRef.current?.files?.length ? 'text-emerald-600' : 'text-slate-400'}`}>
+                  {audioInputRef.current?.files?.length ? 'READY TO UPLOAD ✅' : 'UPLOAD MP3 FILE'}
+                </span>
+                <input
+                  type="file"
+                  ref={audioInputRef}
+                  onChange={() => { 
+                    setProgress({ label: '', percent: 0 }); 
+                  }}
+                  accept="audio/mp3,audio/mpeg,audio/*"
+                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  required
+                />
+              </div>
+
+              <button
+                type="submit"
+                disabled={isUploading}
+                className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isUploading ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" /> {progress.label || 'UPLOADING...'} {progress.percent > 0 ? `${Math.round(progress.percent)}%` : ''}
+                  </>
+                ) : (
+                  'Publish Audio'
                 )}
               </button>
             </div>

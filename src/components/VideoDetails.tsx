@@ -3,6 +3,7 @@ import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye
 import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Video } from '../types';
+import { AudioPlayer } from './AudioPlayer';
 
 interface VideoDetailsProps {
   video: Video;
@@ -119,27 +120,27 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
 
       <div className="bg-white rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-100 mb-16 flex flex-col md:flex-row gap-8 items-center">
         {/* Left side: Thumbnail / Graphic */}
-        <a 
-          href={video.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-50 flex items-center justify-center overflow-hidden shadow-inner border-4 border-slate-50 relative group cursor-pointer block"
-        >
-          {((video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]) ? (
-            <img src={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]} alt={video.folder || video.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" />
-          ) : (
-            <PlayCircle className="w-24 h-24 text-indigo-200" />
-          )}
-          <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-          <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-             <div className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-all duration-300">
-                <Play className="w-8 h-8 text-indigo-600 fill-indigo-600 ml-1" />
-             </div>
+        {video.type !== 'audio' && (
+          <div 
+            onClick={() => {
+              window.open(video.url, '_blank');
+            }}
+            className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-50 flex items-center justify-center overflow-hidden shadow-inner border-4 border-slate-50 relative group block cursor-pointer"
+          >
+            {((video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]) ? (
+              <img src={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]} alt={video.folder || video.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" />
+            ) : null}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+            <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+               <div className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-all duration-300">
+                  <Play className="w-8 h-8 text-indigo-600 fill-indigo-600 ml-1" />
+               </div>
+            </div>
           </div>
-        </a>
+        )}
 
         {/* Right side: Info and Actions */}
-        <div className="flex flex-col gap-6 w-full md:w-2/3">
+        <div className={`flex flex-col gap-6 w-full ${video.type === 'audio' ? '' : 'md:w-2/3'}`}>
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
               <span className="bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg">
@@ -162,22 +163,34 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
             </h1>
           </div>
 
+          {video.type === 'audio' && (
+            <div className="w-full mt-4">
+              <AudioPlayer 
+                url={video.url} 
+                title={video.title} 
+                onNext={upNextVideo ? () => onSelectVideo(upNextVideo) : undefined} 
+              />
+            </div>
+          )}
+
           <div className="flex flex-wrap gap-4 pt-4">
-            <a
-              href={video.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-700 transition-all shadow-xl hover:shadow-2xl active:scale-95 group"
-            >
-              <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" /> Play Now
-            </a>
+            {video.type !== 'audio' && (
+              <a
+                href={video.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-700 transition-all shadow-xl hover:shadow-2xl active:scale-95 group"
+              >
+                <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" /> Play Now
+              </a>
+            )}
             
             <button
               onClick={handleShare}
               className="bg-slate-50 text-slate-700 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-slate-100 transition-all border border-slate-200 shadow-sm active:scale-95"
             >
               {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />} 
-              {copied ? 'Copied!' : 'Share Video'}
+              {copied ? 'Copied!' : 'Share Shiur'}
             </button>
 
             {onToggleSave && (
@@ -286,10 +299,10 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
         <div className="mt-16 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-200 fill-mode-both">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3">
-              <PlayCircle className="w-6 h-6 text-indigo-500" /> Up Next
+              <PlayCircle className="w-6 h-6 text-indigo-500" /> {video.type === 'audio' ? 'Suggested Shiur' : 'Up Next'}
             </h3>
             <span className="text-sm font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
-              {relatedVideos.length} Related Videos
+              {relatedVideos.length} Related
             </span>
           </div>
 
@@ -348,7 +361,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
       {otherRelated.length > 0 && (
         <div className="mt-12 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-300 fill-mode-both">
           <h3 className="text-lg font-bold text-slate-500 uppercase tracking-widest mb-6">
-            More to Watch
+            {video.type === 'audio' ? 'More Audio Shiurim' : 'More to Watch'}
           </h3>
           
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
