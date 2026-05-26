@@ -20,7 +20,7 @@ export function AddExistingBookModal({ series, books, onClose, onSuccess }: AddE
 
   const filteredBooks = availableBooks.filter(b => {
     const searchLower = searchQuery.toLowerCase();
-    return searchLower === '' || b.title.toLowerCase().includes(searchLower) || b.author.toLowerCase().includes(searchLower);
+    return searchLower === '' || (b.title || '').toLowerCase().includes(searchLower) || (b.author || '').toLowerCase().includes(searchLower);
   });
 
   const handleAddBook = async (book: Book) => {

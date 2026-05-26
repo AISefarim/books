@@ -68,7 +68,8 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
 
   const currentRating = video.ratingsCount ? (video.ratingsSum! / video.ratingsCount).toFixed(1) : 'New';
 
-  const getCategoryEmoji = (category: string) => {
+  const getCategoryEmoji = (category: string | undefined) => {
+    if (!category) return '▶️';
     if (category.toLowerCase().includes('daf')) return '📖';
     if (category.toLowerCase().includes('parasha')) return '📜';
     if (category.toLowerCase().includes('mishnah')) return '📚';

@@ -486,9 +486,9 @@ export default function App() {
     const matchesCategory = selectedCategory ? (b.category || 'Uncategorized') === selectedCategory : true;
     const searchLower = searchQuery.toLowerCase();
     const matchesSearch = searchLower === '' || 
-      b.title.toLowerCase().includes(searchLower) || 
-      b.author.toLowerCase().includes(searchLower) || 
-      b.desc.toLowerCase().includes(searchLower);
+      (b.title || '').toLowerCase().includes(searchLower) || 
+      (b.author || '').toLowerCase().includes(searchLower) || 
+      (b.desc || '').toLowerCase().includes(searchLower);
     return matchesCategory && matchesSearch;
   }).sort((a, b) => (b.readCount || 0) - (a.readCount || 0));
 
@@ -497,7 +497,7 @@ export default function App() {
   const filteredVideos = videos.filter(v => {
     const matchesCategory = selectedCategory ? (selectedCategory === 'Top Rated' ? true : v.category === selectedCategory) : true;
     const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = searchLower === '' || v.title.toLowerCase().includes(searchLower);
+    const matchesSearch = searchLower === '' || (v.title || '').toLowerCase().includes(searchLower);
     return matchesCategory && matchesSearch;
   });
 
