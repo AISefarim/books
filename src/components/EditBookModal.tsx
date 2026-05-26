@@ -13,7 +13,6 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
   const [author, setAuthor] = useState(book.author);
   const [desc, setDesc] = useState(book.desc);
   const [category, setCategory] = useState(book.category || '');
-  const [series, setSeries] = useState(book.series || '');
   const [buyLink, setBuyLink] = useState(book.buyLink || '');
   const [order, setOrder] = useState(book.order?.toString() || '');
   const [isFeatured, setIsFeatured] = useState(book.isFeatured || false);
@@ -28,7 +27,6 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
         author,
         desc,
         category,
-        series,
         buyLink,
         isFeatured,
       };
@@ -96,29 +94,6 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Series (Folder)</label>
-              <input
-                type="text"
-                value={series}
-                onChange={(e) => setSeries(e.target.value)}
-                placeholder="e.g. Harry Potter, The Rambam Series"
-                className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Rank Order (1 is highest)</label>
-              <input
-                type="number"
-                value={order}
-                onChange={(e) => setOrder(e.target.value)}
-                placeholder="e.g. 1, 2, 3... (Leave blank for default)"
-                className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
-              />
-            </div>
-            <div className="space-y-2">
               <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Physical Copy URL</label>
               <input
                 type="url"
@@ -128,6 +103,17 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
                 className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
               />
             </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Rank Order (1 is highest)</label>
+            <input
+              type="number"
+              value={order}
+              onChange={(e) => setOrder(e.target.value)}
+              placeholder="e.g. 1, 2, 3... (Leave blank for default)"
+              className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+            />
           </div>
 
           <div className="space-y-2">

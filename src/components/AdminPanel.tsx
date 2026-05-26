@@ -13,10 +13,9 @@ interface AdminPanelProps {
   videoCategories: string[];
   videos?: Video[];
   books?: Book[];
-  triggerAddBookToSeries?: { series: string, timestamp: number } | null;
 }
 
-export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videos = [], books = [], triggerAddBookToSeries }: AdminPanelProps) {
+export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videos = [], books = [] }: AdminPanelProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState({ label: '', percent: 0 });
@@ -26,24 +25,11 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
   const [newFolderInput, setNewFolderInput] = useState('');
   const [selectedVideoCat, setSelectedVideoCat] = useState('');
 
-  const [selectedBookSeries, setSelectedBookSeries] = useState('_none_');
-  const [newBookSeriesInput, setNewBookSeriesInput] = useState('');
-
-  React.useEffect(() => {
-    if (triggerAddBookToSeries) {
-      if (activeTab === 'sefarim') {
-        setIsFormVisible(true);
-        setSelectedBookSeries(triggerAddBookToSeries.series);
-      }
-    }
-  }, [triggerAddBookToSeries, activeTab]);
-
   const coverInputRef = useRef<HTMLInputElement>(null);
   const epubInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
 
   const videoFolders = Array.from(new Set(videos.filter(v => !selectedVideoCat || v.category === selectedVideoCat).map(v => v.folder || ''))).filter(f => f !== '') as string[];
-  const bookSeriesList = Array.from(new Set(books.map(b => b.series || ''))).filter(s => s !== '') as string[];
   const formRef = useRef<HTMLFormElement>(null);
 
   const handleCoverChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -107,9 +93,6 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
     const orderStr = formData.get('order') as string;
     const order = orderStr ? parseInt(orderStr, 10) : undefined;
 
-    const seriesStateValue = selectedBookSeries === 'new' ? newBookSeriesInput : selectedBookSeries;
-    const finalSeries = seriesStateValue === '_none_' ? '' : seriesStateValue.trim();
-
     try {
       const timestamp = Date.now();
       const compressedCover = await compressImage(coverFile, 600, 0.8);
@@ -123,7 +106,6 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
         title,
         author,
         category: category || 'Uncategorized',
-        series: finalSeries,
         desc,
         buyLink,
         cover: coverUrl,
@@ -142,8 +124,6 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
       onStatusMessage('Sefer published successfully to the cloud!', 'success');
       formRef.current?.reset();
       setCoverPreview(null);
-      setSelectedBookSeries('_none_');
-      setNewBookSeriesInput('');
       if (epubInputRef.current) epubInputRef.current.value = '';
       setIsFormVisible(false);
     } catch (err: any) {
@@ -315,34 +295,6 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                   className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
                   placeholder="Category (e.g. Halacha)"
                 />
-                
-                <div className="space-y-3">
-                  <select
-                    name="series_select"
-                    value={selectedBookSeries}
-                    onChange={(e) => setSelectedBookSeries(e.target.value)}
-                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
-                  >
-                    <option value="" disabled>Select Series... (Optional)</option>
-                    <option value="_none_">No Series (Standalone)</option>
-                    {bookSeriesList.map(seriesItem => (
-                      <option key={seriesItem} value={seriesItem}>{seriesItem}</option>
-                    ))}
-                    <option value="new">+ Create New Series</option>
-                  </select>
-                  
-                  {selectedBookSeries === 'new' && (
-                    <input
-                      name="new_series"
-                      required
-                      value={newBookSeriesInput}
-                      onChange={(e) => setNewBookSeriesInput(e.target.value)}
-                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white animate-in slide-in-from-top-2"
-                      placeholder="Enter new series name"
-                      autoFocus
-                    />
-                  )}
-                </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <input
