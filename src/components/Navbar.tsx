@@ -1,12 +1,12 @@
-import { BookOpen, Video, Library, MessageCircle, Bookmark, Eye, Headphones } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Bookmark, Eye, Headphones, Bot } from 'lucide-react';
 
 interface NavbarProps {
   isAdmin: boolean;
   onToggleAdmin: () => void;
   onHome: () => void;
   logoUrl?: string;
-  activeTab: 'sefarim' | 'videos' | 'library' | 'audio';
-  onTabChange: (tab: 'sefarim' | 'videos' | 'library' | 'audio') => void;
+  activeTab: 'sefarim' | 'videos' | 'library' | 'audio' | 'ai';
+  onTabChange: (tab: 'sefarim' | 'videos' | 'library' | 'audio' | 'ai') => void;
   whatsappUrl?: string;
   totalBooks?: number;
   totalVideos?: number;
@@ -88,6 +88,20 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
           >
             <Headphones className="w-3 h-3 md:w-4 md:h-4" />
             Audio
+          </button>
+          <button
+            onClick={() => {
+              onTabChange('ai');
+              onHome();
+            }}
+            className={`flex-1 md:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-wider md:tracking-widest transition-all whitespace-nowrap ${
+              activeTab === 'ai' 
+                ? 'bg-white text-indigo-900 shadow-[0_2px_10px_-3px_rgba(6,181,227,0.3)] ring-1 ring-slate-200/50 scale-[1.02]' 
+                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 scale-95'
+            }`}
+          >
+            <Bot className="w-3 h-3 md:w-4 md:h-4 text-emerald-500 animate-pulse" />
+            AI Chat
           </button>
         </div>
 

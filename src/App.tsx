@@ -21,12 +21,14 @@ import { EditBookModal } from './components/EditBookModal';
 import { EditVideoModal } from './components/EditVideoModal';
 import { SiteSettingsModal } from './components/SiteSettingsModal';
 import { AddToHomescreen } from './components/AddToHomescreen';
+import { AddExistingBookModal } from './components/AddExistingBookModal';
+import { AIChat } from './components/AIChat';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [audios, setAudios] = useState<Audio[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'library' | 'audio'>('sefarim');
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'library' | 'audio' | 'ai'>('sefarim');
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -51,6 +53,8 @@ export default function App() {
     try { return JSON.parse(localStorage.getItem('savedVideoIds') || '[]'); } catch { return []; }
   });
   const hasCheckedSharedLink = React.useRef(false);
+  const [triggerAddBookToSeries, setTriggerAddBookToSeries] = useState<{series: string, timestamp: number} | null>(null);
+  const [addExistingSeriesModal, setAddExistingSeriesModal] = useState<string | null>(null);
 
   useEffect(() => {
     localStorage.setItem('savedBookIds', JSON.stringify(savedBookIds));
@@ -214,6 +218,26 @@ export default function App() {
       } catch (e: any) {
         showStatus(`Delete Error: ${e.message}`, 'error');
       }
+    }
+  };
+
+  const handleUpdateSeriesThumbnail = async (series: string, file: File) => {
+    try {
+      showStatus('Uploading series thumbnail...', 'success');
+      const compressedImage = await compressImage(file, 800, 0.8);
+      const storageRef = ref(storage, `settings/series_${Date.now()}_${compressedImage.name}`);
+      const uploadTask = await uploadBytesResumable(storageRef, compressedImage);
+      const url = await getDownloadURL(uploadTask.ref);
+      
+      const newThumbnails = { ...(siteSettings.seriesThumbnails || {}), [series]: url };
+      await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_'), {
+        ...siteSettings,
+        seriesThumbnails: newThumbnails
+      }, { merge: true });
+      
+      showStatus('Series thumbnail updated!', 'success');
+    } catch (err: any) {
+      showStatus(`Error updating thumbnail: ${err.message}`, 'error');
     }
   };
 
@@ -845,6 +869,14 @@ export default function App() {
               onSelectBook={handleBookSelect}
               savedBookIds={savedBookIds}
               onToggleSave={toggleSaveBook}
+              seriesThumbnails={siteSettings.seriesThumbnails}
+              onUpdateSeriesThumbnail={handleUpdateSeriesThumbnail}
+              searchQuery={searchQuery}
+              onAddBookToSeries={(series) => {
+                setTriggerAddBookToSeries({ series, timestamp: Date.now() });
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              onAddExistingBookToSeries={(series) => setAddExistingSeriesModal(series)}
             />
           </>
         ) : activeTab === 'videos' ? (
@@ -1007,7 +1039,7 @@ export default function App() {
               mediaLabel="Audio"
             />
           </div>
-        ) : (
+        ) : activeTab === 'library' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
             <div className="text-center mb-16">
               <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight mb-4">
@@ -1080,7 +1112,11 @@ export default function App() {
               </div>
             </div>
           </div>
-        )}
+        ) : activeTab === 'ai' ? (
+          <div className="max-w-7xl mx-auto h-[80vh] px-4 md:px-0 pb-8">
+            <AIChat />
+          </div>
+        ) : null}
       </main>
 
       <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-200/60 mt-8 relative">
@@ -1124,6 +1160,15 @@ export default function App() {
           book={editingBook}
           onSave={handleEditSave}
           onClose={() => setEditingBook(null)}
+        />
+      )}
+
+      {addExistingSeriesModal && (
+        <AddExistingBookModal
+          series={addExistingSeriesModal}
+          books={books}
+          onClose={() => setAddExistingSeriesModal(null)}
+          onSuccess={() => { showStatus(`Book added to ${addExistingSeriesModal} successfully`, 'success'); }}
         />
       )}
 

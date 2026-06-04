@@ -48,14 +48,14 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
         </div>
       </div>
       <div className="py-8 px-4 flex-1 flex flex-col">
-        <div className="flex justify-between items-start mb-2">
+        <div className="flex justify-between items-start mb-2 gap-2">
           <h3 
-            className="font-black text-2xl uppercase leading-[0.85] text-slate-800 tracking-tighter cursor-pointer hover:text-indigo-600 transition-colors"
+            className="font-black text-2xl uppercase leading-[0.85] text-slate-800 tracking-tighter cursor-pointer hover:text-indigo-600 transition-colors flex-1 min-w-0 break-words"
             onClick={() => onSelect ? onSelect() : onRead(book.epub)}
           >
             {book.title}
           </h3>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-1 shrink-0">
             {onToggleSave && (
               <button
                 onClick={(e) => { e.stopPropagation(); onToggleSave(book.id); }}
