@@ -1,18 +1,19 @@
-import { BookOpen, Video, Library, MessageCircle, Bookmark, Eye, Headphones, Bot } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Bot } from 'lucide-react';
 
 interface NavbarProps {
   isAdmin: boolean;
   onToggleAdmin: () => void;
   onHome: () => void;
   logoUrl?: string;
-  activeTab: 'sefarim' | 'videos' | 'library' | 'audio' | 'ai';
-  onTabChange: (tab: 'sefarim' | 'videos' | 'library' | 'audio' | 'ai') => void;
+  activeTab: 'sefarim' | 'videos' | 'library';
+  onTabChange: (tab: 'sefarim' | 'videos' | 'library') => void;
   whatsappUrl?: string;
   totalBooks?: number;
   totalVideos?: number;
+  onOpenAiChat: () => void;
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0 }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, onOpenAiChat }: NavbarProps) {
   return (
     <nav className="bg-white/85 backdrop-blur-xl border-b border-slate-200/50 sticky top-0 z-40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -75,38 +76,17 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
             <Video className="w-3 h-3 md:w-4 md:h-4" />
             Videos
           </button>
-          <button
-            onClick={() => {
-              onTabChange('audio');
-              onHome();
-            }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-wider md:tracking-widest transition-all whitespace-nowrap ${
-              activeTab === 'audio' 
-                ? 'bg-white text-indigo-900 shadow-[0_2px_10px_-3px_rgba(6,181,227,0.3)] ring-1 ring-slate-200/50 scale-[1.02]' 
-                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 scale-95'
-            }`}
-          >
-            <Headphones className="w-3 h-3 md:w-4 md:h-4" />
-            Audio
-          </button>
-          <button
-            onClick={() => {
-              onTabChange('ai');
-              onHome();
-            }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-wider md:tracking-widest transition-all whitespace-nowrap ${
-              activeTab === 'ai' 
-                ? 'bg-white text-indigo-900 shadow-[0_2px_10px_-3px_rgba(6,181,227,0.3)] ring-1 ring-slate-200/50 scale-[1.02]' 
-                : 'text-slate-500 hover:text-slate-700 hover:bg-slate-200/50 scale-95'
-            }`}
-          >
-            <Bot className="w-3 h-3 md:w-4 md:h-4 text-emerald-500 animate-pulse" />
-            AI Chat
-          </button>
         </div>
 
         {/* Action Buttons Section */}
         <div className="hidden md:flex items-center gap-3">
+          <button
+            onClick={onOpenAiChat}
+            className="px-5 py-2.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex items-center gap-2 border border-indigo-200 shadow-sm hover:shadow-indigo-500/20 active:scale-95 group"
+          >
+            <Bot className="w-4 h-4 group-hover:text-amber-500 transition-colors" />
+            AI Assistant
+          </button>
           {whatsappUrl && (
             <div className="relative group">
               <div className="absolute inset-0 bg-[#25D366] rounded-xl animate-ping opacity-20" style={{ animationDuration: '3s' }}></div>
@@ -133,6 +113,13 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
         
         {/* Mobile quick actions */}
         <div className="md:hidden absolute top-3 right-4 flex items-center gap-2">
+          <button
+            onClick={onOpenAiChat}
+            className="p-2 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-200 shadow-sm active:scale-95"
+            aria-label="AI Assistant"
+          >
+            <Bot className="w-4 h-4" />
+          </button>
           {whatsappUrl && (
             <div className="relative pt-[2px]">
               <div className="absolute inset-0 bg-[#25D366] rounded-full animate-ping opacity-20" style={{ animationDuration: '3s' }}></div>

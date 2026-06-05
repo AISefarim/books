@@ -43,6 +43,7 @@ export default function App() {
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
   const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string>, welcomeVideoUrl?: string, videoFolderThumbnails?: Record<string, string>, videoFolderOrder?: string[], seriesThumbnails?: Record<string, string> }>({});
   const [showSettingsModal, setShowSettingsModal] = useState(false);
+  const [showAiModal, setShowAiModal] = useState(false);
   const [isPlayingWelcome, setIsPlayingWelcome] = useState(false);
   const [isDirectLinkEntry, setIsDirectLinkEntry] = useState(false);
   const [playingDirectVideo, setPlayingDirectVideo] = useState(false);
@@ -537,6 +538,7 @@ export default function App() {
         whatsappUrl={bannerUrl}
         totalBooks={books.length}
         totalVideos={videos.length}
+        onOpenAiChat={() => setShowAiModal(true)}
       />
 
       {/* Welcome Video Section (Only on main dashboard) */}
@@ -1189,6 +1191,11 @@ export default function App() {
           onStatusMessage={showStatus}
         />
       )}
+
+      {showAiModal && (
+        <AIChat onClose={() => setShowAiModal(false)} />
+      )}
+
       <AddToHomescreen />
     </div>
   );

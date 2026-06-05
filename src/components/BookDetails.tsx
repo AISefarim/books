@@ -77,16 +77,16 @@ export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggl
             
             <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-4">
               <button
-                onClick={() => onRead(book.epub)}
+                onClick={() => onDownload(book.epub, `${book.title}_eBook`)}
                 className="bg-white text-indigo-900 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-xl hover:shadow-2xl active:scale-95"
               >
-                <BookOpen className="w-5 h-5" /> Read Now
+                <Download className="w-5 h-5" /> Download eBook
               </button>
               <button
-                onClick={() => onDownload(book.epub, book.title)}
+                onClick={() => onRead(book.epub)}
                 className="bg-indigo-800/50 backdrop-blur-md text-white border border-indigo-500/30 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700/50 transition-all active:scale-95"
               >
-                <Download className="w-5 h-5" /> Download
+                <BookOpen className="w-5 h-5" /> Read Online
               </button>
               {book.buyLink && (
                 <a

@@ -109,16 +109,16 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
         <div className="mt-auto pt-6 border-t border-slate-50 flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">
             <button
-              onClick={() => onRead(book.epub)}
+              onClick={() => onDownload(book.epub, `${book.title}_eBook`)}
               className="flex-1 min-w-[100px] bg-indigo-600 text-white px-2 py-4 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-indigo-700 transition-all shadow-md hover:shadow-lg active:scale-95"
             >
-              <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" /> Read
+              <Download className="w-4 h-4 sm:w-5 sm:h-5" /> Download eBook
             </button>
             <button
-              onClick={() => onDownload(book.epub, book.title)}
+              onClick={() => onRead(book.epub)}
               className="flex-1 min-w-[100px] bg-indigo-50 text-indigo-700 px-2 py-4 rounded-2xl text-[10px] sm:text-xs font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-indigo-100 transition-all shadow-sm hover:shadow-md active:scale-95"
             >
-              <Download className="w-4 h-4 sm:w-5 sm:h-5" /> Download
+              <BookOpen className="w-4 h-4 sm:w-5 sm:h-5" /> Read Online
             </button>
             <button
               onClick={handleShare}
