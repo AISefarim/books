@@ -199,20 +199,20 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
               >
                 <div className="relative mb-6 mt-2 mr-3 ml-1 isolate">
                   <div className="absolute inset-0 bg-slate-200 rounded-[2rem] translate-x-3 -translate-y-3 -z-20 border border-slate-300 transition-transform duration-500 group-hover:translate-x-5 group-hover:-translate-y-5 rotate-3 origin-bottom-right overflow-hidden shadow-sm">
-                    {book3?.coverUrl || book3?.thumbnailUrl ? (
-                      <img src={book3.coverUrl || book3.thumbnailUrl} alt="" className="w-full h-full object-cover opacity-50" />
+                    {book3?.cover ? (
+                      <img src={book3.cover} alt="" className="w-full h-full object-cover opacity-50" />
                     ) : null}
                   </div>
                   <div className="absolute inset-0 bg-slate-100 rounded-[2rem] translate-x-1.5 -translate-y-1.5 -z-10 border border-slate-200 shadow-sm transition-transform duration-500 group-hover:translate-x-2.5 group-hover:-translate-y-2.5 rotate-1 origin-bottom-right overflow-hidden">
-                    {book2?.coverUrl || book2?.thumbnailUrl ? (
-                      <img src={book2.coverUrl || book2.thumbnailUrl} alt="" className="w-full h-full object-cover opacity-80" />
+                    {book2?.cover ? (
+                      <img src={book2.cover} alt="" className="w-full h-full object-cover opacity-80" />
                     ) : null}
                   </div>
                   
                   <div className="relative aspect-[3/4] rounded-[2rem] overflow-hidden bg-white shadow-md border border-slate-100 transition-all duration-500 flex items-center justify-center group-hover:-translate-y-1 group-hover:-translate-x-1">
-                    {book1?.coverUrl || book1?.thumbnailUrl ? (
+                    {book1?.cover || seriesThumbnails?.[seriesName] ? (
                       <>
-                        <img src={book1.coverUrl || book1.thumbnailUrl} alt={seriesName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" />
+                        <img src={book1?.cover || seriesThumbnails?.[seriesName]} alt={seriesName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
                       </>
                     ) : (
