@@ -425,10 +425,27 @@ export default function App() {
   };
 
   const handleBookReorder = async (reorderedBooks: Book[]) => {
+    // We want to preserve their existing global orders, just swapped around.
+    // 1. Find all their current orders (or default to sequential numbers if missing)
+    let currentOrders = reorderedBooks.map(b => b.order ?? 0);
+    // If all are 0, just assign based on current order in the whole app, 
+    // or simply assign sequential numbers but push others down?
+    // Let's just use sequential numbers but starting from the minimum order they had,
+    // Or simpler: just give them i+1 if they don't have orders, but if they do, swap them.
+    // Wait, simpler: just map them strictly by i+1 but offset by the max existing order?
+    // Actually, just sorting currentOrders and applying them is best:
+    currentOrders.sort((a, b) => a - b);
+    
+    // If they were all 0 (no orders set yet), we need a baseline. Let's just use i + 1 as fallback.
+    const hasExistingOrders = currentOrders.some(o => o > 0);
+    
     const updates = [];
     for (let i = 0; i < reorderedBooks.length; i++) {
       const book = reorderedBooks[i];
-      const newOrder = i + 1;
+      const newOrder = hasExistingOrders ? currentOrders[i] : i + 1;
+      
+      // Force an update to order even if newOrder === book.order, because if hasExistingOrders is false,
+      // book.order is 0, so it will update to i+1.
       if (book.order !== newOrder) {
         updates.push({ id: book.id, order: newOrder });
       }
@@ -441,15 +458,14 @@ export default function App() {
   };
 
   const handleVideoReorder = async (reorderedVideos: Video[]) => {
-    // Optimistically update local state if we want, or just wait for snapshot.
-    // The reorderedVideos array is the new order.
-    // We can assign order = index + 1 for all of them.
-    
-    // To avoid too many writes, we only update those whose order changed.
+    let currentOrders = reorderedVideos.map(v => v.order ?? 0);
+    currentOrders.sort((a, b) => a - b);
+    const hasExistingOrders = currentOrders.some(o => o > 0);
+
     const updates = [];
     for (let i = 0; i < reorderedVideos.length; i++) {
       const video = reorderedVideos[i];
-      const newOrder = i + 1;
+      const newOrder = hasExistingOrders ? currentOrders[i] : i + 1;
       if (video.order !== newOrder) {
         updates.push({ id: video.id, order: newOrder });
       }

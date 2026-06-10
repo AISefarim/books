@@ -62,7 +62,7 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
             Featured Sefer
           </div>
           
-          <h2 className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white drop-shadow-lg break-words w-full pb-2">
+          <h2 className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full pb-2">
             {currentBook.title}
           </h2>
           

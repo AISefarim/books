@@ -162,7 +162,7 @@ function SortableFolderWrapper({ folder, items, folderThumbnails, isAdmin, onUpd
         </div>
         
         <div className="px-2">
-          <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">
+          <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors break-words hyphens-auto">
             {displayName}
           </h3>
           <p className="text-xs font-bold mt-2 uppercase tracking-widest text-slate-500">
@@ -247,7 +247,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
         const newItems = [...newCurrentItems, ...otherItems];
         setItems(newItems);
         if (onReorder) {
-          onReorder(newItems);
+          onReorder(newCurrentItems);
         }
       }
     }
@@ -351,7 +351,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
               </div>
               
               <div className="px-2">
-                <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">
+                <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors break-words hyphens-auto">
                   {displayName}
                 </h3>
                 <p className="text-xs font-bold mt-2 uppercase tracking-widest text-slate-500">
@@ -580,7 +580,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
     return (
       <DndContext 
         sensors={sensors}
-        collisionDetection={pointerWithin}
+        collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
         <SortableContext 

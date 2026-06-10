@@ -57,7 +57,7 @@ export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggl
           {/* Left Content */}
           <div className="flex-1 space-y-6 text-center md:text-left order-3 md:order-1 overflow-hidden">
             
-            <h2 className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white drop-shadow-lg break-words w-full pb-2">
+            <h2 className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full pb-2">
               {book.title}
             </h2>
             

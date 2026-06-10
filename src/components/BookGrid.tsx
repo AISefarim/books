@@ -121,7 +121,7 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
         
         setItems(newItems);
         if (onReorder) {
-          onReorder(newItems);
+          onReorder(newSeriesItems);
         }
       }
     }
@@ -224,7 +224,7 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
                 </div>
                 
                 <div className="px-2">
-                  <h3 className="text-lg font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors">
+                  <h3 className="text-lg font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors break-words hyphens-auto">
                     {seriesName}
                   </h3>
                   <p className="text-[10px] font-bold mt-1 uppercase tracking-widest text-slate-500">
@@ -303,7 +303,7 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
       {isAdmin && onReorder && selectedSeries ? (
         <DndContext
           sensors={sensors}
-          collisionDetection={pointerWithin}
+          collisionDetection={closestCenter}
           onDragEnd={handleDragEnd}
         >
           <SortableContext
