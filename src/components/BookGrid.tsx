@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Book as BookIcon, Folder, ArrowLeft, Upload } from 'lucide-react';
+import { Book as BookIcon, Folder, ArrowLeft, Upload, BookOpen } from 'lucide-react';
 import { Book } from '../types';
 import { BookCard } from './BookCard';
 import {
@@ -190,44 +190,53 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
               <div 
                 key={seriesName}
                 onClick={() => setSelectedSeries(seriesName)}
-                className="group cursor-pointer flex flex-col h-full"
+                className="group cursor-pointer flex flex-col h-full bg-slate-50/50 rounded-[3rem] p-5 shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 hover:border-indigo-100 hover:bg-white"
               >
-                <div className="relative aspect-[3/4] rounded-[2rem] overflow-hidden bg-slate-50 mb-4 shadow-sm border border-slate-100 group-hover:shadow-2xl group-hover:-translate-y-1 transition-all duration-300 flex items-center justify-center">
-                  {seriesThumbnails?.[seriesName] ? (
-                    <>
-                      <img src={seriesThumbnails[seriesName]} alt={seriesName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
-                    </>
-                  ) : (
-                    <div className="w-24 h-24 bg-indigo-50/80 backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border border-indigo-100/50 group-hover:border-indigo-600 shadow-inner">
-                      <Folder className="w-10 h-10 text-indigo-400 group-hover:text-white transition-colors duration-300 pointer-events-none" />
-                    </div>
-                  )}
+                <div className="relative mb-6 mt-2 mr-3 ml-1 isolate">
+                  <div className="absolute inset-0 bg-slate-200 rounded-[2rem] translate-x-3 -translate-y-3 -z-20 border border-slate-300 transition-transform duration-500 group-hover:translate-x-5 group-hover:-translate-y-5 rotate-3 origin-bottom-right"></div>
+                  <div className="absolute inset-0 bg-slate-100 rounded-[2rem] translate-x-1.5 -translate-y-1.5 -z-10 border border-slate-200 shadow-sm transition-transform duration-500 group-hover:translate-x-2.5 group-hover:-translate-y-2.5 rotate-1 origin-bottom-right"></div>
                   
-                  {isAdmin && onUpdateSeriesThumbnail && (
-                    <div className="absolute top-3 right-3 z-[60]" onClick={e => e.stopPropagation()}>
-                      <label className="cursor-pointer bg-white/90 backdrop-blur-md p-2 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-white shadow-sm border border-slate-200 flex items-center justify-center transition-colors">
-                        <Upload className="w-4 h-4" />
-                        <input 
-                          type="file" 
-                          accept="image/*" 
-                          className="hidden" 
-                          onChange={(e) => {
-                            if (e.target.files?.[0]) {
-                              onUpdateSeriesThumbnail(seriesName, e.target.files[0]);
-                            }
-                          }} 
-                        />
-                      </label>
-                    </div>
-                  )}
+                  <div className="relative aspect-[3/4] rounded-[2rem] overflow-hidden bg-white shadow-md border border-slate-100 transition-all duration-500 flex items-center justify-center group-hover:-translate-y-1 group-hover:-translate-x-1">
+                    {seriesThumbnails?.[seriesName] ? (
+                      <>
+                        <img src={seriesThumbnails[seriesName]} alt={seriesName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                      </>
+                    ) : (
+                      <div className="w-24 h-24 bg-indigo-50/80 backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border border-indigo-100/50 group-hover:border-indigo-600 shadow-inner">
+                        <Folder className="w-10 h-10 text-indigo-400 group-hover:text-white transition-colors duration-300 pointer-events-none" />
+                      </div>
+                    )}
+                    
+                    {isAdmin && onUpdateSeriesThumbnail && (
+                      <div className="absolute top-3 right-3 z-[60]" onClick={e => e.stopPropagation()}>
+                        <label className="cursor-pointer bg-white/90 backdrop-blur-md p-2 rounded-xl text-slate-500 hover:text-indigo-600 hover:bg-white shadow-sm border border-slate-200 flex items-center justify-center transition-colors">
+                          <Upload className="w-4 h-4" />
+                          <input 
+                            type="file" 
+                            accept="image/*" 
+                            className="hidden" 
+                            onChange={(e) => {
+                              if (e.target.files?.[0]) {
+                                onUpdateSeriesThumbnail(seriesName, e.target.files[0]);
+                              }
+                            }} 
+                          />
+                        </label>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
-                <div className="px-2">
-                  <h3 className="text-lg font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors break-words hyphens-auto">
+                <div className="px-2 pb-2">
+                  <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-600 text-[9px] font-black uppercase tracking-widest mb-3 border border-indigo-100/50">
+                    <BookOpen className="w-3 h-3" />
+                    Series
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors break-words hyphens-auto">
                     {seriesName}
                   </h3>
-                  <p className="text-[10px] font-bold mt-1 uppercase tracking-widest text-slate-500">
+                  <p className="text-[11px] font-bold mt-2 uppercase tracking-widest text-slate-400">
                     {count} {count === 1 ? 'Book' : 'Books'}
                   </p>
                 </div>
