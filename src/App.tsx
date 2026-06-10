@@ -43,7 +43,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
-  const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string>, welcomeVideoUrl?: string, videoFolderThumbnails?: Record<string, string>, videoFolderOrder?: string[], seriesThumbnails?: Record<string, string> }>({});
+  const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string>, welcomeVideoUrl?: string, videoFolderThumbnails?: Record<string, string>, videoFolderOrder?: string[], seriesThumbnails?: Record<string, string>, seriesOrder?: string[] }>({});
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showAiModal, setShowAiModal] = useState(false);
   const [isPlayingWelcome, setIsPlayingWelcome] = useState(false);
@@ -496,6 +496,18 @@ export default function App() {
     } catch (err: any) {
       console.error(err);
       showStatus(`Failed to rename series: ${err.message}`, 'error');
+    }
+  };
+
+  const handleSeriesReorder = async (newOrder: string[]) => {
+    try {
+      await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_'), {
+        seriesOrder: newOrder,
+        isSettingsDoc: true
+      }, { merge: true });
+    } catch (err) {
+      console.error("Failed to reorder series:", err);
+      showStatus("Failed to save series order", "error");
     }
   };
 
@@ -1004,6 +1016,8 @@ export default function App() {
               onAddExistingBookToSeries={(series) => setAddExistingSeriesModal(series)}
               onReorder={handleBookReorder}
               onRenameSeries={handleRenameSeries}
+              seriesOrder={siteSettings.seriesOrder}
+              onSeriesReorder={handleSeriesReorder}
             />
           </>
         ) : activeTab === 'videos' ? (
@@ -1209,6 +1223,8 @@ export default function App() {
                     savedBookIds={savedBookIds}
                     onToggleSave={toggleSaveBook}
                     onRenameSeries={handleRenameSeries}
+                    seriesOrder={siteSettings.seriesOrder}
+                    onSeriesReorder={handleSeriesReorder}
                   />
                 )}
               </div>
