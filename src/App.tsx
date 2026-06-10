@@ -2,7 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment, setDoc, writeBatch } from 'firebase/firestore';
 import { ref, deleteObject, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download } from 'lucide-react';
+import JSZip from 'jszip';
+import { saveAs } from 'file-saver';
 
 import { db, storage, auth } from './lib/firebase';
 import { Book, Video, Audio } from './types';
@@ -279,6 +281,62 @@ export default function App() {
     }
   };
 
+  const handleDownloadAllBooks = async () => {
+    try {
+      showStatus('Preparing library for download. This might take a few minutes...', 'success');
+      const zip = new JSZip();
+      
+      const booksToDownload = books.filter(b => b.epub);
+
+      if (booksToDownload.length === 0) {
+        showStatus('No items available to download.', 'error');
+        return;
+      }
+      
+      let downloadedCount = 0;
+      
+      for (const book of booksToDownload) {
+        try {
+          // Add a short delay to avoid overwhelming the browser/network connections
+          await new Promise(resolve => setTimeout(resolve, 50));
+          const response = await fetch(book.epub);
+          if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
+          const blob = await response.blob();
+          
+          let folderPath = book.series ? `${book.series}/` : '';
+          let fileName = `${book.title}.epub`;
+          
+          // Sanitize filename and folder path
+          fileName = fileName.replace(/[/\\?%*:|"<>]/g, '-');
+          folderPath = folderPath.replace(/[/\\?%*:|"<>]/g, '-');
+          
+          if (folderPath) {
+             zip.folder(folderPath.replace(/\/$/, ''))?.file(fileName, blob);
+          } else {
+             zip.file(fileName, blob);
+          }
+          
+          downloadedCount++;
+        } catch (error) {
+          console.error(`Failed to download book: ${book.title}`, error);
+        }
+      }
+      
+      if (downloadedCount === 0) {
+        showStatus('Failed to download any items.', 'error');
+        return;
+      }
+      
+      showStatus(`Zipping ${downloadedCount} Sefarim...`, 'success');
+      const zipBlob = await zip.generateAsync({ type: 'blob' });
+      saveAs(zipBlob, 'AI_Sefarim_Library.zip');
+      showStatus('Library downloaded successfully!', 'success');
+    } catch (error: any) {
+      console.error(error);
+      showStatus(`Download Error: ${error.message}`, 'error');
+    }
+  };
+
   const handleDownload = async (url: string, title: string, bookId: string) => {
     try {
       // Increment download count
@@ -412,6 +470,32 @@ export default function App() {
       showStatus('Sefer updated successfully.', 'success');
     } catch (e: any) {
       showStatus(`Update Error: ${e.message}`, 'error');
+    }
+  };
+
+  const handleRenameSeries = async (oldName: string, newName: string) => {
+    try {
+      showStatus('Renaming series...', 'success');
+      const batch = writeBatch(db);
+      books.filter(b => b.series === oldName).forEach(book => {
+        const ref = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id);
+        batch.update(ref, { series: newName });
+      });
+      await batch.commit();
+      
+      if (siteSettings.seriesThumbnails?.[oldName]) {
+        const newThumbnails = { ...siteSettings.seriesThumbnails };
+        newThumbnails[newName] = newThumbnails[oldName];
+        delete newThumbnails[oldName];
+        await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_'), {
+          seriesThumbnails: newThumbnails,
+          isSettingsDoc: true
+        }, { merge: true });
+      }
+      showStatus(`Series renamed to "${newName}"`, 'success');
+    } catch (err: any) {
+      console.error(err);
+      showStatus(`Failed to rename series: ${err.message}`, 'error');
     }
   };
 
@@ -853,6 +937,13 @@ export default function App() {
                       <Share2 className="w-4 h-4" /> Share Category
                     </button>
                   )}
+                  <button
+                    onClick={handleDownloadAllBooks}
+                    className="px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-slate-800 text-white hover:bg-slate-700 shadow-sm w-full sm:w-auto justify-center border border-slate-700 hover:shadow-md"
+                    title="Download entire library as ZIP"
+                  >
+                    <Download className="w-4 h-4" /> Download Library (.ZIP)
+                  </button>
                 </div>
               </div>
 
@@ -912,6 +1003,7 @@ export default function App() {
               }}
               onAddExistingBookToSeries={(series) => setAddExistingSeriesModal(series)}
               onReorder={handleBookReorder}
+              onRenameSeries={handleRenameSeries}
             />
           </>
         ) : activeTab === 'videos' ? (
@@ -1116,6 +1208,7 @@ export default function App() {
                     onSelectBook={handleBookSelect}
                     savedBookIds={savedBookIds}
                     onToggleSave={toggleSaveBook}
+                    onRenameSeries={handleRenameSeries}
                   />
                 )}
               </div>
