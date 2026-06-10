@@ -31,6 +31,7 @@ export default function App() {
   const [videos, setVideos] = useState<Video[]>([]);
   const [audios, setAudios] = useState<Audio[]>([]);
   const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'library' | 'audio' | 'ai'>('sefarim');
+  const [activeSeries, setActiveSeries] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -281,15 +282,15 @@ export default function App() {
     }
   };
 
-  const handleDownloadAllBooks = async () => {
+  const handleDownloadSeries = async (seriesName: string) => {
     try {
-      showStatus('Preparing library for download. This might take a few minutes...', 'success');
+      showStatus(`Preparing "${seriesName}" for download. This might take a few moments...`, 'success');
       const zip = new JSZip();
       
-      const booksToDownload = books.filter(b => b.epub);
+      const booksToDownload = books.filter(b => (b.series || '') === seriesName && b.epub);
 
       if (booksToDownload.length === 0) {
-        showStatus('No items available to download.', 'error');
+        showStatus('No items available to download in this series.', 'error');
         return;
       }
       
@@ -303,18 +304,12 @@ export default function App() {
           if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
           const blob = await response.blob();
           
-          let folderPath = book.series ? `${book.series}/` : '';
           let fileName = `${book.title}.epub`;
           
-          // Sanitize filename and folder path
+          // Sanitize filename
           fileName = fileName.replace(/[/\\?%*:|"<>]/g, '-');
-          folderPath = folderPath.replace(/[/\\?%*:|"<>]/g, '-');
           
-          if (folderPath) {
-             zip.folder(folderPath.replace(/\/$/, ''))?.file(fileName, blob);
-          } else {
-             zip.file(fileName, blob);
-          }
+          zip.file(fileName, blob);
           
           downloadedCount++;
         } catch (error) {
@@ -329,8 +324,8 @@ export default function App() {
       
       showStatus(`Zipping ${downloadedCount} Sefarim...`, 'success');
       const zipBlob = await zip.generateAsync({ type: 'blob' });
-      saveAs(zipBlob, 'AI_Sefarim_Library.zip');
-      showStatus('Library downloaded successfully!', 'success');
+      saveAs(zipBlob, `${seriesName}_Series.zip`);
+      showStatus('Series downloaded successfully!', 'success');
     } catch (error: any) {
       console.error(error);
       showStatus(`Download Error: ${error.message}`, 'error');
@@ -670,7 +665,7 @@ export default function App() {
       />
 
       {/* Welcome Video Section (Only on main dashboard) */}
-      {!selectedBook && !selectedVideo && !searchQuery && !selectedCategory && (
+      {!selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 md:pt-8 pb-4">
           <div className="bg-slate-900 rounded-[1.5rem] md:rounded-[3rem] overflow-hidden shadow-2xl border border-slate-800 shadow-indigo-900/10 relative">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-slate-900 to-slate-900 pointer-events-none" />
@@ -881,7 +876,7 @@ export default function App() {
           />
         ) : activeTab === 'sefarim' ? (
           <>
-            {!isLoading && featuredBooks.length > 0 && !searchQuery && !selectedCategory && (
+            {!isLoading && featuredBooks.length > 0 && !searchQuery && !selectedCategory && !activeSeries && (
               <FeaturedBooks 
                 books={featuredBooks} 
                 onRead={(url) => {
@@ -949,13 +944,7 @@ export default function App() {
                       <Share2 className="w-4 h-4" /> Share Category
                     </button>
                   )}
-                  <button
-                    onClick={handleDownloadAllBooks}
-                    className="px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-slate-800 text-white hover:bg-slate-700 shadow-sm w-full sm:w-auto justify-center border border-slate-700 hover:shadow-md"
-                    title="Download entire library as ZIP"
-                  >
-                    <Download className="w-4 h-4" /> Download Library (.ZIP)
-                  </button>
+
                 </div>
               </div>
 
@@ -1018,6 +1007,8 @@ export default function App() {
               onRenameSeries={handleRenameSeries}
               seriesOrder={siteSettings.seriesOrder}
               onSeriesReorder={handleSeriesReorder}
+              onDownloadSeries={handleDownloadSeries}
+              onSeriesSelectChange={setActiveSeries}
             />
           </>
         ) : activeTab === 'videos' ? (
@@ -1225,6 +1216,8 @@ export default function App() {
                     onRenameSeries={handleRenameSeries}
                     seriesOrder={siteSettings.seriesOrder}
                     onSeriesReorder={handleSeriesReorder}
+                    onDownloadSeries={handleDownloadSeries}
+                    onSeriesSelectChange={setActiveSeries}
                   />
                 )}
               </div>

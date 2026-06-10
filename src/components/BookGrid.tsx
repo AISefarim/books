@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Book as BookIcon, Folder, ArrowLeft, Upload, BookOpen, Edit3 } from 'lucide-react';
+import { Book as BookIcon, Folder, ArrowLeft, Upload, BookOpen, Edit3, Download } from 'lucide-react';
 import { Book } from '../types';
 import { BookCard } from './BookCard';
 import {
@@ -41,6 +41,8 @@ interface BookGridProps {
   onRenameSeries?: (oldName: string, newName: string) => void;
   seriesOrder?: string[];
   onSeriesReorder?: (series: string[]) => void;
+  onDownloadSeries?: (seriesName: string) => void;
+  onSeriesSelectChange?: (seriesName: string | null) => void;
 }
 
 function SortableSeriesWrapper({ seriesName, children }: any) {
@@ -121,10 +123,17 @@ function SortableBookWrapper({ book, isAdmin, onEdit, onDelete, onRead, onDownlo
   );
 }
 
-export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries, onAddExistingBookToSeries, onReorder, searchQuery, onRenameSeries, seriesOrder, onSeriesReorder }: BookGridProps) {
+export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries, onAddExistingBookToSeries, onReorder, searchQuery, onRenameSeries, seriesOrder, onSeriesReorder, onDownloadSeries, onSeriesSelectChange }: BookGridProps) {
   const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
   const [items, setItems] = useState(books);
   const [currentSeriesOrder, setCurrentSeriesOrder] = useState<string[]>([]);
+
+  const handleSeriesSelect = (series: string | null) => {
+    setSelectedSeries(series);
+    if (onSeriesSelectChange) {
+      onSeriesSelectChange(series);
+    }
+  };
 
   useEffect(() => {
     setItems(books);
@@ -259,7 +268,7 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
       const book3 = seriesBooks.length > 2 ? seriesBooks[2] : null;
       return (
         <div 
-          onClick={() => setSelectedSeries(seriesName)}
+          onClick={() => handleSeriesSelect(seriesName)}
           className="group cursor-pointer flex flex-col h-full bg-slate-50/50 rounded-[3rem] p-5 shadow-sm hover:shadow-xl transition-all duration-500 border border-slate-100 hover:border-indigo-100 hover:bg-white"
         >
           <div className="relative mb-6 mt-2 mr-3 ml-1 isolate">
@@ -302,21 +311,23 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
                   {count} {count === 1 ? 'Book' : 'Books'}
                 </p>
               </div>
-              {isAdmin && onRenameSeries && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    const newName = window.prompt('Enter new series name:', seriesName);
-                    if (newName && newName.trim() !== '' && newName !== seriesName) {
-                      onRenameSeries(seriesName, newName.trim());
-                    }
-                  }}
-                  className="p-2 -mr-2 bg-slate-100 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-xl shadow-sm border border-slate-200 transition-all opacity-0 group-hover:opacity-100"
-                  title="Rename Series"
-                >
-                  <Edit3 className="w-4 h-4" />
-                </button>
-              )}
+              <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {isAdmin && onRenameSeries && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newName = window.prompt('Enter new series name:', seriesName);
+                      if (newName && newName.trim() !== '' && newName !== seriesName) {
+                        onRenameSeries(seriesName, newName.trim());
+                      }
+                    }}
+                    className="p-2 -mr-2 bg-slate-100 text-slate-500 hover:text-indigo-600 hover:bg-white rounded-xl shadow-sm border border-slate-200 transition-all"
+                    title="Rename Series"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -378,9 +389,9 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
     <div className="space-y-8 animate-in slide-in-from-right-4 fade-in duration-300">
       {selectedSeries && (
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-slate-50 border border-slate-100 p-4 rounded-3xl">
-          <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-4 flex-wrap flex-1">
             <button 
-              onClick={() => setSelectedSeries(null)}
+              onClick={() => handleSeriesSelect(null)}
               className="px-5 py-2.5 bg-white text-slate-600 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-100 hover:text-slate-900 transition-colors border-2 border-slate-200 flex items-center gap-2 shadow-sm shrink-0 w-fit"
             >
               <ArrowLeft className="w-4 h-4" /> All Series
@@ -388,6 +399,15 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
             <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight px-2 border-l-2 border-slate-200">
               {selectedSeries}
             </h2>
+            {onDownloadSeries && (
+              <button
+                onClick={() => onDownloadSeries(selectedSeries)}
+                className="px-8 py-4 rounded-2xl text-sm sm:text-base font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400 shadow-xl shadow-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/40 w-full sm:w-fit sm:ml-auto border border-white/20 hover:-translate-y-1 active:translate-y-0 justify-center transform"
+              >
+                <Download className="w-6 h-6 pointer-events-none animate-bounce" /> 
+                <span className="pointer-events-none drop-shadow-md">Download Entire Series Onto Device</span>
+              </button>
+            )}
           </div>
           
           {isAdmin && onAddBookToSeries && (
