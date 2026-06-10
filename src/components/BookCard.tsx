@@ -50,7 +50,7 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
       <div className="py-8 px-4 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-2 gap-2">
           <h3 
-            className="font-black text-2xl uppercase leading-[0.85] text-slate-800 tracking-tighter cursor-pointer hover:text-indigo-600 transition-colors flex-1 min-w-0 break-words"
+            className="font-black text-xl sm:text-2xl uppercase leading-tight text-slate-800 tracking-tighter cursor-pointer hover:text-indigo-600 transition-colors flex-1 min-w-0 break-all"
             onClick={() => onSelect ? onSelect() : onRead(book.epub)}
           >
             {book.title}

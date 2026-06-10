@@ -48,16 +48,16 @@ export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggl
         <div className="relative z-10 flex flex-col md:flex-row items-center p-8 md:p-12 gap-8 md:gap-16 min-h-[400px]">
           
           {/* Mobile Title & Badge (Hidden on Desktop) */}
-          <div className="md:hidden flex flex-col items-center text-center space-y-4 w-full order-1">
-            <h2 className="text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white drop-shadow-lg">
+          <div className="md:hidden flex flex-col items-center text-center space-y-4 w-full order-1 overflow-hidden px-2">
+            <h2 className="text-3xl sm:text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full px-2">
               {book.title}
             </h2>
           </div>
 
           {/* Left Content */}
-          <div className="flex-1 space-y-6 text-center md:text-left order-3 md:order-1">
+          <div className="flex-1 space-y-6 text-center md:text-left order-3 md:order-1 overflow-hidden">
             
-            <h2 className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-[0.9] tracking-tighter text-white drop-shadow-lg">
+            <h2 className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white drop-shadow-lg break-words w-full pb-2">
               {book.title}
             </h2>
             

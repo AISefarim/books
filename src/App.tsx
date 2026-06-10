@@ -424,6 +424,22 @@ export default function App() {
     }
   };
 
+  const handleBookReorder = async (reorderedBooks: Book[]) => {
+    const updates = [];
+    for (let i = 0; i < reorderedBooks.length; i++) {
+      const book = reorderedBooks[i];
+      const newOrder = i + 1;
+      if (book.order !== newOrder) {
+        updates.push({ id: book.id, order: newOrder });
+      }
+    }
+    
+    for (const update of updates) {
+      const ref = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', update.id);
+      updateDoc(ref, { order: update.order }).catch(console.error);
+    }
+  };
+
   const handleVideoReorder = async (reorderedVideos: Video[]) => {
     // Optimistically update local state if we want, or just wait for snapshot.
     // The reorderedVideos array is the new order.
@@ -879,6 +895,7 @@ export default function App() {
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               onAddExistingBookToSeries={(series) => setAddExistingSeriesModal(series)}
+              onReorder={handleBookReorder}
             />
           </>
         ) : activeTab === 'videos' ? (
@@ -1113,10 +1130,6 @@ export default function App() {
                 )}
               </div>
             </div>
-          </div>
-        ) : activeTab === 'ai' ? (
-          <div className="max-w-7xl mx-auto h-[80vh] px-4 md:px-0 pb-8">
-            <AIChat />
           </div>
         ) : null}
       </main>

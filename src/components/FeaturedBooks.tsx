@@ -45,24 +45,24 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
       <div className="relative z-10 flex flex-col md:flex-row items-center p-8 md:p-12 gap-8 md:gap-16 min-h-[400px]">
         
         {/* Mobile Title & Badge (Hidden on Desktop) */}
-        <div className="md:hidden flex flex-col items-center text-center space-y-4 w-full order-1">
+        <div className="md:hidden flex flex-col items-center text-center space-y-4 w-full order-1 overflow-hidden px-2">
           <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase tracking-widest text-indigo-200">
             <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
             Featured Sefer
           </div>
-          <h2 className="text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white drop-shadow-lg">
+          <h2 className="text-3xl sm:text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full px-2">
             {currentBook.title}
           </h2>
         </div>
 
         {/* Left Content */}
-        <div className="flex-1 space-y-6 text-center md:text-left order-3 md:order-1">
+        <div className="flex-1 space-y-6 text-center md:text-left order-3 md:order-1 overflow-hidden">
           <div className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase tracking-widest text-indigo-200">
             <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
             Featured Sefer
           </div>
           
-          <h2 className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-[0.9] tracking-tighter text-white drop-shadow-lg">
+          <h2 className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white drop-shadow-lg break-words w-full pb-2">
             {currentBook.title}
           </h2>
           

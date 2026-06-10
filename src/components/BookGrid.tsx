@@ -1,7 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Book as BookIcon, Folder, ArrowLeft, Upload } from 'lucide-react';
 import { Book } from '../types';
 import { BookCard } from './BookCard';
+import {
+  DndContext,
+  closestCenter,
+  pointerWithin,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  arrayMove,
+  SortableContext,
+  sortableKeyboardCoordinates,
+  rectSortingStrategy,
+  useSortable
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 interface BookGridProps {
   books: Book[];
@@ -18,11 +36,96 @@ interface BookGridProps {
   onUpdateSeriesThumbnail?: (series: string, file: File) => void;
   onAddBookToSeries?: (series: string) => void;
   onAddExistingBookToSeries?: (series: string) => void;
+  onReorder?: (books: Book[]) => void;
   searchQuery?: string;
 }
 
-export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries, onAddExistingBookToSeries, searchQuery }: BookGridProps) {
+function SortableBookWrapper({ book, isAdmin, onEdit, onDelete, onRead, onDownload, onSelect, isSaved, onToggleSave }: any) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging
+  } = useSortable({ id: book.id });
+
+  const style = {
+    transform: CSS.Transform.toString(transform),
+    transition,
+    zIndex: isDragging ? 10 : 1,
+    opacity: isDragging ? 0.8 : 1,
+  };
+
+  return (
+    <div ref={setNodeRef} style={style} className="relative">
+      <div 
+        {...attributes} 
+        {...listeners} 
+        className="absolute top-2 left-2 z-[60] bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-lg cursor-grab hover:bg-white text-slate-400 hover:text-indigo-600 border border-slate-200"
+        title="Drag to reorder"
+      >
+        <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+        </svg>
+      </div>
+      <BookCard 
+        book={book} 
+        isAdmin={isAdmin} 
+        onEdit={onEdit} 
+        onDelete={onDelete} 
+        onRead={onRead} 
+        onDownload={onDownload} 
+        onSelect={onSelect} 
+        isSaved={isSaved} 
+        onToggleSave={onToggleSave} 
+      />
+    </div>
+  );
+}
+
+export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries, onAddExistingBookToSeries, onReorder, searchQuery }: BookGridProps) {
   const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
+  const [items, setItems] = useState(books);
+
+  useEffect(() => {
+    setItems(books);
+  }, [books]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    if (over && active.id !== over.id) {
+      const oldIndex = items.findIndex(v => v.id === active.id);
+      const newIndex = items.findIndex(v => v.id === over.id);
+      
+      if (oldIndex !== -1 && newIndex !== -1) {
+        const seriesItems = items.filter(b => (b.series || '') === selectedSeries);
+        const oldSeriesIndex = seriesItems.findIndex(v => v.id === active.id);
+        const newSeriesIndex = seriesItems.findIndex(v => v.id === over.id);
+        
+        const newSeriesItems = arrayMove(seriesItems, oldSeriesIndex, newSeriesIndex) as Book[];
+        const otherItems = items.filter(b => (b.series || '') !== selectedSeries);
+        const newItems = [...newSeriesItems, ...otherItems];
+        
+        setItems(newItems);
+        if (onReorder) {
+          onReorder(newItems);
+        }
+      }
+    }
+  };
 
   if (isLoading) {
     return (
@@ -158,7 +261,7 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
     );
   }
 
-  const seriesBooks = selectedSeries ? books.filter(b => (b.series || '') === selectedSeries) : books;
+  const seriesBooks = selectedSeries ? items.filter(b => (b.series || '') === selectedSeries) : items;
 
   return (
     <div className="space-y-8 animate-in slide-in-from-right-4 fade-in duration-300">
@@ -197,22 +300,52 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
-        {seriesBooks.map((book) => (
-          <BookCard
-            key={book.id}
-            book={book}
-            isAdmin={isAdmin}
-            onEdit={onEdit}
-            onDelete={onDelete}
-            onRead={onRead}
-            onDownload={onDownload}
-            onSelect={() => onSelectBook(book)}
-            isSaved={savedBookIds.includes(book.id)}
-            onToggleSave={onToggleSave}
-          />
-        ))}
-      </div>
+      {isAdmin && onReorder && selectedSeries ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={pointerWithin}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={seriesBooks.map(b => b.id)}
+            strategy={rectSortingStrategy}
+          >
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+              {seriesBooks.map((book) => (
+                <SortableBookWrapper
+                  key={book.id}
+                  book={book}
+                  isAdmin={isAdmin}
+                  onEdit={onEdit}
+                  onDelete={onDelete}
+                  onRead={onRead}
+                  onDownload={onDownload}
+                  onSelect={() => onSelectBook(book)}
+                  isSaved={savedBookIds.includes(book.id)}
+                  onToggleSave={onToggleSave}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
+          {seriesBooks.map((book) => (
+            <BookCard
+              key={book.id}
+              book={book}
+              isAdmin={isAdmin}
+              onEdit={onEdit}
+              onDelete={onDelete}
+              onRead={onRead}
+              onDownload={onDownload}
+              onSelect={() => onSelectBook(book)}
+              isSaved={savedBookIds.includes(book.id)}
+              onToggleSave={onToggleSave}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
