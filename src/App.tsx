@@ -128,6 +128,7 @@ export default function App() {
         let sharedBookId = params.get('book');
         let sharedVideoId = params.get('video');
         let sharedCategory = params.get('category');
+        let sharedSeries = params.get('series');
         let sharedTab = params.get('tab') as 'sefarim' | 'videos' | 'library' | null;
         
         const pathParts = window.location.pathname.split('/');
@@ -135,6 +136,8 @@ export default function App() {
           sharedVideoId = pathParts[2];
         } else if (pathParts[1] === 'b' && pathParts[2]) {
           sharedBookId = pathParts[2];
+        } else if (pathParts[1] === 's' && pathParts[2]) {
+          sharedSeries = decodeURIComponent(pathParts[2]);
         } else if (pathParts[1] === 'c' && pathParts[2]) {
           sharedCategory = decodeURIComponent(pathParts[2]);
           if (pathParts[3] === 'videos') sharedTab = 'videos';
@@ -158,6 +161,9 @@ export default function App() {
               views: increment(1)
             }).catch(err => console.error("Failed to increment video views", err));
           }
+        } else if (sharedSeries) {
+          setActiveSeries(sharedSeries);
+          setActiveTab('sefarim');
         } else if (sharedCategory) {
           setSelectedCategory(sharedCategory);
           if (sharedTab) {
@@ -581,6 +587,28 @@ export default function App() {
     } catch (err: any) {
       console.error(err);
       showStatus(`Failed to update folder order: ${err.message}`, 'error');
+    }
+  };
+
+  const handleSeriesShare = async (seriesName: string) => {
+    const url = `${window.location.origin}/s/${encodeURIComponent(seriesName)}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `${seriesName} Series`,
+          url: url
+        });
+        return;
+      } catch (err) {
+        console.log('Share API failed, falling back to clipboard.', err);
+      }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setStatus({ message: 'Series link copied to clipboard!', type: 'success' });
+      setTimeout(() => setStatus(null), 3000);
+    } catch (err) {
+      console.error('Failed to copy link', err);
     }
   };
 
@@ -1008,7 +1036,9 @@ export default function App() {
               seriesOrder={siteSettings.seriesOrder}
               onSeriesReorder={handleSeriesReorder}
               onDownloadSeries={handleDownloadSeries}
+              onShareSeries={handleSeriesShare}
               onSeriesSelectChange={setActiveSeries}
+              activeSeries={activeSeries}
             />
           </>
         ) : activeTab === 'videos' ? (
@@ -1217,7 +1247,9 @@ export default function App() {
                     seriesOrder={siteSettings.seriesOrder}
                     onSeriesReorder={handleSeriesReorder}
                     onDownloadSeries={handleDownloadSeries}
+                    onShareSeries={handleSeriesShare}
                     onSeriesSelectChange={setActiveSeries}
+                    activeSeries={activeSeries}
                   />
                 )}
               </div>

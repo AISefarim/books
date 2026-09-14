@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Book as BookIcon, Folder, ArrowLeft, Upload, BookOpen, Edit3, Download } from 'lucide-react';
+import { Book as BookIcon, Folder, ArrowLeft, Upload, BookOpen, Edit3, Download, Share2 } from 'lucide-react';
 import { Book } from '../types';
 import { BookCard } from './BookCard';
 import {
@@ -42,7 +42,9 @@ interface BookGridProps {
   seriesOrder?: string[];
   onSeriesReorder?: (series: string[]) => void;
   onDownloadSeries?: (seriesName: string) => void;
+  onShareSeries?: (seriesName: string) => void;
   onSeriesSelectChange?: (seriesName: string | null) => void;
+  activeSeries?: string | null;
 }
 
 function SortableSeriesWrapper({ seriesName, children }: any) {
@@ -123,10 +125,16 @@ function SortableBookWrapper({ book, isAdmin, onEdit, onDelete, onRead, onDownlo
   );
 }
 
-export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries, onAddExistingBookToSeries, onReorder, searchQuery, onRenameSeries, seriesOrder, onSeriesReorder, onDownloadSeries, onSeriesSelectChange }: BookGridProps) {
-  const [selectedSeries, setSelectedSeries] = useState<string | null>(null);
+export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries, onAddExistingBookToSeries, onReorder, searchQuery, onRenameSeries, seriesOrder, onSeriesReorder, onDownloadSeries, onShareSeries, onSeriesSelectChange, activeSeries = null }: BookGridProps) {
+  const [selectedSeries, setSelectedSeries] = useState<string | null>(activeSeries);
   const [items, setItems] = useState(books);
   const [currentSeriesOrder, setCurrentSeriesOrder] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (activeSeries !== undefined) {
+      setSelectedSeries(activeSeries);
+    }
+  }, [activeSeries]);
 
   const handleSeriesSelect = (series: string | null) => {
     setSelectedSeries(series);
@@ -399,15 +407,25 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
             <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight px-2 border-l-2 border-slate-200">
               {selectedSeries}
             </h2>
-            {onDownloadSeries && (
-              <button
-                onClick={() => onDownloadSeries(selectedSeries)}
-                className="px-8 py-4 rounded-2xl text-sm sm:text-base font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400 shadow-xl shadow-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/40 w-full sm:w-fit sm:ml-auto border border-white/20 hover:-translate-y-1 active:translate-y-0 justify-center transform"
-              >
-                <Download className="w-6 h-6 pointer-events-none animate-bounce" /> 
-                <span className="pointer-events-none drop-shadow-md">Download Entire Series Onto Device</span>
-              </button>
-            )}
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:ml-auto">
+              {onShareSeries && (
+                <button
+                  onClick={() => onShareSeries(selectedSeries)}
+                  className="px-5 py-3 rounded-xl sm:rounded-full text-xs font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 bg-white text-indigo-600 hover:bg-indigo-50 border-2 border-indigo-100 hover:border-indigo-200 shadow-sm w-full sm:w-fit justify-center"
+                >
+                  <Share2 className="w-4 h-4" /> Share Series
+                </button>
+              )}
+              {onDownloadSeries && (
+                <button
+                  onClick={() => onDownloadSeries(selectedSeries)}
+                  className="px-8 py-4 rounded-2xl text-sm sm:text-base font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white hover:from-emerald-400 hover:to-teal-400 shadow-xl shadow-emerald-500/30 hover:shadow-2xl hover:shadow-emerald-500/40 w-full sm:w-fit border border-white/20 hover:-translate-y-1 active:translate-y-0 justify-center transform"
+                >
+                  <Download className="w-6 h-6 pointer-events-none animate-bounce" /> 
+                  <span className="pointer-events-none drop-shadow-md">Download Entire Series Onto Device</span>
+                </button>
+              )}
+            </div>
           </div>
           
           {isAdmin && onAddBookToSeries && (
