@@ -46,7 +46,7 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
         
         {/* Mobile Title & Badge (Hidden on Desktop) */}
         <div className="md:hidden flex flex-col items-center text-center space-y-4 w-full order-1 overflow-hidden px-2">
-          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase tracking-widest text-indigo-200">
+          <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase tracking-widest text-indigo-200">
             <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
             Featured Sefer
           </div>
@@ -57,7 +57,7 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
 
         {/* Left Content */}
         <div className="flex-1 space-y-6 text-center md:text-left order-3 md:order-1 overflow-hidden">
-          <div className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase tracking-widest text-indigo-200">
+          <div className="hidden md:inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-900/10 backdrop-blur-md border border-white/20 text-xs font-black uppercase tracking-widest text-indigo-200">
             <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
             Featured Sefer
           </div>
@@ -80,7 +80,7 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
                 href={currentBook.buyLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="bg-white text-indigo-900 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-xl hover:shadow-2xl active:scale-95"
+                className="bg-slate-900 text-indigo-900 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-xl hover:shadow-2xl active:scale-95"
               >
                 <ShoppingCart className="w-5 h-5" /> Buy Physical
               </a>
@@ -120,7 +120,7 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
                 className={`w-2 h-2 rounded-full transition-all ${
-                  idx === currentIndex ? 'bg-white w-6' : 'bg-white/30 hover:bg-white/50'
+                  idx === currentIndex ? 'bg-slate-900 w-6' : 'bg-slate-900/30 hover:bg-slate-900/50'
                 }`}
               />
             ))}

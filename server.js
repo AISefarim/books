@@ -10,6 +10,10 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
   let vite;
   if (process.env.NODE_ENV !== "production") {
     vite = await createViteServer({

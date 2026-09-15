@@ -129,12 +129,12 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm overflow-y-auto">
-      <div className="bg-white rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 my-8">
-        <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10">
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Site Settings</h2>
+      <div className="bg-slate-900 rounded-[2rem] w-full max-w-xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300 my-8">
+        <div className="flex justify-between items-center p-6 border-b border-slate-800 bg-slate-950/50 sticky top-0 z-10">
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-100">Site Settings</h2>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-800 rounded-full transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
@@ -142,9 +142,9 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="space-y-3">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Site Logo (Thumbnail)</label>
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Site Logo (Thumbnail)</label>
             <div className="flex items-center gap-6">
-              <div className="w-24 h-24 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative shadow-inner">
+              <div className="w-24 h-24 rounded-2xl bg-slate-950 border-2 border-dashed border-slate-700 flex items-center justify-center overflow-hidden relative shadow-inner">
                 {logoPreview ? (
                   <img src={logoPreview} alt="Logo Preview" className="w-full h-full object-cover" />
                 ) : (
@@ -159,11 +159,11 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
                 />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-slate-500 mb-2">Upload a square image for your site logo. This is also used as a fallback thumbnail.</p>
+                <p className="text-sm font-medium text-slate-400 mb-2">Upload a square image for your site logo. This is also used as a fallback thumbnail.</p>
                 <button
                   type="button"
                   onClick={() => logoInputRef.current?.click()}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                  className="px-4 py-2 bg-slate-800 text-slate-200 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-700 transition-colors"
                 >
                   Choose Image
                 </button>
@@ -171,10 +171,10 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
             </div>
           </div>
 
-          <div className="space-y-3 border-t border-slate-100 pt-6">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Welcome Dashboard Video (.mp4)</label>
+          <div className="space-y-3 border-t border-slate-800 pt-6">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Welcome Dashboard Video (.mp4)</label>
             <div className="flex items-center gap-6">
-              <div className="w-32 h-20 rounded-2xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative shadow-inner">
+              <div className="w-32 h-20 rounded-2xl bg-slate-950 border-2 border-dashed border-slate-700 flex items-center justify-center overflow-hidden relative shadow-inner">
                 {welcomeVideoPreview ? (
                   <video src={welcomeVideoPreview} className="w-full h-full object-cover" muted />
                 ) : (
@@ -189,11 +189,11 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
                 />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-medium text-slate-500 mb-2">Upload the main welcome video displayed on the dashboard.</p>
+                <p className="text-sm font-medium text-slate-400 mb-2">Upload the main welcome video displayed on the dashboard.</p>
                 <button
                   type="button"
                   onClick={() => welcomeVideoInputRef.current?.click()}
-                  className="px-4 py-2 bg-slate-100 text-slate-700 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-200 transition-colors"
+                  className="px-4 py-2 bg-slate-800 text-slate-200 rounded-xl text-xs font-bold uppercase tracking-widest hover:bg-slate-700 transition-colors"
                 >
                   {welcomeVideoPreview ? 'Change Video' : 'Upload Video'}
                 </button>
@@ -201,21 +201,21 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
             </div>
           </div>
 
-          <div className="space-y-2 border-t border-slate-100 pt-6">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Community WhatsApp URL</label>
+          <div className="space-y-2 border-t border-slate-800 pt-6">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Community WhatsApp URL</label>
             <input
               type="url"
               required
               value={bannerUrl}
               onChange={(e) => setBannerUrl(e.target.value)}
               placeholder="https://chat.whatsapp.com/..."
-              className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+              className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
             />
             <p className="text-[11px] font-medium text-slate-400 pl-2">This is the link used for the top WhatsApp buttons.</p>
           </div>
 
-          <div className="space-y-3 border-t border-slate-100 pt-6">
-            <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Video Categories & Thumbnails</label>
+          <div className="space-y-3 border-t border-slate-800 pt-6">
+            <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Video Categories & Thumbnails</label>
             
             <div className="flex gap-2 mb-4">
               <input
@@ -223,7 +223,7 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
                 placeholder="New Category Name..."
-                className="flex-1 px-4 py-2 bg-slate-50 border-2 border-slate-100 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+                className="flex-1 px-4 py-2 bg-slate-950 border-2 border-slate-800 rounded-xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
               />
               <button
                 type="button"
@@ -244,7 +244,7 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
                   >
                     <X className="w-3 h-3" />
                   </button>
-                  <div className="aspect-square rounded-xl bg-slate-50 border-2 border-dashed border-slate-200 flex items-center justify-center overflow-hidden relative shadow-inner">
+                  <div className="aspect-square rounded-xl bg-slate-950 border-2 border-dashed border-slate-700 flex items-center justify-center overflow-hidden relative shadow-inner">
                     {categoryThumbnails[category] ? (
                       <img src={categoryThumbnails[category]} alt={category} className="w-full h-full object-cover" />
                     ) : (
@@ -258,7 +258,7 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
                       className="absolute inset-0 opacity-0 cursor-pointer"
                     />
                   </div>
-                  <span className="text-[10px] font-bold text-slate-600 text-center">{category}</span>
+                  <span className="text-[10px] font-bold text-slate-300 text-center">{category}</span>
                 </div>
               ))}
             </div>
@@ -268,7 +268,7 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
             <button
               type="button"
               onClick={onClose}
-              className="px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition-colors"
+              className="px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-slate-400 hover:bg-slate-800 transition-colors"
             >
               Cancel
             </button>

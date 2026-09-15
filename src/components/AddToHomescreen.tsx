@@ -61,10 +61,10 @@ export function AddToHomescreen() {
   if (!showPrompt) return null;
 
   return (
-    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-white rounded-2xl shadow-2xl border border-indigo-100 p-5 z-[200] animate-in slide-in-from-bottom-8 fade-in duration-500">
+    <div className="fixed bottom-4 left-4 right-4 md:left-auto md:right-4 md:w-96 bg-slate-900 rounded-2xl shadow-2xl border border-indigo-100 p-5 z-[200] animate-in slide-in-from-bottom-8 fade-in duration-500">
       <button 
         onClick={handleDismiss}
-        className="absolute top-3 right-3 p-1.5 text-slate-400 hover:bg-slate-100 rounded-full transition-colors"
+        className="absolute top-3 right-3 p-1.5 text-slate-400 hover:bg-slate-800 rounded-full transition-colors"
       >
         <X className="w-4 h-4" />
       </button>
@@ -77,14 +77,14 @@ export function AddToHomescreen() {
         </div>
         
         <div className="flex-1">
-          <h4 className="font-black text-slate-800 text-sm uppercase tracking-tight mb-1">Install AI Sefarim</h4>
+          <h4 className="font-black text-slate-100 text-sm uppercase tracking-tight mb-1">Install AI Sefarim</h4>
           
           {isIOS ? (
-            <div className="text-xs text-slate-500 font-medium leading-relaxed">
+            <div className="text-xs text-slate-400 font-medium leading-relaxed">
               Install this app on your iPhone: tap <Share className="inline w-3 h-3 mx-1" /> and then <strong>Add to Home Screen</strong> <PlusSquare className="inline w-3 h-3 mx-1" />.
             </div>
           ) : (
-            <div className="text-xs text-slate-500 font-medium leading-relaxed mb-3">
+            <div className="text-xs text-slate-400 font-medium leading-relaxed mb-3">
               Add to your home screen for a faster, full-screen reading experience.
             </div>
           )}

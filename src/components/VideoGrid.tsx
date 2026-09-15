@@ -62,7 +62,7 @@ function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo,
     <div ref={setNodeRef} style={style} className="relative group/wrapper">
       {isAdmin && onToggleSelect && (
         <div 
-          className="absolute top-4 right-4 z-[60] bg-white/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-200 cursor-pointer hover:scale-110 active:scale-95 transition-all text-slate-400 hover:text-indigo-600"
+          className="absolute top-4 right-4 z-[60] bg-slate-900/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-700 cursor-pointer hover:scale-110 active:scale-95 transition-all text-slate-400 hover:text-indigo-600"
           onClick={(e) => {
             e.stopPropagation();
             onToggleSelect(video.id);
@@ -119,12 +119,12 @@ function SortableFolderWrapper({ folder, items, folderThumbnails, isAdmin, onUpd
         onClick={() => onSelectFolder(folder)}
         className="group cursor-pointer flex flex-col h-full"
       >
-        <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-slate-50 mb-4 shadow-sm border border-slate-100 group-hover:shadow-2xl group-hover:-translate-y-2 hover:border-indigo-100 transition-all duration-300">
+        <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-slate-950 mb-4 shadow-sm border border-slate-800 group-hover:shadow-2xl group-hover:-translate-y-2 hover:border-indigo-100 transition-all duration-300">
           {isAdmin && (
             <div 
               {...listeners} 
               onClick={(e) => e.stopPropagation()} 
-              className="absolute top-4 left-4 z-[60] bg-white/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-200 cursor-grab hover:scale-110 transition-all text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 active:cursor-grabbing"
+              className="absolute top-4 left-4 z-[60] bg-slate-900/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-700 cursor-grab hover:scale-110 transition-all text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 active:cursor-grabbing"
               title="Drag to reorder"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
@@ -133,7 +133,7 @@ function SortableFolderWrapper({ folder, items, folderThumbnails, isAdmin, onUpd
           {isAdmin && onUpdateFolderThumbnail && (
             <div className="absolute top-4 right-4 z-[60]">
               <label 
-                className="cursor-pointer bg-white/90 backdrop-blur-md hover:bg-indigo-600 hover:text-white text-slate-500 p-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
+                className="cursor-pointer bg-slate-900/90 backdrop-blur-md hover:bg-indigo-600 hover:text-white text-slate-400 p-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
                 onClick={(e) => e.stopPropagation()}
                 title="Upload Folder Cover"
               >
@@ -153,7 +153,7 @@ function SortableFolderWrapper({ folder, items, folderThumbnails, isAdmin, onUpd
           {hasThumbnail ? (
             <img src={folderThumbnails[folder]} alt={displayName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 pointer-events-none" />
           ) : (
-            <div className="absolute inset-0 bg-slate-50/50 group-hover:bg-indigo-50/10 transition-colors duration-500 pointer-events-none flex items-center justify-center">
+            <div className="absolute inset-0 bg-slate-950/50 group-hover:bg-indigo-50/10 transition-colors duration-500 pointer-events-none flex items-center justify-center">
               <div className="w-24 h-24 bg-indigo-50/80 backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border border-indigo-100/50 group-hover:border-indigo-600 shadow-inner">
                 <Folder className="w-10 h-10 text-indigo-400 group-hover:text-white transition-colors duration-300 pointer-events-none" />
               </div>
@@ -162,10 +162,10 @@ function SortableFolderWrapper({ folder, items, folderThumbnails, isAdmin, onUpd
         </div>
         
         <div className="px-2">
-          <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors break-words hyphens-auto">
+          <h3 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors break-words hyphens-auto">
             {displayName}
           </h3>
-          <p className="text-xs font-bold mt-2 uppercase tracking-widest text-slate-500">
+          <p className="text-xs font-bold mt-2 uppercase tracking-widest text-slate-400">
             {count} {count === 1 ? 'Video' : 'Videos'}
           </p>
         </div>
@@ -265,10 +265,10 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {[...Array(8)].map((_, i) => (
-          <div key={i} className="animate-pulse bg-white rounded-[2rem] p-5 h-64 border border-slate-100">
-            <div className="w-full aspect-video bg-slate-100 rounded-xl mb-4"></div>
-            <div className="h-4 bg-slate-100 rounded w-3/4 mb-2"></div>
-            <div className="h-4 bg-slate-100 rounded w-1/2"></div>
+          <div key={i} className="animate-pulse bg-slate-900 rounded-[2rem] p-5 h-64 border border-slate-800">
+            <div className="w-full aspect-video bg-slate-800 rounded-xl mb-4"></div>
+            <div className="h-4 bg-slate-800 rounded w-3/4 mb-2"></div>
+            <div className="h-4 bg-slate-800 rounded w-1/2"></div>
           </div>
         ))}
       </div>
@@ -279,7 +279,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
     return (
       <div className="grid grid-cols-1 gap-10">
         <div className="col-span-full py-32 text-center animate-in fade-in">
-          <div className="bg-white p-16 rounded-[4rem] shadow-sm border border-slate-100 inline-block">
+          <div className="bg-slate-900 p-16 rounded-[4rem] shadow-sm border border-slate-800 inline-block">
             <PlayCircle className="w-16 h-16 text-slate-100 mx-auto mb-6" />
             <p className="text-slate-300 font-black uppercase italic tracking-[0.2em]">No videos yet</p>
           </div>
@@ -318,11 +318,11 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
               onClick={() => setSelectedFolder(f)}
               className="group cursor-pointer flex flex-col h-full"
             >
-              <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-slate-50 mb-4 shadow-sm border border-slate-100 group-hover:shadow-2xl group-hover:-translate-y-2 hover:border-indigo-100 transition-all duration-300">
+              <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-slate-950 mb-4 shadow-sm border border-slate-800 group-hover:shadow-2xl group-hover:-translate-y-2 hover:border-indigo-100 transition-all duration-300">
                 {isAdmin && onUpdateFolderThumbnail && (
                   <div className="absolute top-4 right-4 z-[60]">
                     <label 
-                      className="cursor-pointer bg-white/90 backdrop-blur-md hover:bg-indigo-600 hover:text-white text-slate-500 p-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
+                      className="cursor-pointer bg-slate-900/90 backdrop-blur-md hover:bg-indigo-600 hover:text-white text-slate-400 p-2.5 rounded-xl shadow-sm transition-all flex items-center justify-center opacity-0 group-hover:opacity-100"
                       onClick={(e) => e.stopPropagation()}
                       title="Upload Folder Cover"
                     >
@@ -342,7 +342,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
                 {hasThumbnail ? (
                   <img src={folderThumbnails[f]} alt={displayName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 pointer-events-none" />
                 ) : (
-                  <div className="absolute inset-0 bg-slate-50/50 group-hover:bg-indigo-50/10 transition-colors duration-500 pointer-events-none flex items-center justify-center">
+                  <div className="absolute inset-0 bg-slate-950/50 group-hover:bg-indigo-50/10 transition-colors duration-500 pointer-events-none flex items-center justify-center">
                     <div className="w-24 h-24 bg-indigo-50/80 backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border border-indigo-100/50 group-hover:border-indigo-600 shadow-inner">
                       <Folder className="w-10 h-10 text-indigo-400 group-hover:text-white transition-colors duration-300 pointer-events-none" />
                     </div>
@@ -351,10 +351,10 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
               </div>
               
               <div className="px-2">
-                <h3 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors break-words hyphens-auto">
+                <h3 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors break-words hyphens-auto">
                   {displayName}
                 </h3>
-                <p className="text-xs font-bold mt-2 uppercase tracking-widest text-slate-500">
+                <p className="text-xs font-bold mt-2 uppercase tracking-widest text-slate-400">
                   {count} {count === 1 ? mediaLabel : `${mediaLabel}s`}
                 </p>
               </div>
@@ -387,13 +387,13 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
         
         {looseVideos.length > 0 && (
           <div>
-            {allFolders.length > 0 && <h3 className="text-xl font-black text-slate-800 tracking-tight leading-tight px-4 mb-6 border-l-4 border-indigo-500 rounded-sm">Other {mediaLabel}s</h3>}
+            {allFolders.length > 0 && <h3 className="text-xl font-black text-slate-100 tracking-tight leading-tight px-4 mb-6 border-l-4 border-indigo-500 rounded-sm">Other {mediaLabel}s</h3>}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
               {looseVideos.map(video => (
                 <div key={video.id} className="relative group/wrapper">
                   {isAdmin && (
                     <div 
-                      className="absolute top-4 right-4 z-[60] bg-white/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-200 cursor-pointer hover:scale-110 active:scale-95 transition-all text-slate-400 hover:text-indigo-600 opacity-0 group-hover/wrapper:opacity-100"
+                      className="absolute top-4 right-4 z-[60] bg-slate-900/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-700 cursor-pointer hover:scale-110 active:scale-95 transition-all text-slate-400 hover:text-indigo-600 opacity-0 group-hover/wrapper:opacity-100"
                       onClick={(e) => {
                         e.stopPropagation();
                         // Bulk select would go here if we want to enable it for root view
@@ -426,27 +426,27 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
     <div className="space-y-8 animate-in slide-in-from-right-4 fade-in duration-300">
       
       {(isAdmin || !disableFolders) && (
-        <div className={`flex flex-col sm:flex-row sm:items-center gap-4 ${!disableFolders ? 'bg-slate-50 border border-slate-100 p-4 rounded-3xl' : 'justify-end mb-4'}`}>
+        <div className={`flex flex-col sm:flex-row sm:items-center gap-4 ${!disableFolders ? 'bg-slate-950 border border-slate-800 p-4 rounded-3xl' : 'justify-end mb-4'}`}>
           {!disableFolders && (
             <>
               <button 
                 onClick={() => setSelectedFolder(null)}
-                className="px-5 py-2.5 bg-white text-slate-600 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-100 hover:text-slate-900 transition-colors border-2 border-slate-200 flex items-center gap-2 shadow-sm shrink-0 w-fit"
+                className="px-5 py-2.5 bg-slate-900 text-slate-300 rounded-full font-black uppercase tracking-widest text-xs hover:bg-slate-800 hover:text-slate-50 transition-colors border-2 border-slate-700 flex items-center gap-2 shadow-sm shrink-0 w-fit"
               >
                 <ArrowLeft className="w-4 h-4" /> All Folders
               </button>
-              <h2 className="text-xl sm:text-2xl font-black text-slate-800 tracking-tight px-2 border-l-2 border-slate-200">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight px-2 border-l-2 border-slate-700">
                 {selectedFolder || 'Other'}
               </h2>
               <div className="flex-1"></div>
             </>
           )}
           {isAdmin && selectedVideos.length > 0 && (
-            <div className="flex items-center gap-3 bg-white p-2 rounded-2xl border border-slate-200 shadow-sm shrink-0">
+            <div className="flex items-center gap-3 bg-slate-900 p-2 rounded-2xl border border-slate-700 shadow-sm shrink-0">
                <span className="text-xs font-black text-indigo-600 bg-indigo-50 px-3 py-1.5 rounded-xl">{selectedVideos.length} Selected</span>
                <button
                  onClick={() => setSelectedVideos(currentFolderItems.map(v => v.id))}
-                 className="text-[10px] font-black text-slate-500 hover:text-slate-800 uppercase tracking-widest px-3"
+                 className="text-[10px] font-black text-slate-400 hover:text-slate-100 uppercase tracking-widest px-3"
                >Select All</button>
             </div>
           )}
@@ -454,7 +454,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
             <div className="shrink-0">
               <button
                  onClick={() => setSelectedVideos(currentFolderItems.map(v => v.id))}
-                 className="text-[10px] font-black text-slate-500 hover:text-slate-800 uppercase tracking-widest bg-white border border-slate-200 px-4 py-2.5 rounded-full shadow-sm hover:shadow"
+                 className="text-[10px] font-black text-slate-400 hover:text-slate-100 uppercase tracking-widest bg-slate-900 border border-slate-700 px-4 py-2.5 rounded-full shadow-sm hover:shadow"
               >Select All</button>
             </div>
           )}
@@ -463,7 +463,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
 
       {currentFolderItems.length === 0 ? (
         <div className="py-20 text-center">
-          <div className="bg-slate-50 p-12 rounded-3xl border border-slate-100 inline-block border-dashed">
+          <div className="bg-slate-950 p-12 rounded-3xl border border-slate-800 inline-block border-dashed">
             <Folder className="w-12 h-12 text-slate-200 mx-auto mb-4" />
             <p className="text-slate-400 font-bold">This folder is empty</p>
           </div>
@@ -489,7 +489,7 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
               <div key={video.id} className="relative group/wrapper">
                  {isAdmin && (
                     <div 
-                      className="absolute top-4 right-4 z-[60] bg-white/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-200 cursor-pointer hover:scale-110 active:scale-95 transition-all text-slate-400 hover:text-indigo-600 opacity-0 group-hover/wrapper:opacity-100"
+                      className="absolute top-4 right-4 z-[60] bg-slate-900/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-700 cursor-pointer hover:scale-110 active:scale-95 transition-all text-slate-400 hover:text-indigo-600 opacity-0 group-hover/wrapper:opacity-100"
                       onClick={(e) => {
                         e.stopPropagation();
                         handleToggleSelect(video.id);

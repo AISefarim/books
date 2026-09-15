@@ -29,9 +29,9 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
     }
   };
   return (
-    <div className="bg-white rounded-[3rem] p-5 shadow-sm hover:shadow-2xl transition-all duration-700 border border-slate-100 flex flex-col group animate-in zoom-in-95">
+    <div className="bg-slate-900 rounded-[3rem] p-5 shadow-sm hover:shadow-2xl transition-all duration-700 border border-slate-800 flex flex-col group animate-in zoom-in-95">
       <div 
-        className="aspect-[3/4] rounded-[2rem] overflow-hidden relative shadow-inner bg-slate-50 cursor-pointer"
+        className="aspect-[3/4] rounded-[2rem] overflow-hidden relative shadow-inner bg-slate-950 cursor-pointer"
         onClick={() => onSelect ? onSelect() : onRead(book.epub)}
       >
         <img
@@ -42,7 +42,7 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
           referrerPolicy="no-referrer"
         />
         <div className="absolute inset-0 bg-slate-900/40 opacity-0 group-hover:opacity-100 transition-all duration-300 flex flex-col justify-center items-center p-8 backdrop-blur-[2px]">
-          <div className="bg-white text-slate-900 px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">
+          <div className="bg-slate-900 text-slate-50 px-6 py-3 rounded-2xl font-black uppercase text-xs tracking-[0.2em] shadow-xl flex items-center gap-2 transform translate-y-4 group-hover:translate-y-0 transition-all duration-500">
             <BookOpen className="w-4 h-4" /> {onSelect ? 'View Details' : 'Read Online'}
           </div>
         </div>
@@ -50,7 +50,7 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
       <div className="py-8 px-4 flex-1 flex flex-col">
         <div className="flex justify-between items-start mb-2 gap-2">
           <h3 
-            className="font-black text-xl md:text-2xl uppercase leading-tight text-slate-800 tracking-tighter cursor-pointer hover:text-indigo-600 transition-colors flex-1 min-w-0 break-words hyphens-auto line-clamp-3"
+            className="font-black text-xl md:text-2xl uppercase leading-tight text-slate-100 tracking-tighter cursor-pointer hover:text-indigo-600 transition-colors flex-1 min-w-0 break-words hyphens-auto line-clamp-3"
             onClick={() => onSelect ? onSelect() : onRead(book.epub)}
           >
             {book.title}
@@ -59,7 +59,7 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
             {onToggleSave && (
               <button
                 onClick={(e) => { e.stopPropagation(); onToggleSave(book.id); }}
-                className={`transition-colors p-2 rounded-full hover:bg-slate-50 ${isSaved ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-300 hover:text-indigo-600'}`}
+                className={`transition-colors p-2 rounded-full hover:bg-slate-950 ${isSaved ? 'text-indigo-600 bg-indigo-50/50' : 'text-slate-300 hover:text-indigo-600'}`}
                 title={isSaved ? "Remove from Library" : "Save to Library"}
               >
                 <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-indigo-600' : ''}`} />
@@ -69,14 +69,14 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
               <>
                 <button
                   onClick={() => onEdit(book)}
-                  className="text-slate-300 hover:text-indigo-500 transition-colors p-2 bg-slate-50 hover:bg-indigo-50 rounded-full"
+                  className="text-slate-300 hover:text-indigo-500 transition-colors p-2 bg-slate-950 hover:bg-indigo-50 rounded-full"
                   title="Edit Sefer"
                 >
                   <Pencil className="w-4 h-4" />
                 </button>
                 <button
                   onClick={() => onDelete(book.id, book.coverPath, book.epubPath)}
-                  className="text-slate-300 hover:text-rose-500 transition-colors p-2 bg-slate-50 hover:bg-rose-50 rounded-full"
+                  className="text-slate-300 hover:text-rose-500 transition-colors p-2 bg-slate-950 hover:bg-rose-50 rounded-full"
                   title="Delete Sefer"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -90,7 +90,7 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
             By {book.author}
           </p>
           {book.category && (
-            <span className="bg-slate-100 text-slate-500 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md">
+            <span className="bg-slate-800 text-slate-400 text-[9px] font-black uppercase tracking-widest px-2 py-1 rounded-md">
               {book.category}
             </span>
           )}
@@ -105,7 +105,7 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
             {book.downloadCount || 0}
           </div>
         </div>
-        <p className="text-slate-500 text-sm line-clamp-3 mb-8 font-medium leading-relaxed">{book.desc}</p>
+        <p className="text-slate-400 text-sm line-clamp-3 mb-8 font-medium leading-relaxed">{book.desc}</p>
         <div className="mt-auto pt-6 border-t border-slate-50 flex flex-col gap-3">
           <div className="flex flex-wrap gap-2">
             <button
@@ -122,7 +122,7 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
             </button>
             <button
               onClick={handleShare}
-              className="w-12 sm:w-14 bg-slate-50 text-slate-700 py-4 rounded-2xl flex justify-center items-center hover:bg-slate-100 transition-all shadow-sm hover:shadow-md active:scale-95 shrink-0"
+              className="w-12 sm:w-14 bg-slate-950 text-slate-200 py-4 rounded-2xl flex justify-center items-center hover:bg-slate-800 transition-all shadow-sm hover:shadow-md active:scale-95 shrink-0"
               title="Copy Share Link"
             >
               {copied ? <Check className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" /> : <Share2 className="w-4 h-4 sm:w-5 sm:h-5" />}
@@ -133,7 +133,7 @@ export function BookCard({ book, isAdmin, onEdit, onDelete, onRead, onDownload, 
               href={book.buyLink}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full bg-slate-50 text-slate-900 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-slate-100 transition-all border border-slate-100 shadow-sm active:scale-95"
+              className="w-full bg-slate-950 text-slate-50 px-6 py-3 rounded-2xl text-[10px] font-black uppercase tracking-widest flex justify-center items-center gap-2 hover:bg-slate-800 transition-all border border-slate-800 shadow-sm active:scale-95"
             >
               Physical Copy <ExternalLink className="w-4 h-4 text-slate-400" />
             </a>

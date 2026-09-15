@@ -84,11 +84,11 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
     <div ref={containerRef} className="fixed inset-0 z-[100] bg-[#F9F7F1] flex flex-col w-full h-full">
       <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center z-20 transition-opacity bg-gradient-to-b from-black/20 to-transparent pointer-events-none">
         <div className="flex items-center gap-2 sm:gap-4 pointer-events-auto">
-          <button onClick={onClose} className="p-2 sm:p-3 text-white hover:bg-white/20 rounded-full transition-colors group backdrop-blur-sm shadow-sm" aria-label="Close">
+          <button onClick={onClose} className="p-2 sm:p-3 text-white hover:bg-slate-900/20 rounded-full transition-colors group backdrop-blur-sm shadow-sm" aria-label="Close">
             <X className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform drop-shadow" />
           </button>
-          <div className="bg-white/90 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-lg border border-white/20">
-            <h3 className="font-black text-slate-800 text-xs sm:text-sm flex items-center tracking-tighter uppercase italic line-clamp-1 max-w-[120px] sm:max-w-xs">
+          <div className="bg-slate-900/90 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-lg border border-white/20">
+            <h3 className="font-black text-slate-100 text-xs sm:text-sm flex items-center tracking-tighter uppercase italic line-clamp-1 max-w-[120px] sm:max-w-xs">
               {book.title}
             </h3>
           </div>
@@ -96,7 +96,7 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
         <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
           <button
             onClick={toggleFullscreen}
-            className="p-2 text-white hover:bg-white/20 rounded-full transition-colors hidden sm:block backdrop-blur-sm drop-shadow"
+            className="p-2 text-white hover:bg-slate-900/20 rounded-full transition-colors hidden sm:block backdrop-blur-sm drop-shadow"
             title={isFullscreen ? "Exit Fullscreen" : "Enter Fullscreen"}
           >
             {isFullscreen ? <Minimize className="w-5 h-5" /> : <Maximize className="w-5 h-5" />}
@@ -122,8 +122,8 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
         {error && (
           <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#F9F7F1] z-10 p-8 text-center w-full h-full">
             <AlertCircle className="w-12 h-12 text-rose-500 mb-2" />
-            <h4 className="font-black text-xl text-slate-800 uppercase tracking-tight">Reader Unavailable</h4>
-            <p className="text-slate-500 font-medium max-w-md">{error}</p>
+            <h4 className="font-black text-xl text-slate-100 uppercase tracking-tight">Reader Unavailable</h4>
+            <p className="text-slate-400 font-medium max-w-md">{error}</p>
             <a
               href={book.epub}
               target="_blank"
@@ -139,7 +139,7 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
           
           <button
             onClick={handlePrev}
-            className="absolute left-0 sm:left-4 top-1/2 -translate-y-1/2 p-2 sm:p-4 bg-white/50 hover:bg-white text-slate-600 rounded-full shadow-md hover:shadow-lg transition-all backdrop-blur-md opacity-0 hover:opacity-100 sm:opacity-30 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 z-20 -ml-5 sm:ml-0 group"
+            className="absolute left-0 sm:left-4 top-1/2 -translate-y-1/2 p-2 sm:p-4 bg-slate-900/50 hover:bg-slate-900 text-slate-300 rounded-full shadow-md hover:shadow-lg transition-all backdrop-blur-md opacity-0 hover:opacity-100 sm:opacity-30 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 z-20 -ml-5 sm:ml-0 group"
           >
             <svg className="w-6 h-6 sm:w-8 sm:h-8 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -148,7 +148,7 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
           
           <button
             onClick={handleNext}
-            className="absolute right-0 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-4 bg-white/50 hover:bg-white text-slate-600 rounded-full shadow-md hover:shadow-lg transition-all backdrop-blur-md opacity-0 hover:opacity-100 sm:opacity-30 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 z-20 -mr-5 sm:mr-0 group"
+            className="absolute right-0 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-4 bg-slate-900/50 hover:bg-slate-900 text-slate-300 rounded-full shadow-md hover:shadow-lg transition-all backdrop-blur-md opacity-0 hover:opacity-100 sm:opacity-30 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 z-20 -mr-5 sm:mr-0 group"
           >
             <svg className="w-6 h-6 sm:w-8 sm:h-8 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
@@ -157,17 +157,17 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
         </div>
       </div>
 
-      <div className="sm:hidden absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-white/90 backdrop-blur-md p-2 rounded-full shadow-xl border border-slate-100 z-20">
+      <div className="sm:hidden absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-slate-900/90 backdrop-blur-md p-2 rounded-full shadow-xl border border-slate-800 z-20">
         <button
           onClick={handlePrev}
-          className="px-6 py-2 bg-slate-100 text-slate-700 rounded-full font-black text-xs uppercase tracking-wider hover:bg-slate-200 transition-all focus:bg-indigo-100"
+          className="px-6 py-2 bg-slate-800 text-slate-200 rounded-full font-black text-xs uppercase tracking-wider hover:bg-slate-700 transition-all focus:bg-indigo-100"
         >
           Previous
         </button>
-        <div className="w-px h-6 bg-slate-200 mx-1"></div>
+        <div className="w-px h-6 bg-slate-700 mx-1"></div>
         <button
           onClick={handleNext}
-          className="px-6 py-2 bg-slate-100 text-slate-700 rounded-full font-black text-xs uppercase tracking-wider hover:bg-slate-200 transition-all focus:bg-indigo-100"
+          className="px-6 py-2 bg-slate-800 text-slate-200 rounded-full font-black text-xs uppercase tracking-wider hover:bg-slate-700 transition-all focus:bg-indigo-100"
         >
           Next
         </button>

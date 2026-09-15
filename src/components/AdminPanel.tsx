@@ -254,13 +254,13 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
 
   return (
     <div className="mb-16">
-      <div className="bg-white p-8 rounded-[2.5rem] shadow-xl border border-indigo-50">
+      <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl border border-indigo-50">
         <div className="flex justify-between items-center mb-8">
-          <h2 className="text-3xl font-black text-slate-900 uppercase italic tracking-tighter">Publishing Portal</h2>
+          <h2 className="text-3xl font-black text-slate-50 uppercase italic tracking-tighter">Publishing Portal</h2>
           <div className="flex items-center gap-3">
             <button
               onClick={onOpenSettings}
-              className="bg-slate-100 text-slate-700 px-4 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-slate-200 transition-all"
+              className="bg-slate-800 text-slate-200 px-4 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-slate-700 transition-all"
               title="Site Settings"
             >
               <Settings className="w-5 h-5" />
@@ -275,10 +275,10 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
         </div>
 
         {isFormVisible && activeTab === 'sefarim' && (
-          <form ref={formRef} onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6 p-8 bg-slate-50 rounded-3xl border border-slate-100">
+          <form ref={formRef} onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6 p-8 bg-slate-950 rounded-3xl border border-slate-800">
             <div className="lg:col-span-1">
               <label className="block text-xs font-black text-slate-400 uppercase mb-3 tracking-widest">Sefer Cover</label>
-              <div className="aspect-[3/4] rounded-2xl bg-white border-2 border-dashed border-slate-200 flex flex-col items-center justify-center relative overflow-hidden group shadow-inner">
+              <div className="aspect-[3/4] rounded-2xl bg-slate-900 border-2 border-dashed border-slate-700 flex flex-col items-center justify-center relative overflow-hidden group shadow-inner">
                 {coverPreview ? (
                   <img src={coverPreview} alt="Cover Preview" className="w-full h-full object-cover" />
                 ) : (
@@ -300,19 +300,19 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
               <input
                 name="title"
                 required
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-lg bg-white"
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-lg bg-slate-900"
                 placeholder="Title (*כותרת*)"
               />
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 lg:col-span-2">
                 <input
                   name="author"
                   required
-                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900"
                   placeholder="Author (*מחבר*)"
                 />
                 <input
                   name="category"
-                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900"
                   placeholder="Category (e.g. Halacha)"
                 />
                 <div className="space-y-3">
@@ -320,7 +320,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                     name="series_select"
                     value={selectedBookSeries}
                     onChange={(e) => setSelectedBookSeries(e.target.value)}
-                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
+                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900 appearance-none"
                   >
                     <option value="" disabled>Select Series... (Optional)</option>
                     <option value="_none_">No Series (Standalone)</option>
@@ -336,7 +336,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                       required
                       value={newBookSeriesInput}
                       onChange={(e) => setNewBookSeriesInput(e.target.value)}
-                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white animate-in slide-in-from-top-2"
+                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900 animate-in slide-in-from-top-2"
                       placeholder="Enter new series name"
                       autoFocus
                     />
@@ -346,24 +346,24 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
               <div className="grid grid-cols-2 gap-4">
                 <input
                   name="buyLink"
-                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900"
                   placeholder="Physical Copy URL"
                 />
                 <input
                   name="order"
                   type="number"
-                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900"
                   placeholder="Rank Order (1 is highest)"
                 />
               </div>
               <textarea
                 name="desc"
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all h-24 resize-none font-medium bg-white"
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all h-24 resize-none font-medium bg-slate-900"
                 placeholder="Describe the Sefer..."
               ></textarea>
 
               <div className="grid grid-cols-1 gap-4">
-                <div className="relative bg-white p-4 rounded-2xl ring-1 ring-slate-200 flex items-center justify-center group hover:bg-indigo-50 transition-colors">
+                <div className="relative bg-slate-900 p-4 rounded-2xl ring-1 ring-slate-200 flex items-center justify-center group hover:bg-indigo-50 transition-colors">
                   <span className={`text-xs font-black uppercase tracking-widest ${epubInputRef.current?.files?.length ? 'text-emerald-600' : 'text-slate-400'}`}>
                     {epubInputRef.current?.files?.length ? 'READY FOR CLOUD ✅' : 'UPLOAD EPUB'}
                   </span>
@@ -386,7 +386,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                     <span>{progress.label}</span>
                     <span>{progress.percent}%</span>
                   </div>
-                  <div className="w-full bg-slate-200 h-2 rounded-full overflow-hidden">
+                  <div className="w-full bg-slate-700 h-2 rounded-full overflow-hidden">
                     <div className="h-full bg-indigo-600 transition-all duration-300" style={{ width: `${progress.percent}%` }}></div>
                   </div>
                 </div>
@@ -395,7 +395,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
               <button
                 type="submit"
                 disabled={isUploading}
-                className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-indigo-600 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUploading ? (
                   <>
@@ -410,19 +410,19 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
         )}
 
         {isFormVisible && activeTab === 'videos' && (
-          <form ref={formRef} onSubmit={handleVideoSubmit} className="grid grid-cols-1 gap-8 mt-6 p-8 bg-slate-50 rounded-3xl border border-slate-100">
+          <form ref={formRef} onSubmit={handleVideoSubmit} className="grid grid-cols-1 gap-8 mt-6 p-8 bg-slate-950 rounded-3xl border border-slate-800">
             <div className="space-y-5">
               <input
                 name="title"
                 required
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-lg bg-white"
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-lg bg-slate-900"
                 placeholder="Video Title"
               />
               <input
                 name="url"
                 required
                 type="url"
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900"
                 placeholder="NotebookLM Link (e.g. https://notebooklm.google.com/...)"
               />
               <div className="grid grid-cols-2 gap-4">
@@ -431,7 +431,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                   required
                   value={selectedVideoCat}
                   onChange={(e) => setSelectedVideoCat(e.target.value)}
-                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900 appearance-none"
                 >
                   <option value="">Select Category...</option>
                   {videoCategories.map(cat => (
@@ -445,7 +445,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                     required
                     value={selectedFolder}
                     onChange={(e) => setSelectedFolder(e.target.value)}
-                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
+                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900 appearance-none"
                   >
                     <option value="" disabled>Select Folder...</option>
                     <option value="_none_">No Folder (Grid View)</option>
@@ -461,7 +461,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                       required
                       value={newFolderInput}
                       onChange={(e) => setNewFolderInput(e.target.value)}
-                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white animate-in slide-in-from-top-2"
+                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900 animate-in slide-in-from-top-2"
                       placeholder="Enter new folder name"
                       autoFocus
                     />
@@ -471,14 +471,14 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
               <input
                 name="order"
                 type="number"
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900"
                 placeholder="Rank Order (1 is highest)"
               />
 
               <button
                 type="submit"
                 disabled={isUploading}
-                className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-indigo-600 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUploading ? (
                   <>
@@ -493,19 +493,19 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
         )}
 
         {isFormVisible && activeTab === 'audio' && (
-          <form ref={formRef} onSubmit={handleAudioSubmit} className="grid grid-cols-1 gap-8 mt-6 p-8 bg-slate-50 rounded-3xl border border-slate-100">
+          <form ref={formRef} onSubmit={handleAudioSubmit} className="grid grid-cols-1 gap-8 mt-6 p-8 bg-slate-950 rounded-3xl border border-slate-800">
             <div className="space-y-5">
               <input
                 name="title"
                 required
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-lg bg-white"
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-lg bg-slate-900"
                 placeholder="Audio Title"
               />
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   name="category"
-                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900"
                   placeholder="Category (Optional)"
                 />
                 
@@ -514,7 +514,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                     name="folder_select"
                     value={selectedFolder}
                     onChange={(e) => setSelectedFolder(e.target.value)}
-                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white appearance-none"
+                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900 appearance-none"
                   >
                     <option value="" disabled>Select Folder... (Optional)</option>
                     <option value="_none_">No Folder (Standalone track)</option>
@@ -530,7 +530,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                       required
                       value={newFolderInput}
                       onChange={(e) => setNewFolderInput(e.target.value)}
-                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-white animate-in slide-in-from-top-2"
+                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900 animate-in slide-in-from-top-2"
                       placeholder="Enter new folder name"
                       autoFocus
                     />
@@ -538,7 +538,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                 </div>
               </div>
 
-              <div className="relative bg-white p-4 rounded-2xl ring-1 ring-slate-200 flex items-center justify-center group hover:bg-indigo-50 transition-colors">
+              <div className="relative bg-slate-900 p-4 rounded-2xl ring-1 ring-slate-200 flex items-center justify-center group hover:bg-indigo-50 transition-colors">
                 <span className={`text-xs font-black uppercase tracking-widest ${audioInputRef.current?.files?.length ? 'text-emerald-600' : 'text-slate-400'}`}>
                   {audioInputRef.current?.files?.length ? 'READY TO UPLOAD ✅' : 'UPLOAD MP3 FILE'}
                 </span>
@@ -557,7 +557,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
               <button
                 type="submit"
                 disabled={isUploading}
-                className="w-full bg-slate-900 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full bg-indigo-600 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isUploading ? (
                   <>

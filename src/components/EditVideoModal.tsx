@@ -59,12 +59,12 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
-      <div className="bg-white rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
-        <div className="flex justify-between items-center p-6 border-b border-slate-100 bg-slate-50/50">
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-800">Edit Video</h2>
+      <div className="bg-slate-900 rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+        <div className="flex justify-between items-center p-6 border-b border-slate-800 bg-slate-950/50">
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-100">Edit Video</h2>
           <button
             onClick={onClose}
-            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors"
+            className="p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-800 rounded-full transition-colors"
           >
             <X className="w-6 h-6" />
           </button>
@@ -73,35 +73,35 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Title</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Title</label>
               <input
                 type="text"
                 required
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+                className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
               />
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">URL</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">URL</label>
               <input
                 type="url"
                 required
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+                className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
               />
             </div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Category</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Category</label>
               <select
                 required
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
-                className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium appearance-none"
+                className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium appearance-none"
               >
                 <option value="">Select Category...</option>
                 {videoCategories.map(cat => (
@@ -110,13 +110,13 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Subfolder</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Subfolder</label>
               <div className="space-y-3">
                 <select
                   required
                   value={selectedFolder}
                   onChange={(e) => setSelectedFolder(e.target.value)}
-                  className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium appearance-none cursor-pointer"
+                  className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium appearance-none cursor-pointer"
                 >
                   <option value="" disabled>Select Folder...</option>
                   <option value="_none_">No Folder (Grid View)</option>
@@ -133,20 +133,20 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
                     value={newFolderInput}
                     onChange={(e) => setNewFolderInput(e.target.value)}
                     placeholder="Enter new folder name..."
-                    className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium animate-in slide-in-from-top-2"
+                    className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium animate-in slide-in-from-top-2"
                     autoFocus
                   />
                 )}
               </div>
             </div>
             <div className="space-y-2 md:col-span-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-500 ml-2">Rank Order (1 is highest)</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Rank Order (1 is highest)</label>
               <input
                 type="number"
                 value={order}
                 onChange={(e) => setOrder(e.target.value)}
                 placeholder="e.g. 1, 2, 3... (Leave blank for default)"
-                className="w-full px-6 py-4 bg-slate-50 border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+                className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
               />
             </div>
           </div>
@@ -155,7 +155,7 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
             <button
               type="button"
               onClick={onClose}
-              className="px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 transition-colors"
+              className="px-8 py-4 rounded-2xl font-black uppercase tracking-widest text-slate-400 hover:bg-slate-800 transition-colors"
             >
               Cancel
             </button>

@@ -114,12 +114,12 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
     <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
       <button
         onClick={onBack}
-        className="mb-8 flex items-center gap-3 text-slate-600 hover:text-white hover:bg-slate-800 transition-all font-black uppercase tracking-widest text-sm bg-white px-6 py-3.5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-slate-200/60 group"
+        className="mb-8 flex items-center gap-3 text-slate-300 hover:text-white hover:bg-slate-800 transition-all font-black uppercase tracking-widest text-sm bg-slate-900 px-6 py-3.5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-slate-700/60 group"
       >
         <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Back to Library
       </button>
 
-      <div className="bg-white rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-100 mb-16 flex flex-col md:flex-row gap-8 items-center">
+      <div className="bg-slate-900 rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-800 mb-16 flex flex-col md:flex-row gap-8 items-center">
         {/* Left side: Thumbnail / Graphic */}
         {video.type !== 'audio' && (
           <div 
@@ -133,7 +133,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
             ) : null}
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-               <div className="w-16 h-16 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-all duration-300">
+               <div className="w-16 h-16 bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-all duration-300">
                   <Play className="w-8 h-8 text-indigo-600 fill-indigo-600 ml-1" />
                </div>
             </div>
@@ -159,7 +159,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
               )}
             </div>
             
-            <h1 className="text-3xl md:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+            <h1 className="text-3xl md:text-5xl font-black text-slate-50 tracking-tight leading-tight">
               {video.title}
             </h1>
           </div>
@@ -188,7 +188,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
             
             <button
               onClick={handleShare}
-              className="bg-slate-50 text-slate-700 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-slate-100 transition-all border border-slate-200 shadow-sm active:scale-95"
+              className="bg-slate-950 text-slate-200 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-slate-800 transition-all border border-slate-700 shadow-sm active:scale-95"
             >
               {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />} 
               {copied ? 'Copied!' : 'Share Shiur'}
@@ -197,7 +197,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
             {onToggleSave && (
               <button
                 onClick={(e) => onToggleSave(video.id, e)}
-                className={`px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 transition-all border shadow-sm active:scale-95 ${isSaved ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100'}`}
+                className={`px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 transition-all border shadow-sm active:scale-95 ${isSaved ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' : 'bg-slate-950 text-slate-200 border-slate-700 hover:bg-slate-800'}`}
               >
                 <Bookmark className={`w-6 h-6 ${isSaved ? 'fill-indigo-700' : ''}`} /> 
                 {isSaved ? 'Saved' : 'Save'}
@@ -208,10 +208,10 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
       </div>
 
       {/* Ratings and Comments Section */}
-      <div className="bg-white rounded-[2rem] p-8 shadow-sm border border-slate-100 mb-16 max-w-4xl mx-auto">
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-8 border-b border-slate-100">
+      <div className="bg-slate-900 rounded-[2rem] p-8 shadow-sm border border-slate-800 mb-16 max-w-4xl mx-auto">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-10 pb-8 border-b border-slate-800">
           <div>
-             <h3 className="text-xl font-black text-slate-900 flex items-center gap-2 tracking-tight">
+             <h3 className="text-xl font-black text-slate-50 flex items-center gap-2 tracking-tight">
                 <Star className="w-5 h-5 text-amber-400 fill-amber-400" /> 
                 {currentRating} Rating
              </h3>
@@ -228,7 +228,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
                   className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
                     hasRated 
                       ? 'cursor-default opacity-50' 
-                      : 'hover:bg-slate-50 active:scale-95'
+                      : 'hover:bg-slate-950 active:scale-95'
                   }`}
                 >
                   <Star 
@@ -244,7 +244,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
         </div>
 
         <div className="space-y-6">
-           <h3 className="font-bold text-slate-900 flex items-center gap-2">
+           <h3 className="font-bold text-slate-50 flex items-center gap-2">
               <MessageSquare className="w-5 h-5 text-indigo-500" />
               Comments ({video.comments?.length || 0})
            </h3>
@@ -255,14 +255,14 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
                 placeholder="Your name (optional)" 
                 value={commentName}
                 onChange={e => setCommentName(e.target.value)}
-                className="w-full md:w-64 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
+                className="w-full md:w-64 bg-slate-950 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors"
               />
               <div className="relative">
                 <textarea 
                   placeholder="Share your thoughts on this Daf..." 
                   value={commentText}
                   onChange={e => setCommentText(e.target.value)}
-                  className="w-full bg-slate-50 border border-slate-200 rounded-2xl p-4 min-h-[100px] text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors resize-none"
+                  className="w-full bg-slate-950 border border-slate-700 rounded-2xl p-4 min-h-[100px] text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-colors resize-none"
                 />
                 <button 
                   type="submit"
@@ -280,14 +280,14 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
                  <p className="text-slate-400 text-sm text-center py-8">Be the first to share your thoughts!</p>
               ) : (
                  [...video.comments].sort((a, b) => b.createdAt - a.createdAt).map(comment => (
-                   <div key={comment.id} className="bg-slate-50/50 border border-slate-100 rounded-2xl p-5 fade-in">
+                   <div key={comment.id} className="bg-slate-950/50 border border-slate-800 rounded-2xl p-5 fade-in">
                       <div className="flex justify-between items-baseline mb-2">
-                         <span className="font-bold text-slate-900">{comment.name}</span>
+                         <span className="font-bold text-slate-50">{comment.name}</span>
                          <span className="text-xs text-slate-400 font-medium">
                            {new Date(comment.createdAt).toLocaleDateString()}
                          </span>
                       </div>
-                      <p className="text-slate-600 text-sm leading-relaxed whitespace-pre-wrap">{comment.text}</p>
+                      <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">{comment.text}</p>
                    </div>
                  ))
               )}
@@ -299,7 +299,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
       {upNextVideo && (
         <div className="mt-16 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-200 fill-mode-both">
           <div className="flex items-center justify-between mb-8">
-            <h3 className="text-2xl font-black text-slate-900 uppercase tracking-tighter flex items-center gap-3">
+            <h3 className="text-2xl font-black text-slate-50 uppercase tracking-tighter flex items-center gap-3">
               <PlayCircle className="w-6 h-6 text-indigo-500" /> {video.type === 'audio' ? 'Suggested Shiur' : 'Up Next'}
             </h3>
             <span className="text-sm font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
@@ -361,7 +361,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
       {/* Grid for remaining items */}
       {otherRelated.length > 0 && (
         <div className="mt-12 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-300 fill-mode-both">
-          <h3 className="text-lg font-bold text-slate-500 uppercase tracking-widest mb-6">
+          <h3 className="text-lg font-bold text-slate-400 uppercase tracking-widest mb-6">
             {video.type === 'audio' ? 'More Audio Shiurim' : 'More to Watch'}
           </h3>
           
@@ -388,7 +388,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
                   
                   {/* Play overlay */}
                   <div className="absolute inset-0 flex items-center justify-center bg-indigo-900/20 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <div className="w-14 h-14 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center transform scale-75 group-hover:scale-100 transition-all duration-300">
+                    <div className="w-14 h-14 rounded-full bg-slate-900/20 backdrop-blur-md flex items-center justify-center transform scale-75 group-hover:scale-100 transition-all duration-300">
                       <Play className="w-6 h-6 text-white fill-white ml-1" />
                     </div>
                   </div>
@@ -399,11 +399,11 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
                   </div>
                 </div>
                 
-                <h4 className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors line-clamp-2 text-base leading-snug mb-2">
+                <h4 className="font-bold text-slate-50 group-hover:text-indigo-600 transition-colors line-clamp-2 text-base leading-snug mb-2">
                   {v.title}
                 </h4>
                 
-                <div className="flex items-center gap-3 text-xs font-semibold text-slate-500 uppercase tracking-wider mt-auto">
+                <div className="flex items-center gap-3 text-xs font-semibold text-slate-400 uppercase tracking-wider mt-auto">
                   <span>{new Date(v.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                   {v.views !== undefined && (
                     <>

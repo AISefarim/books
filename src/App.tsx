@@ -465,8 +465,18 @@ export default function App() {
     }).catch(err => console.error("Failed to increment video views", err));
   };
 
-  const handleEditSave = async (id: string, updatedData: Partial<Book>) => {
+  const handleEditSave = async (id: string, updatedData: Partial<Book>, newEpubFile?: File) => {
     try {
+      showStatus('Saving changes...', 'success');
+      
+      if (newEpubFile) {
+        showStatus('Uploading new EPUB file...', 'success');
+        const storageRef = ref(storage, `sefarim/${Date.now()}_${newEpubFile.name}`);
+        const uploadTask = await uploadBytesResumable(storageRef, newEpubFile);
+        const url = await getDownloadURL(uploadTask.ref);
+        updatedData.epubUrl = url;
+      }
+
       await updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', id), updatedData);
       showStatus('Sefer updated successfully.', 'success');
     } catch (e: any) {
@@ -678,7 +688,7 @@ export default function App() {
   const bannerUrl = siteSettings.bannerUrl || "https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr";
   
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
+    <div className="min-h-screen bg-slate-950 text-slate-50 font-sans">
       <Navbar 
         isAdmin={isAdmin} 
         onToggleAdmin={handleToggleAdmin} 
@@ -702,7 +712,7 @@ export default function App() {
               <div className="relative aspect-video w-full bg-black animate-in fade-in zoom-in-95 duration-500">
                 <button 
                   onClick={() => setIsPlayingWelcome(false)}
-                  className="absolute top-4 right-4 md:top-6 md:right-6 z-50 p-2.5 bg-white/10 hover:bg-white/20 text-white rounded-full backdrop-blur-md transition-all border border-white/20"
+                  className="absolute top-4 right-4 md:top-6 md:right-6 z-50 p-2.5 bg-slate-900/10 hover:bg-slate-900/20 text-white rounded-full backdrop-blur-md transition-all border border-white/20"
                 >
                   <X className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
@@ -716,7 +726,7 @@ export default function App() {
                   />
                 ) : (
                   <div className="absolute inset-0 w-full h-full bg-slate-900 flex flex-col items-center justify-center p-6 text-center">
-                     <AlertCircle className="w-12 h-12 text-slate-500 mb-4" />
+                     <AlertCircle className="w-12 h-12 text-slate-400 mb-4" />
                      <h3 className="text-white font-bold text-lg mb-2">Video Not Configured</h3>
                      <p className="text-slate-400 text-sm max-w-xs leading-relaxed">
                         Please click <span className="font-bold text-white">"Admin" &rarr; "Settings"</span> to upload your `.mp4` video directly to your website storage.
@@ -789,7 +799,7 @@ export default function App() {
         {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} videos={videos} books={books} />}
 
         {isDirectLinkEntry && (selectedBook || selectedVideo) && (
-          <div className="mb-6 bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden animate-in fade-in slide-in-from-top-4">
+          <div className="mb-6 bg-slate-900 rounded-2xl shadow-sm border border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-4">
              <div className="p-3 sm:p-4 flex items-center justify-between gap-4">
                 <div className="flex items-center gap-3 md:gap-4 flex-1">
                   {siteSettings.logoUrl ? (
@@ -800,8 +810,8 @@ export default function App() {
                      </div>
                    )}
                    <div>
-                     <h2 className="text-sm md:text-base font-black text-slate-800 leading-tight mb-0.5 tracking-tight truncate">Welcome to AI Sefarim</h2>
-                     <p className="text-[10px] md:text-xs text-slate-500 font-bold uppercase tracking-widest truncate">Digital Library</p>
+                     <h2 className="text-sm md:text-base font-black text-slate-100 leading-tight mb-0.5 tracking-tight truncate">Welcome to AI Sefarim</h2>
+                     <p className="text-[10px] md:text-xs text-slate-400 font-bold uppercase tracking-widest truncate">Digital Library</p>
                    </div>
                 </div>
                 
@@ -809,7 +819,7 @@ export default function App() {
                   {siteSettings.welcomeVideoUrl && (
                      <button 
                         onClick={() => setPlayingDirectVideo(!playingDirectVideo)}
-                        className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${playingDirectVideo ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:scale-95'}`}
+                        className={`px-3 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${playingDirectVideo ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md shadow-indigo-200 hover:shadow-lg hover:-translate-y-0.5 active:translate-y-0 active:scale-95'}`}
                      >
                        <PlayCircle className="w-4 h-4 shrink-0" />
                        <span className="hidden sm:inline">{playingDirectVideo ? 'Close Video' : 'Watch Intro'}</span>
@@ -821,7 +831,7 @@ export default function App() {
                         setIsDirectLinkEntry(false);
                         setPlayingDirectVideo(false);
                     }}
-                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors flex-shrink-0"
+                    className="p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-800 rounded-full transition-colors flex-shrink-0"
                     aria-label="Dismiss welcome message"
                   >
                     <X className="w-4 h-4 font-bold" />
@@ -830,7 +840,7 @@ export default function App() {
              </div>
              
              {playingDirectVideo && siteSettings.welcomeVideoUrl && (
-                <div className="aspect-video bg-black relative border-t border-slate-100 animate-in slide-in-from-top-2 duration-300">
+                <div className="aspect-video bg-black relative border-t border-slate-800 animate-in slide-in-from-top-2 duration-300">
                    <video 
                      className="absolute inset-0 w-full h-full object-contain" 
                      src={siteSettings.welcomeVideoUrl} 
@@ -926,14 +936,14 @@ export default function App() {
 
             {!isLoading && books.length > 0 && (
               <>
-                <div className="mb-6 flex flex-row gap-4 sm:gap-6 items-center justify-between bg-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-200 shadow-sm max-w-2xl mx-auto md:mx-0">
+                <div className="mb-6 flex flex-row gap-4 sm:gap-6 items-center justify-between bg-slate-900 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-700 shadow-sm max-w-2xl mx-auto md:mx-0">
                   <div className="flex items-center gap-3 w-auto justify-start">
                     <div className="bg-indigo-50 p-2 rounded-xl border border-indigo-100 shrink-0 hidden sm:block">
                       <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-600" />
                     </div>
                     <div className="flex flex-row items-baseline gap-2 text-left">
-                      <h3 className="font-black text-slate-800 text-[14px] sm:text-base leading-tight">My Library</h3>
-                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium hidden sm:block">{savedBookIds.length + savedVideoIds.length} saved items</p>
+                      <h3 className="font-black text-slate-100 text-[14px] sm:text-base leading-tight">My Library</h3>
+                      <p className="text-[11px] sm:text-xs text-slate-400 font-medium hidden sm:block">{savedBookIds.length + savedVideoIds.length} saved items</p>
                     </div>
                   </div>
                   <button
@@ -955,7 +965,7 @@ export default function App() {
                     placeholder="Search by title, author, or description..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-32 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-700 shadow-sm text-ellipsis"
+                    className="w-full pl-12 pr-32 py-3 bg-slate-900 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-200 shadow-sm text-ellipsis"
                   />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50/50 border border-indigo-100 text-indigo-600 rounded-xl pointer-events-none shadow-sm backdrop-blur-sm">
                      <BookOpen className="w-3.5 h-3.5 fill-indigo-200" />
@@ -981,8 +991,8 @@ export default function App() {
                    onClick={() => setSelectedCategory(null)}
                    className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
                      selectedCategory === null 
-                       ? 'bg-slate-900 text-white shadow-md' 
-                       : 'bg-white text-slate-500 hover:bg-slate-100 border-2 border-slate-200'
+                       ? 'bg-indigo-600 text-white shadow-md' 
+                       : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border-2 border-slate-700'
                    }`}
                 >All Sefarim</button>
                 {categories.map(cat => (
@@ -992,7 +1002,7 @@ export default function App() {
                      className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
                        selectedCategory === cat 
                          ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-600 ring-offset-1' 
-                         : 'bg-white text-slate-500 hover:bg-slate-100 border-2 border-slate-200'
+                         : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border-2 border-slate-700'
                      }`}
                   >{cat}</button>
                 ))}
@@ -1045,14 +1055,14 @@ export default function App() {
           <>
             {!isLoading && (
               <>
-                <div className="mb-6 flex flex-row gap-4 sm:gap-6 items-center justify-between bg-white px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-200 shadow-sm max-w-2xl mx-auto md:mx-0">
+                <div className="mb-6 flex flex-row gap-4 sm:gap-6 items-center justify-between bg-slate-900 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-700 shadow-sm max-w-2xl mx-auto md:mx-0">
                   <div className="flex items-center gap-3 w-auto justify-start">
                     <div className="bg-indigo-50 p-2 rounded-xl border border-indigo-100 shrink-0 hidden sm:block">
                       <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-600" />
                     </div>
                     <div className="flex flex-row items-baseline gap-2 text-left">
-                      <h3 className="font-black text-slate-800 text-[14px] sm:text-base leading-tight">My Library</h3>
-                      <p className="text-[11px] sm:text-xs text-slate-500 font-medium hidden sm:block">{savedBookIds.length + savedVideoIds.length} saved items</p>
+                      <h3 className="font-black text-slate-100 text-[14px] sm:text-base leading-tight">My Library</h3>
+                      <p className="text-[11px] sm:text-xs text-slate-400 font-medium hidden sm:block">{savedBookIds.length + savedVideoIds.length} saved items</p>
                     </div>
                   </div>
                   <button
@@ -1074,7 +1084,7 @@ export default function App() {
                     placeholder="Search videos..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-32 py-3 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-700 shadow-sm"
+                    className="w-full pl-12 pr-32 py-3 bg-slate-900 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-200 shadow-sm"
                   />
                   <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50/50 border border-indigo-100 text-indigo-600 rounded-xl pointer-events-none shadow-sm backdrop-blur-sm">
                      <PlayCircle className="w-3.5 h-3.5 fill-indigo-200" />
@@ -1099,8 +1109,8 @@ export default function App() {
                    onClick={() => setSelectedCategory(null)}
                    className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
                      selectedCategory === null 
-                       ? 'bg-slate-900 text-white shadow-md' 
-                       : 'bg-white text-slate-500 hover:bg-slate-100 border-2 border-slate-200'
+                       ? 'bg-indigo-600 text-white shadow-md' 
+                       : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border-2 border-slate-700'
                    }`}
                 >All Videos</button>
                 <button
@@ -1111,7 +1121,7 @@ export default function App() {
                     className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all flex items-center gap-1.5 border-2 ${
                       selectedCategory === 'Top Rated'
                         ? 'bg-amber-400 text-amber-950 border-amber-500 shadow-md ring-2 ring-amber-400 ring-offset-1'
-                        : 'bg-white text-amber-600 hover:bg-amber-50 border-amber-200 hover:border-amber-300'
+                        : 'bg-slate-900 text-amber-600 hover:bg-amber-50 border-amber-200 hover:border-amber-300'
                     }`}
                   >
                     <Star className={`w-3.5 h-3.5 ${selectedCategory === 'Top Rated' ? 'fill-amber-950 text-amber-950' : 'fill-amber-600 text-amber-600'}`} /> 
@@ -1124,7 +1134,7 @@ export default function App() {
                      className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
                        selectedCategory === cat 
                          ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-600 ring-offset-1' 
-                         : 'bg-white text-slate-500 hover:bg-slate-100 border-2 border-slate-200'
+                         : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border-2 border-slate-700'
                      }`}
                   >{cat}</button>
                 ))}
@@ -1142,7 +1152,7 @@ export default function App() {
                         setSelectedCategory(cat);
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="bg-white rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-100 flex flex-col group cursor-pointer"
+                    className="bg-slate-900 rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-800 flex flex-col group cursor-pointer"
                   >
                     <div className="aspect-square rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
                       {siteSettings.videoCategoryThumbnails?.[cat] ? (
@@ -1151,7 +1161,7 @@ export default function App() {
                         <PlayCircle className="w-12 h-12 text-indigo-300 group-hover:text-indigo-500 transition-colors group-hover:scale-110 duration-300" />
                       )}
                     </div>
-                    <h3 className="font-black text-xl text-slate-800 text-center uppercase tracking-tighter group-hover:text-indigo-600 transition-colors">{cat}</h3>
+                    <h3 className="font-black text-xl text-slate-100 text-center uppercase tracking-tighter group-hover:text-indigo-600 transition-colors">{cat}</h3>
                     <p className="text-center text-slate-400 text-sm font-medium mt-2">
                       {videos.filter(v => v.category === cat).length} videos
                     </p>
@@ -1204,19 +1214,19 @@ export default function App() {
         ) : activeTab === 'library' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
             <div className="text-center mb-16">
-              <h1 className="text-4xl md:text-5xl font-black text-slate-900 tracking-tighter leading-tight mb-4">
+              <h1 className="text-4xl md:text-5xl font-black text-slate-50 tracking-tighter leading-tight mb-4">
                 My Library
               </h1>
-              <p className="text-slate-500 font-medium">Your personal collection of saved sefarim and videos.</p>
+              <p className="text-slate-400 font-medium">Your personal collection of saved sefarim and videos.</p>
             </div>
 
             <div className="space-y-16">
               <div>
-                <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-100 pb-4">
+                <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-800 pb-4">
                   Saved Sefarim ({savedBookIds.length})
                 </h2>
                 {savedBookIds.length === 0 ? (
-                  <div className="text-center py-12 bg-slate-50 rounded-[2rem] border border-slate-100 border-dashed">
+                  <div className="text-center py-12 bg-slate-950 rounded-[2rem] border border-slate-800 border-dashed">
                     <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                     <p className="text-slate-400 font-medium tracking-wide">You haven't saved any sefarim yet.</p>
                   </div>
@@ -1255,11 +1265,11 @@ export default function App() {
               </div>
 
               <div>
-                <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-100 pb-4">
+                <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-800 pb-4">
                   Saved Videos ({savedVideoIds.length})
                 </h2>
                 {savedVideoIds.length === 0 ? (
-                  <div className="text-center py-12 bg-slate-50 rounded-[2rem] border border-slate-100 border-dashed">
+                  <div className="text-center py-12 bg-slate-950 rounded-[2rem] border border-slate-800 border-dashed">
                     <PlayCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                     <p className="text-slate-400 font-medium tracking-wide">You haven't saved any videos yet.</p>
                   </div>
@@ -1284,9 +1294,9 @@ export default function App() {
         ) : null}
       </main>
 
-      <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-200/60 mt-8 relative">
+      <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-700/60 mt-8 relative">
         <p className="text-slate-400 text-sm font-medium max-w-2xl mx-auto leading-relaxed">
-          <span className="font-bold text-slate-500">Please note:</span> These sefarim are generated using AI and have not been vetted by rabbinic authorities. We do not make any profit from the sale of physical books; they are printed and sold strictly at cost.
+          <span className="font-bold text-slate-400">Please note:</span> These sefarim are generated using AI and have not been vetted by rabbinic authorities. We do not make any profit from the sale of physical books; they are printed and sold strictly at cost.
         </p>
         {!isAdmin && (
           <button 

@@ -36,20 +36,20 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
     if (match && match[2]) {
       return (
         <span className="group-hover:text-indigo-600 transition-colors">
-          <span className="text-slate-800 group-hover:text-indigo-600 font-bold">{match[1].trim()}</span>
+          <span className="text-slate-100 group-hover:text-indigo-600 font-bold">{match[1].trim()}</span>
           <span className="ml-1.5 text-indigo-500 font-black tracking-tight text-xl bg-indigo-50 px-2 py-0.5 rounded-md inline-block -my-1">{match[2]}</span>
         </span>
       );
     }
-    return <span className="font-bold text-slate-800 group-hover:text-indigo-600 transition-colors">{title}</span>;
+    return <span className="font-bold text-slate-100 group-hover:text-indigo-600 transition-colors">{title}</span>;
   };
 
   return (
     <div 
-      className="bg-white rounded-[1.5rem] p-3.5 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 border border-slate-100 flex flex-col group cursor-pointer"
+      className="bg-slate-900 rounded-[1.5rem] p-3.5 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:-translate-y-1 transition-all duration-300 border border-slate-800 flex flex-col group cursor-pointer"
       onClick={onSelect}
     >
-      <div className="aspect-square rounded-[1rem] bg-slate-50 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-100/50">
+      <div className="aspect-square rounded-[1rem] bg-slate-950 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800/50">
         
         {categoryThumbnail ? (
           <>
@@ -61,14 +61,14 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
 
             {/* Bright, Airy Play Overlay - No dark muddy colors */}
             <div className="absolute inset-0 bg-slate-900/0 group-hover:bg-slate-900/10 transition-colors flex items-center justify-center z-10 duration-300">
-               <div className="bg-white/95 p-4 rounded-full shadow-2xl scale-75 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 ease-out">
+               <div className="bg-slate-900/95 p-4 rounded-full shadow-2xl scale-75 opacity-0 group-hover:opacity-100 group-hover:scale-100 transition-all duration-300 ease-out">
                  <Play className="w-8 h-8 text-indigo-600 fill-indigo-600 ml-1" />
                </div>
             </div>
             
             {/* Clean Category Pill */}
             <div className="absolute top-3 right-3 z-30">
-              <span className="bg-white/95 backdrop-blur-md text-indigo-700 text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm border border-slate-200/50">
+              <span className="bg-slate-900/95 backdrop-blur-md text-indigo-700 text-[9px] font-black uppercase tracking-widest px-2.5 py-1.5 rounded-lg shadow-sm border border-slate-700/50">
                 {video.category}
               </span>
             </div>
@@ -82,7 +82,7 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
         {isAdmin && dragHandleProps && (
           <div 
             {...dragHandleProps}
-            className="absolute top-3 left-3 z-40 p-2 bg-white/90 backdrop-blur-md rounded-lg shadow-sm border border-slate-200/60 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing transition-opacity touch-none text-slate-400 hover:text-indigo-600 hover:bg-white"
+            className="absolute top-3 left-3 z-40 p-2 bg-slate-900/90 backdrop-blur-md rounded-lg shadow-sm border border-slate-700/60 opacity-0 group-hover:opacity-100 cursor-grab active:cursor-grabbing transition-opacity touch-none text-slate-400 hover:text-indigo-600 hover:bg-slate-900"
             onClick={(e) => e.stopPropagation()}
           >
             <GripVertical className="w-4 h-4" />
@@ -99,14 +99,14 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
             <div className="flex gap-1 shrink-0">
               <button
                 onClick={(e) => { e.stopPropagation(); onEdit(); }}
-                className="text-slate-300 hover:text-indigo-500 transition-colors p-1.5 bg-slate-50 hover:bg-indigo-50 rounded-lg"
+                className="text-slate-300 hover:text-indigo-500 transition-colors p-1.5 bg-slate-950 hover:bg-indigo-50 rounded-lg"
                 title="Edit Video"
               >
                 <Edit2 className="w-4 h-4" />
               </button>
               <button
                 onClick={(e) => { e.stopPropagation(); onDelete(video.id); }}
-                className="text-slate-300 hover:text-rose-500 transition-colors p-1.5 bg-slate-50 hover:bg-rose-50 rounded-lg"
+                className="text-slate-300 hover:text-rose-500 transition-colors p-1.5 bg-slate-950 hover:bg-rose-50 rounded-lg"
                 title="Delete Video"
               >
                 <Trash2 className="w-4 h-4" />
@@ -120,13 +120,13 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
             <span>{new Date(video.createdAt).toLocaleDateString()}</span>
             {video.views !== undefined && (
               <>
-                <span className="w-1 h-1 rounded-full bg-slate-200 hidden sm:block"></span>
+                <span className="w-1 h-1 rounded-full bg-slate-700 hidden sm:block"></span>
                 <span className="flex items-center gap-1.5 text-indigo-400"><Eye className="w-3.5 h-3.5" />{video.views}</span>
               </>
             )}
             {video.ratingsCount ? (
               <>
-                <span className="w-1 h-1 rounded-full bg-slate-200 hidden sm:block"></span>
+                <span className="w-1 h-1 rounded-full bg-slate-700 hidden sm:block"></span>
                 <span className="flex items-center gap-1 text-amber-500 font-black"><Star className="w-3.5 h-3.5 fill-amber-500" />{(video.ratingsSum! / video.ratingsCount).toFixed(1)}</span>
               </>
             ) : null}
@@ -138,7 +138,7 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
                   e.stopPropagation();
                   onToggleSave(video.id, e);
                 }}
-                className={`transition-colors p-2 rounded-full hover:bg-slate-50 ${isSaved ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
+                className={`transition-colors p-2 rounded-full hover:bg-slate-950 ${isSaved ? 'text-indigo-600' : 'text-slate-400 hover:text-indigo-600'}`}
                 title={isSaved ? "Remove from Library" : "Save to Library"}
               >
                 <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-indigo-600' : ''}`} />
@@ -146,7 +146,7 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
             )}
             <button
               onClick={handleShare}
-              className="text-slate-400 hover:text-indigo-600 transition-colors p-2 rounded-full hover:bg-slate-50"
+              className="text-slate-400 hover:text-indigo-600 transition-colors p-2 rounded-full hover:bg-slate-950"
               title="Copy Share Link"
             >
               {copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4" />}

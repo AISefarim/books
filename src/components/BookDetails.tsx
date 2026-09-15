@@ -33,7 +33,7 @@ export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggl
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
       <button 
         onClick={onBack}
-        className="mb-8 flex items-center gap-3 text-slate-600 hover:text-white hover:bg-slate-800 transition-all font-black uppercase tracking-widest text-sm bg-white px-6 py-3.5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-slate-200/60 group w-[fit-content]"
+        className="mb-8 flex items-center gap-3 text-slate-300 hover:text-white hover:bg-slate-800 transition-all font-black uppercase tracking-widest text-sm bg-slate-900 px-6 py-3.5 rounded-2xl shadow-[0_4px_20px_rgba(0,0,0,0.05)] border border-slate-700/60 group w-[fit-content]"
       >
         <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Back to Library
       </button>
@@ -66,7 +66,7 @@ export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggl
             </p>
 
             {book.category && (
-              <span className="inline-block bg-white/10 text-white text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-white/20">
+              <span className="inline-block bg-slate-900/10 text-white text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-white/20">
                 {book.category}
               </span>
             )}
@@ -78,7 +78,7 @@ export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggl
             <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-4">
               <button
                 onClick={() => onDownload(book.epub, `${book.title}_eBook`)}
-                className="bg-white text-indigo-900 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-xl hover:shadow-2xl active:scale-95"
+                className="bg-slate-900 text-indigo-900 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-xl hover:shadow-2xl active:scale-95"
               >
                 <Download className="w-5 h-5" /> Download eBook
               </button>
@@ -100,7 +100,7 @@ export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggl
               )}
               <button
                 onClick={handleShare}
-                className="bg-white/10 backdrop-blur-md text-white border border-white/20 px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-white/20 transition-all active:scale-95"
+                className="bg-slate-900/10 backdrop-blur-md text-white border border-white/20 px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-900/20 transition-all active:scale-95"
               >
                 {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Share2 className="w-5 h-5" />} 
                 {copied ? 'Copied!' : 'Share'}
@@ -108,7 +108,7 @@ export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggl
               {onToggleSave && (
                 <button
                   onClick={() => onToggleSave(book.id)}
-                  className={`backdrop-blur-md border px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 ${isSaved ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/30 hover:bg-indigo-500/30' : 'bg-white/10 text-white border-white/20 hover:bg-white/20'}`}
+                  className={`backdrop-blur-md border px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 transition-all active:scale-95 ${isSaved ? 'bg-indigo-500/20 text-indigo-200 border-indigo-500/30 hover:bg-indigo-500/30' : 'bg-slate-900/10 text-white border-white/20 hover:bg-slate-900/20'}`}
                 >
                   <Bookmark className={`w-5 h-5 ${isSaved ? 'fill-indigo-300' : ''}`} /> 
                   {isSaved ? 'Saved' : 'Save'}
