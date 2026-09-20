@@ -30,7 +30,7 @@ export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [audios, setAudios] = useState<Audio[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'library' | 'audio' | 'ai'>('sefarim');
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'ai'>('sefarim');
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -129,7 +129,7 @@ export default function App() {
         let sharedVideoId = params.get('video');
         let sharedCategory = params.get('category');
         let sharedSeries = params.get('series');
-        let sharedTab = params.get('tab') as 'sefarim' | 'videos' | 'library' | null;
+        let sharedTab = params.get('tab') as 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | null;
         
         const pathParts = window.location.pathname.split('/');
         if (pathParts[1] === 'v' && pathParts[2]) {
@@ -142,6 +142,9 @@ export default function App() {
           sharedCategory = decodeURIComponent(pathParts[2]);
           if (pathParts[3] === 'videos') sharedTab = 'videos';
           if (pathParts[3] === 'sefarim') sharedTab = 'sefarim';
+          if (pathParts[3] === 'podcasts' || pathParts[3] === 'audio') sharedTab = 'podcasts';
+        } else if ((pathParts[1] === 'p' || pathParts[1] === 'a') && pathParts[2]) {
+          sharedVideoId = pathParts[2];
         }
         
         if (sharedBookId) {
@@ -152,10 +155,10 @@ export default function App() {
             setIsDirectLinkEntry(true);
           }
         } else if (sharedVideoId) {
-          const videoToOpen = videoDocs.find(v => v.id === sharedVideoId);
+          const videoToOpen = videoDocs.find(v => v.id === sharedVideoId) || (audioDocs.find(a => a.id === sharedVideoId) as unknown as Video);
           if (videoToOpen) {
             setSelectedVideo(videoToOpen);
-            setActiveTab('videos');
+            setActiveTab(videoToOpen.type === 'audio' ? 'podcasts' : 'videos');
             setIsDirectLinkEntry(true);
             updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', videoToOpen.id), {
               views: increment(1)
@@ -167,7 +170,7 @@ export default function App() {
         } else if (sharedCategory) {
           setSelectedCategory(sharedCategory);
           if (sharedTab) {
-            setActiveTab(sharedTab as 'sefarim' | 'videos' | 'library');
+            setActiveTab(sharedTab);
           }
         }
       }
@@ -382,7 +385,7 @@ export default function App() {
       let sharedBookId = params.get('book');
       let sharedVideoId = params.get('video');
       let sharedCategory = params.get('category');
-      let sharedTab = params.get('tab');
+      let sharedTab = params.get('tab') as 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | null;
       
       const pathParts = window.location.pathname.split('/');
       if (pathParts[1] === 'v' && pathParts[2]) {
@@ -393,6 +396,9 @@ export default function App() {
         sharedCategory = decodeURIComponent(pathParts[2]);
         if (pathParts[3] === 'videos') sharedTab = 'videos';
         if (pathParts[3] === 'sefarim') sharedTab = 'sefarim';
+        if (pathParts[3] === 'podcasts' || pathParts[3] === 'audio') sharedTab = 'podcasts';
+      } else if ((pathParts[1] === 'p' || pathParts[1] === 'a') && pathParts[2]) {
+        sharedVideoId = pathParts[2];
       }
       
       if (sharedBookId) {
@@ -402,15 +408,15 @@ export default function App() {
           setActiveTab('sefarim');
         }
       } else if (sharedVideoId) {
-        const videoToOpen = videos.find(v => v.id === sharedVideoId);
+        const videoToOpen = videos.find(v => v.id === sharedVideoId) || (audios.find(a => a.id === sharedVideoId) as unknown as Video);
         if (videoToOpen) {
           setSelectedVideo(videoToOpen);
-          setActiveTab('videos');
+          setActiveTab(videoToOpen.type === 'audio' ? 'podcasts' : 'videos');
         }
       } else if (sharedCategory) {
         setSelectedCategory(sharedCategory);
         if (sharedTab) {
-          setActiveTab(sharedTab as 'sefarim' | 'videos');
+          setActiveTab(sharedTab);
         }
         setSelectedBook(null);
         setSelectedVideo(null);
@@ -471,10 +477,12 @@ export default function App() {
       
       if (newEpubFile) {
         showStatus('Uploading new EPUB file...', 'success');
-        const storageRef = ref(storage, `sefarim/${Date.now()}_${newEpubFile.name}`);
+        const storagePath = `sefarim/${Date.now()}_${newEpubFile.name}`;
+        const storageRef = ref(storage, storagePath);
         const uploadTask = await uploadBytesResumable(storageRef, newEpubFile);
         const url = await getDownloadURL(uploadTask.ref);
-        updatedData.epubUrl = url;
+        updatedData.epub = url;
+        updatedData.epubPath = storagePath;
       }
 
       await updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', id), updatedData);
@@ -665,6 +673,17 @@ export default function App() {
     return matchesCategory && matchesSearch;
   });
 
+  const podcastCategories = Array.from(new Set(audios.map(a => a.category).filter(Boolean))) as string[];
+  const filteredPodcasts = (audios as unknown as Video[]).filter(a => {
+    const matchesCategory = selectedCategory ? a.category === selectedCategory : true;
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch = searchLower === '' || 
+      (a.title || '').toLowerCase().includes(searchLower) ||
+      (a.category || '').toLowerCase().includes(searchLower) ||
+      (a.folder || '').toLowerCase().includes(searchLower);
+    return matchesCategory && matchesSearch;
+  });
+
   const displayedVideos = [...filteredVideos];
   if (selectedCategory === 'Top Rated') {
     displayedVideos.sort((a, b) => {
@@ -699,6 +718,7 @@ export default function App() {
         whatsappUrl={bannerUrl}
         totalBooks={books.length}
         totalVideos={videos.length}
+        totalPodcasts={audios.length}
         onOpenAiChat={() => setShowAiModal(true)}
       />
 
@@ -796,7 +816,18 @@ export default function App() {
           </div>
         )}
 
-        {isAdmin && <AdminPanel onStatusMessage={showStatus} onOpenSettings={() => setShowSettingsModal(true)} activeTab={activeTab} videoCategories={strictVideoCategories} videos={videos} books={books} />}
+        {isAdmin && (
+          <AdminPanel 
+            onStatusMessage={showStatus} 
+            onOpenSettings={() => setShowSettingsModal(true)} 
+            activeTab={activeTab} 
+            videoCategories={strictVideoCategories} 
+            videos={videos} 
+            books={books} 
+            audios={audios}
+            triggerAddBookToSeries={triggerAddBookToSeries}
+          />
+        )}
 
         {isDirectLinkEntry && (selectedBook || selectedVideo) && (
           <div className="mb-6 bg-slate-900 rounded-2xl shadow-sm border border-slate-700 overflow-hidden animate-in fade-in slide-in-from-top-4">
@@ -1194,21 +1225,109 @@ export default function App() {
               />
             )}
           </>
-        ) : activeTab === 'audio' ? (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto px-4 md:px-0">
-            <div className="flex items-center gap-3 w-auto justify-start mb-6">
-              <Headphones className="w-4 h-4 text-slate-400" />
-              <span className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-l border-slate-300 pl-3">Audio Library</span>
-            </div>
-            {/* Using VideoGrid for Audio items by casting them since they share the same structure */}
+        ) : activeTab === 'podcasts' || activeTab === 'audio' ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-7xl mx-auto px-4 md:px-0">
+            {!isLoading && (
+              <>
+                <div className="mb-6 flex flex-row gap-4 sm:gap-6 items-center justify-between bg-slate-900 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-700 shadow-sm max-w-2xl mx-auto md:mx-0">
+                  <div className="flex items-center gap-3 w-auto justify-start">
+                    <div className="bg-indigo-500/10 p-2 rounded-xl border border-indigo-500/20 shrink-0 hidden sm:block">
+                      <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-400" />
+                    </div>
+                    <div className="flex flex-row items-baseline gap-2 text-left">
+                      <h3 className="font-black text-slate-100 text-[14px] sm:text-base leading-tight">My Library</h3>
+                      <p className="text-[11px] sm:text-xs text-slate-400 font-medium hidden sm:block">{savedBookIds.length + savedVideoIds.length} saved items</p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => {
+                      setActiveTab('library');
+                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                    }}
+                    className="w-auto px-4 py-1.5 sm:px-5 sm:py-2 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-500/30 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
+                  >
+                    View Library
+                  </button>
+                </div>
+
+                <div className="mb-10 space-y-4">
+                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="relative w-full md:w-96 lg:w-[28rem]">
+                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <input
+                        type="text"
+                        placeholder="Search podcasts..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="w-full pl-12 pr-32 py-3 bg-slate-900 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-200 shadow-sm"
+                      />
+                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 rounded-xl pointer-events-none shadow-sm backdrop-blur-sm">
+                         <Headphones className="w-3.5 h-3.5" />
+                         <span className="text-[11px] font-black uppercase tracking-wider">{filteredPodcasts.length} Podcasts</span>
+                      </div>
+                    </div>
+
+                    {selectedCategory && (
+                      <button
+                        onClick={() => setSelectedCategory(null)}
+                        className="text-xs font-bold text-slate-400 hover:text-slate-200"
+                      >
+                        Clear Filter
+                      </button>
+                    )}
+                  </div>
+
+                  {podcastCategories.length > 0 && (
+                    <div className="flex overflow-x-auto gap-2 pb-2 custom-scrollbar">
+                      <button
+                        onClick={() => setSelectedCategory(null)}
+                        className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
+                          selectedCategory === null 
+                            ? 'bg-indigo-600 text-white shadow-md' 
+                            : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border-2 border-slate-700'
+                        }`}
+                      >
+                        All Podcasts
+                      </button>
+                      {podcastCategories.map(cat => (
+                        <button
+                          key={cat}
+                          onClick={() => setSelectedCategory(cat)}
+                          className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
+                            selectedCategory === cat 
+                              ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-600 ring-offset-1' 
+                              : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border-2 border-slate-700'
+                          }`}
+                        >
+                          {cat}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+
             <VideoGrid
-              videos={audios as unknown as Video[]}
+              videos={filteredPodcasts}
               isLoading={isLoading}
               isAdmin={isAdmin}
-              onEdit={() => {}} // No edit modal for audio right now
+              onEdit={setEditingVideo}
               onDelete={handleAudioDelete}
               onSelectVideo={handleVideoSelect}
-              mediaLabel="Audio"
+              onMoveToFolder={(audioId, newFolder) => {
+                updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', audioId), {
+                  folder: newFolder,
+                  order: 0
+                }).catch(err => console.error("Failed to move podcast to folder", err));
+              }}
+              categoryThumbnails={siteSettings.videoCategoryThumbnails}
+              folderThumbnails={siteSettings.videoFolderThumbnails}
+              folderOrder={siteSettings.videoFolderOrder}
+              onUpdateFolderThumbnail={handleUpdateFolderThumbnail}
+              savedVideoIds={savedVideoIds}
+              onToggleSave={toggleSaveVideo}
+              mediaLabel="Podcast"
             />
           </div>
         ) : activeTab === 'library' ? (
@@ -1266,11 +1385,11 @@ export default function App() {
 
               <div>
                 <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-800 pb-4">
-                  Saved Videos ({savedVideoIds.length})
+                  Saved Videos ({videos.filter(v => savedVideoIds.includes(v.id)).length})
                 </h2>
-                {savedVideoIds.length === 0 ? (
+                {videos.filter(v => savedVideoIds.includes(v.id)).length === 0 ? (
                   <div className="text-center py-12 bg-slate-950 rounded-[2rem] border border-slate-800 border-dashed">
-                    <PlayCircle className="w-12 h-12 text-slate-300 mx-auto mb-4" />
+                    <PlayCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
                     <p className="text-slate-400 font-medium tracking-wide">You haven't saved any videos yet.</p>
                   </div>
                 ) : (
@@ -1286,6 +1405,34 @@ export default function App() {
                     onUpdateFolderThumbnail={handleUpdateFolderThumbnail}
                     savedVideoIds={savedVideoIds}
                     onToggleSave={toggleSaveVideo}
+                    mediaLabel="Video"
+                  />
+                )}
+              </div>
+
+              <div>
+                <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-800 pb-4">
+                  Saved Podcasts ({audios.filter(a => savedVideoIds.includes(a.id)).length})
+                </h2>
+                {audios.filter(a => savedVideoIds.includes(a.id)).length === 0 ? (
+                  <div className="text-center py-12 bg-slate-950 rounded-[2rem] border border-slate-800 border-dashed">
+                    <Headphones className="w-12 h-12 text-slate-400 mx-auto mb-4" />
+                    <p className="text-slate-400 font-medium tracking-wide">You haven't saved any podcasts yet.</p>
+                  </div>
+                ) : (
+                  <VideoGrid
+                    videos={audios.filter(a => savedVideoIds.includes(a.id)) as unknown as Video[]}
+                    isLoading={isLoading}
+                    isAdmin={isAdmin}
+                    onEdit={setEditingVideo}
+                    onDelete={handleAudioDelete}
+                    onSelectVideo={handleVideoSelect}
+                    categoryThumbnails={siteSettings.videoCategoryThumbnails}
+                    folderThumbnails={siteSettings.videoFolderThumbnails}
+                    onUpdateFolderThumbnail={handleUpdateFolderThumbnail}
+                    savedVideoIds={savedVideoIds}
+                    onToggleSave={toggleSaveVideo}
+                    mediaLabel="Podcast"
                   />
                 )}
               </div>

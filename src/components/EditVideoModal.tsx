@@ -61,7 +61,9 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <div className="bg-slate-900 rounded-[2rem] w-full max-w-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
         <div className="flex justify-between items-center p-6 border-b border-slate-800 bg-slate-950/50">
-          <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-100">Edit Video</h2>
+          <h2 className="text-2xl font-black uppercase tracking-tighter text-slate-100">
+            Edit {video.type === 'audio' ? 'Podcast' : 'Video'}
+          </h2>
           <button
             onClick={onClose}
             className="p-2 text-slate-400 hover:text-slate-300 hover:bg-slate-800 rounded-full transition-colors"

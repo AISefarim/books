@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark } from 'lucide-react';
+import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark, Headphones } from 'lucide-react';
 import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Video } from '../types';
@@ -121,12 +121,12 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
 
       <div className="bg-slate-900 rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-800 mb-16 flex flex-col md:flex-row gap-8 items-center">
         {/* Left side: Thumbnail / Graphic */}
-        {video.type !== 'audio' && (
+        {video.type !== 'audio' ? (
           <div 
             onClick={() => {
               window.open(video.url, '_blank');
             }}
-            className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-50 flex items-center justify-center overflow-hidden shadow-inner border-4 border-slate-50 relative group block cursor-pointer"
+            className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-950/40 flex items-center justify-center overflow-hidden shadow-inner border border-slate-700 relative group block cursor-pointer"
           >
             {((video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]) ? (
               <img src={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]} alt={video.folder || video.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" />
@@ -134,18 +134,31 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
             <div className="absolute inset-0 bg-gradient-to-t from-slate-900/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                <div className="w-16 h-16 bg-slate-900/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-all duration-300">
-                  <Play className="w-8 h-8 text-indigo-600 fill-indigo-600 ml-1" />
+                  <Play className="w-8 h-8 text-indigo-400 fill-indigo-400 ml-1" />
                </div>
             </div>
+          </div>
+        ) : (
+          <div className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-950/40 flex items-center justify-center overflow-hidden shadow-inner border border-indigo-500/30 relative">
+            {((video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]) ? (
+              <img src={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]} alt={video.folder || video.category} className="w-full h-full object-cover" />
+            ) : (
+              <div className="flex flex-col items-center justify-center text-center p-6">
+                <div className="w-20 h-20 bg-indigo-600/20 text-indigo-400 rounded-3xl flex items-center justify-center mb-4 border border-indigo-500/30 shadow-lg shadow-indigo-900/40">
+                  <Headphones className="w-10 h-10" />
+                </div>
+                <span className="text-xs font-black uppercase tracking-widest text-indigo-300">Podcast Episode</span>
+              </div>
+            )}
           </div>
         )}
 
         {/* Right side: Info and Actions */}
-        <div className={`flex flex-col gap-6 w-full ${video.type === 'audio' ? '' : 'md:w-2/3'}`}>
+        <div className="flex flex-col gap-6 w-full md:w-2/3">
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-3">
-              <span className="bg-indigo-50 text-indigo-700 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg">
-                {video.category}
+              <span className="bg-indigo-950/60 text-indigo-400 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-indigo-500/30">
+                {video.category || (video.type === 'audio' ? 'Podcast' : 'General')}
               </span>
               <span className="text-slate-400 text-sm font-medium flex items-center gap-1.5">
                 <Calendar className="w-4 h-4" />

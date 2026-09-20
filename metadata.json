@@ -1,5 +1,6 @@
 {
   "name": "AI Sefarim",
-  "description": "Digital ספריה - Read and download Jewish texts.",
-  "requestFramePermissions": []
+  "description": "Digital ספריה - Read and download Jewish texts, videos, and podcasts.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }

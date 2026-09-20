@@ -38,7 +38,7 @@ interface VideoGridProps {
   savedVideoIds?: string[];
   onToggleSave?: (id: string, e: React.MouseEvent) => void;
   disableFolders?: boolean;
-  mediaLabel?: 'Video' | 'Audio';
+  mediaLabel?: 'Video' | 'Audio' | 'Podcast';
 }
 
 function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo, categoryThumbnail, isSaved, onToggleSave, isSelected, onToggleSelect }: any) {

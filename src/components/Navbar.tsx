@@ -1,19 +1,20 @@
-import { BookOpen, Video, Library, MessageCircle, Bot } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Bot, Headphones } from 'lucide-react';
 
 interface NavbarProps {
   isAdmin: boolean;
   onToggleAdmin: () => void;
   onHome: () => void;
   logoUrl?: string;
-  activeTab: 'sefarim' | 'videos' | 'library';
-  onTabChange: (tab: 'sefarim' | 'videos' | 'library') => void;
+  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'ai';
+  onTabChange: (tab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'ai') => void;
   whatsappUrl?: string;
   totalBooks?: number;
   totalVideos?: number;
+  totalPodcasts?: number;
   onOpenAiChat: () => void;
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, onOpenAiChat }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, onOpenAiChat }: NavbarProps) {
   return (
     <nav className="bg-slate-900/85 backdrop-blur-xl border-b border-slate-700/50 sticky top-0 z-40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 md:px-6 py-3 flex flex-col md:flex-row justify-between items-center gap-4">
@@ -27,20 +28,24 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
           {logoUrl ? (
             <img src={logoUrl} alt="Site Logo" className="w-10 h-10 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform" />
           ) : (
-            <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-100 group-hover:scale-105 transition-transform">
+            <div className="bg-indigo-600 p-2 rounded-xl text-white shadow-lg shadow-indigo-500/20 group-hover:scale-105 transition-transform">
               <BookOpen className="w-5 h-5" />
             </div>
           )}
           <div>
-            <h1 className="text-xl font-black text-slate-50 tracking-tighter group-hover:text-indigo-600 transition-colors leading-tight">AI SEFARIM</h1>
+            <h1 className="text-xl font-black text-slate-50 tracking-tighter group-hover:text-indigo-400 transition-colors leading-tight">AI SEFARIM</h1>
             <div className="flex items-center gap-2 mt-0.5">
-              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest border-r border-slate-300 pr-2">
-                <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-500" />
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest border-r border-slate-700 pr-2">
+                <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400" />
                 {totalBooks.toLocaleString()} <span className="hidden sm:inline">Sefarim</span>
               </div>
-              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">
-                <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-500" />
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest border-r border-slate-700 pr-2">
+                <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400" />
                 {totalVideos.toLocaleString()} <span className="hidden sm:inline">Videos</span>
+              </div>
+              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-widest">
+                <Headphones className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400" />
+                {totalPodcasts.toLocaleString()} <span className="hidden sm:inline">Podcasts</span>
               </div>
             </div>
           </div>
@@ -53,9 +58,9 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
               onTabChange('sefarim');
               onHome();
             }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-wider md:tracking-widest transition-all whitespace-nowrap ${
+            className={`flex-1 md:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 md:px-7 py-2 md:py-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-wider md:tracking-widest transition-all whitespace-nowrap ${
               activeTab === 'sefarim' 
-                ? 'bg-slate-900 text-indigo-900 shadow-[0_2px_10px_-3px_rgba(6,181,227,0.3)] ring-1 ring-slate-200/50 scale-[1.02]' 
+                ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40 scale-[1.02]' 
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 scale-95'
             }`}
           >
@@ -67,14 +72,28 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
               onTabChange('videos');
               onHome();
             }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 md:px-8 py-2 md:py-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-wider md:tracking-widest transition-all whitespace-nowrap ${
+            className={`flex-1 md:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 md:px-7 py-2 md:py-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-wider md:tracking-widest transition-all whitespace-nowrap ${
               activeTab === 'videos' 
-                ? 'bg-slate-900 text-indigo-900 shadow-[0_2px_10px_-3px_rgba(6,181,227,0.3)] ring-1 ring-slate-200/50 scale-[1.02]' 
+                ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40 scale-[1.02]' 
                 : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 scale-95'
             }`}
           >
             <Video className="w-3 h-3 md:w-4 md:h-4" />
             Videos
+          </button>
+          <button
+            onClick={() => {
+              onTabChange('podcasts');
+              onHome();
+            }}
+            className={`flex-1 md:flex-none flex items-center justify-center gap-1 sm:gap-2 px-3 sm:px-4 md:px-7 py-2 md:py-2.5 rounded-full text-[10px] sm:text-xs md:text-sm font-black uppercase tracking-wider md:tracking-widest transition-all whitespace-nowrap ${
+              activeTab === 'podcasts' || activeTab === 'audio'
+                ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40 scale-[1.02]' 
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 scale-95'
+            }`}
+          >
+            <Headphones className="w-3 h-3 md:w-4 md:h-4" />
+            Podcasts
           </button>
         </div>
 
@@ -82,9 +101,9 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
         <div className="hidden md:flex items-center gap-3">
           <button
             onClick={onOpenAiChat}
-            className="px-5 py-2.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex items-center gap-2 border border-indigo-200 shadow-sm hover:shadow-indigo-500/20 active:scale-95 group"
+            className="px-5 py-2.5 bg-indigo-950/60 text-indigo-300 hover:bg-indigo-900/60 rounded-xl font-black uppercase tracking-widest text-xs transition-all flex items-center gap-2 border border-indigo-500/30 shadow-sm hover:shadow-indigo-500/20 active:scale-95 group"
           >
-            <Bot className="w-4 h-4 group-hover:text-amber-500 transition-colors" />
+            <Bot className="w-4 h-4 group-hover:text-amber-400 transition-colors" />
             AI Assistant
           </button>
           {whatsappUrl && (
@@ -104,7 +123,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
           {isAdmin && (
             <button
               onClick={onToggleAdmin}
-              className="px-4 py-2.5 bg-rose-50 text-rose-600 rounded-xl font-bold hover:bg-rose-100 transition-all text-sm border border-rose-200 shadow-sm relative z-10"
+              className="px-4 py-2.5 bg-rose-500/10 text-rose-400 rounded-xl font-bold hover:bg-rose-500/20 transition-all text-sm border border-rose-500/30 shadow-sm relative z-10"
             >
               Logout
             </button>
@@ -115,7 +134,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
         <div className="md:hidden absolute top-3 right-4 flex items-center gap-2">
           <button
             onClick={onOpenAiChat}
-            className="p-2 bg-indigo-50 text-indigo-600 rounded-full border border-indigo-200 shadow-sm active:scale-95"
+            className="p-2 bg-indigo-950/60 text-indigo-300 rounded-full border border-indigo-500/30 shadow-sm active:scale-95"
             aria-label="AI Assistant"
           >
             <Bot className="w-4 h-4" />
@@ -135,7 +154,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
             </div>
           )}
           {isAdmin && (
-             <button onClick={onToggleAdmin} className="text-[10px] font-bold text-rose-500 bg-rose-50 px-2 py-1 rounded-full border border-rose-100 relative z-10">
+             <button onClick={onToggleAdmin} className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-1 rounded-full border border-rose-500/30 relative z-10">
                Logout
              </button>
           )}
