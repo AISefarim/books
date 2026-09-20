@@ -139,17 +139,27 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
             </div>
           </div>
         ) : (
-          <div className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-950/40 flex items-center justify-center overflow-hidden shadow-inner border border-indigo-500/30 relative">
+          <div 
+            onClick={() => {
+              window.open(video.url, '_blank');
+            }}
+            className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-950/40 flex items-center justify-center overflow-hidden shadow-inner border border-indigo-500/30 relative group cursor-pointer"
+          >
             {((video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]) ? (
-              <img src={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]} alt={video.folder || video.category} className="w-full h-full object-cover" />
+              <img src={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]} alt={video.folder || video.category} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
             ) : (
               <div className="flex flex-col items-center justify-center text-center p-6">
-                <div className="w-20 h-20 bg-indigo-600/20 text-indigo-400 rounded-3xl flex items-center justify-center mb-4 border border-indigo-500/30 shadow-lg shadow-indigo-900/40">
+                <div className="w-20 h-20 bg-indigo-600/20 text-indigo-400 rounded-3xl flex items-center justify-center mb-4 border border-indigo-500/30 shadow-lg shadow-indigo-900/40 group-hover:scale-110 transition-transform">
                   <Headphones className="w-10 h-10" />
                 </div>
                 <span className="text-xs font-black uppercase tracking-widest text-indigo-300">Podcast Episode</span>
               </div>
             )}
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-900/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+              <div className="w-16 h-16 bg-indigo-600/90 backdrop-blur-sm rounded-full flex items-center justify-center shadow-xl transform scale-75 group-hover:scale-100 transition-all duration-300 text-white">
+                <ExternalLink className="w-7 h-7" />
+              </div>
+            </div>
           </div>
         )}
 
@@ -188,7 +198,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
           )}
 
           <div className="flex flex-wrap gap-4 pt-4">
-            {video.type !== 'audio' && (
+            {video.type !== 'audio' ? (
               <a
                 href={video.url}
                 target="_blank"
@@ -196,6 +206,15 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
                 className="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-700 transition-all shadow-xl hover:shadow-2xl active:scale-95 group"
               >
                 <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" /> Play Now
+              </a>
+            ) : (
+              <a
+                href={video.url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-500 transition-all shadow-xl hover:shadow-2xl active:scale-95 group"
+              >
+                <Headphones className="w-6 h-6 group-hover:scale-110 transition-transform" /> Listen to Podcast <ExternalLink className="w-5 h-5 ml-1 opacity-75" />
               </a>
             )}
             

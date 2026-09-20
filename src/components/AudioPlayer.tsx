@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Play, Pause, SkipBack, SkipForward, FastForward, Rewind, Volume2 } from 'lucide-react';
+import React, { useState, useRef } from 'react';
+import { Play, Pause, SkipForward, FastForward, Rewind, ExternalLink, Headphones } from 'lucide-react';
 
 interface AudioPlayerProps {
   url: string;
@@ -13,6 +13,67 @@ export function AudioPlayer({ url, title, onNext }: AudioPlayerProps) {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(0);
   const [playbackRate, setPlaybackRate] = useState(1);
+  const [audioError, setAudioError] = useState(false);
+
+  // Check if URL is an external platform link rather than a direct playable audio stream
+  const isDirectAudio = url.match(/\.(mp3|wav|ogg|m4a|aac|opus)(\?.*)?$/i) || url.includes('firebasestorage') || url.includes('storage.googleapis.com');
+
+  // Detect platform name and styling
+  const getPlatformInfo = (targetUrl: string) => {
+    const lower = targetUrl.toLowerCase();
+    if (lower.includes('spotify.com')) {
+      return { name: 'Spotify', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20' };
+    }
+    if (lower.includes('apple.com') || lower.includes('podcasts.apple')) {
+      return { name: 'Apple Podcasts', color: 'bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20' };
+    }
+    if (lower.includes('youtube.com') || lower.includes('youtu.be')) {
+      return { name: 'YouTube', color: 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20' };
+    }
+    if (lower.includes('soundcloud.com')) {
+      return { name: 'SoundCloud', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30 hover:bg-orange-500/20' };
+    }
+    if (lower.includes('podbean.com')) {
+      return { name: 'Podbean', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20' };
+    }
+    return { name: 'Podcast Link', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20' };
+  };
+
+  const platform = getPlatformInfo(url);
+
+  // If not a direct audio file or if the audio element failed to decode, render the direct podcast platform card
+  if (!isDirectAudio || audioError) {
+    return (
+      <div className="bg-slate-900 rounded-3xl p-6 md:p-8 flex flex-col gap-4 shadow-2xl w-full border border-slate-800">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shrink-0">
+              <Headphones className="w-6 h-6" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-indigo-400 text-xs font-black uppercase tracking-widest">Podcast Link</span>
+                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${platform.color}`}>
+                  {platform.name}
+                </span>
+              </div>
+              <h3 className="text-white font-bold text-lg md:text-xl truncate max-w-[280px] sm:max-w-md">{title}</h3>
+            </div>
+          </div>
+
+          <a
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full sm:w-auto bg-indigo-600 text-white px-6 py-3.5 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2.5 hover:bg-indigo-500 transition-all shadow-lg hover:shadow-indigo-600/30 active:scale-95 group shrink-0"
+          >
+            <span>Listen on {platform.name}</span>
+            <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+          </a>
+        </div>
+      </div>
+    );
+  }
 
   const togglePlay = () => {
     if (audioRef.current) {
@@ -74,6 +135,7 @@ export function AudioPlayer({ url, title, onNext }: AudioPlayerProps) {
         onTimeUpdate={handleTimeUpdate}
         onLoadedMetadata={handleLoadedMetadata}
         onEnded={() => setIsPlaying(false)}
+        onError={() => setAudioError(true)}
       />
       
       {/* Visualizer / Title Area */}

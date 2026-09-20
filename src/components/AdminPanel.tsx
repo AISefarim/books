@@ -9,7 +9,7 @@ import { Video, Book, Audio } from '../types';
 interface AdminPanelProps {
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
   onOpenSettings: () => void;
-  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'images' | 'audio' | 'ai';
+  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'images' | 'audio';
   videoCategories: string[];
   videos?: Video[];
   books?: Book[];
@@ -41,7 +41,6 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
 
   const coverInputRef = useRef<HTMLInputElement>(null);
   const epubInputRef = useRef<HTMLInputElement>(null);
-  const audioInputRef = useRef<HTMLInputElement>(null);
 
   const videoFolders = Array.from(new Set(videos.filter(v => !selectedVideoCat || v.category === selectedVideoCat).map(v => v.folder || ''))).filter(f => f !== '') as string[];
   const audioFolders = Array.from(new Set(audios.map(a => a.folder || ''))).filter(f => f !== '') as string[];
@@ -162,48 +161,49 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
 
   const handleAudioSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
-    const audioFile = audioInputRef.current?.files?.[0];
-    if (!audioFile) {
-      onStatusMessage('Please select an audio file (MP3)!', 'error');
-      return;
-    }
-
     setIsUploading(true);
     const formData = new FormData(e.currentTarget);
-    const title = formData.get('title') as string;
-    const category = formData.get('category') as string;
-    const folder = formData.get('folder') as string;
+    const title = (formData.get('title') as string)?.trim();
+    const url = (formData.get('url') as string)?.trim();
+    const category = (formData.get('category') as string)?.trim();
+    const orderStr = formData.get('order') as string;
+    const order = orderStr ? parseInt(orderStr, 10) : undefined;
+
+    if (!title || !url) {
+      onStatusMessage('Please enter both podcast title and link URL!', 'error');
+      setIsUploading(false);
+      return;
+    }
     
     const folderStateValue = selectedFolder === 'new' ? newFolderInput : selectedFolder;
     const finalFolder = folderStateValue === '_none_' ? '' : folderStateValue.trim();
 
     try {
       const timestamp = Date.now();
-      const audioPath = `audio/${timestamp}_${audioFile.name}`;
-      
-      const audioUrl = await uploadWithProgress(audioFile, audioPath, 'Uploading Podcast...');
 
       const docData: any = {
         title,
-        url: audioUrl,
-        category,
+        url,
+        category: category || 'General',
         folder: finalFolder,
         createdAt: timestamp,
-        type: 'audio',
-        audioPath
+        views: 0,
+        type: 'audio'
       };
+
+      if (order !== undefined && !isNaN(order)) {
+        docData.order = order;
+      }
 
       await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim'), docData);
 
       onStatusMessage('Podcast published successfully!', 'success');
       formRef.current?.reset();
-      if (audioInputRef.current) audioInputRef.current.value = '';
       setSelectedFolder('');
       setNewFolderInput('');
       setIsFormVisible(false);
     } catch (err: any) {
-      console.error(err);
+      console.error('Podcast publish error:', err);
       onStatusMessage(`Error: ${err.message}`, 'error');
     } finally {
       setIsUploading(false);
@@ -505,6 +505,14 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                 placeholder="Podcast Episode Title"
               />
               
+              <input
+                name="url"
+                type="url"
+                required
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold text-base bg-slate-900 text-slate-100 placeholder:text-slate-500"
+                placeholder="Podcast Link URL (Spotify, Apple Podcasts, YouTube, MP3 link, etc.)"
+              />
+              
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   name="category"
@@ -541,21 +549,12 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                 </div>
               </div>
 
-              <div className="relative bg-slate-900 p-4 rounded-2xl ring-1 ring-slate-700 flex items-center justify-center group hover:bg-slate-850 transition-colors">
-                <span className={`text-xs font-black uppercase tracking-widest ${audioInputRef.current?.files?.length ? 'text-emerald-400' : 'text-slate-400'}`}>
-                  {audioInputRef.current?.files?.length ? 'READY TO UPLOAD ✅' : 'UPLOAD MP3 PODCAST EPISODE'}
-                </span>
-                <input
-                  type="file"
-                  ref={audioInputRef}
-                  onChange={() => { 
-                    setProgress({ label: '', percent: 0 }); 
-                  }}
-                  accept="audio/mp3,audio/mpeg,audio/*"
-                  className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                  required
-                />
-              </div>
+              <input
+                name="order"
+                type="number"
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100"
+                placeholder="Rank Order (1 is highest)"
+              />
 
               <button
                 type="submit"
@@ -564,7 +563,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
               >
                 {isUploading ? (
                   <>
-                    <Loader2 className="w-5 h-5 animate-spin" /> {progress.label || 'UPLOADING...'} {progress.percent > 0 ? `${Math.round(progress.percent)}%` : ''}
+                    <Loader2 className="w-5 h-5 animate-spin" /> SAVING...
                   </>
                 ) : (
                   'Publish Podcast'

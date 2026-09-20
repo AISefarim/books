@@ -24,13 +24,12 @@ import { EditVideoModal } from './components/EditVideoModal';
 import { SiteSettingsModal } from './components/SiteSettingsModal';
 import { AddToHomescreen } from './components/AddToHomescreen';
 import { AddExistingBookModal } from './components/AddExistingBookModal';
-import { AIChat } from './components/AIChat';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [audios, setAudios] = useState<Audio[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'ai'>('sefarim');
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio'>('sefarim');
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -46,7 +45,6 @@ export default function App() {
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
   const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string>, welcomeVideoUrl?: string, videoFolderThumbnails?: Record<string, string>, videoFolderOrder?: string[], seriesThumbnails?: Record<string, string>, seriesOrder?: string[] }>({});
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showAiModal, setShowAiModal] = useState(false);
   const [isPlayingWelcome, setIsPlayingWelcome] = useState(false);
   const [isDirectLinkEntry, setIsDirectLinkEntry] = useState(false);
   const [playingDirectVideo, setPlayingDirectVideo] = useState(false);
@@ -224,10 +222,10 @@ export default function App() {
 
   const handleAudioDelete = async (id: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (window.confirm('Are you sure you want to delete this audio?')) {
+    if (window.confirm('Are you sure you want to delete this podcast?')) {
       try {
         await deleteDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', id));
-        showStatus('Audio deleted successfully.', 'success');
+        showStatus('Podcast deleted successfully.', 'success');
       } catch (e: any) {
         showStatus(`Delete Error: ${e.message}`, 'error');
       }
@@ -719,20 +717,19 @@ export default function App() {
         totalBooks={books.length}
         totalVideos={videos.length}
         totalPodcasts={audios.length}
-        onOpenAiChat={() => setShowAiModal(true)}
       />
 
       {/* Welcome Video Section (Only on main dashboard) */}
       {!selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-12 pt-6 md:pt-8 pb-4">
-          <div className="bg-slate-900 rounded-[1.5rem] md:rounded-[3rem] overflow-hidden shadow-2xl border border-slate-800 shadow-indigo-900/10 relative">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-900/20 via-slate-900 to-slate-900 pointer-events-none" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-2">
+          <div className="bg-slate-900 rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-800 shadow-indigo-950/40 relative">
+            <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/20 via-slate-900 to-slate-900 pointer-events-none" />
             
             {isPlayingWelcome ? (
               <div className="relative aspect-video w-full bg-black animate-in fade-in zoom-in-95 duration-500">
                 <button 
                   onClick={() => setIsPlayingWelcome(false)}
-                  className="absolute top-4 right-4 md:top-6 md:right-6 z-50 p-2.5 bg-slate-900/10 hover:bg-slate-900/20 text-white rounded-full backdrop-blur-md transition-all border border-white/20"
+                  className="absolute top-4 right-4 md:top-6 md:right-6 z-50 p-2.5 bg-slate-900/40 hover:bg-slate-900/60 text-white rounded-full backdrop-blur-md transition-all border border-white/20"
                 >
                   <X className="w-5 h-5 md:w-6 md:h-6" />
                 </button>
@@ -755,32 +752,32 @@ export default function App() {
                 )}
               </div>
             ) : (
-              <div className="relative px-5 py-8 sm:p-8 md:p-12 lg:p-16 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-12 z-10 w-full">
-                 <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start w-full">
-                   <div className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-300 text-xs font-bold uppercase tracking-widest mb-6">
+              <div className="relative px-6 py-8 sm:px-8 sm:py-10 md:px-8 md:py-10 lg:px-12 lg:py-12 flex flex-col md:flex-row items-center justify-between gap-6 md:gap-8 lg:gap-12 z-10 w-full">
+                 <div className="flex-1 text-center md:text-left flex flex-col items-center md:items-start w-full min-w-0">
+                   <div className="hidden md:inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-full text-indigo-300 text-xs font-bold uppercase tracking-widest mb-3 md:mb-4">
                      <BookOpen className="w-3.5 h-3.5" /> Welcome to the Library
                    </div>
-                   <h2 className="text-[28px] sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight leading-[1.05] sm:leading-[1.1] mb-3 md:mb-6 text-white max-w-[280px] sm:max-w-md md:max-w-none mx-auto md:mx-0">
-                     Ancient wisdom,<br className="hidden md:block"/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mt-1 inline-block md:mt-0">illuminated by AI.</span>
+                   <h2 className="text-2xl sm:text-3xl md:text-3xl lg:text-4xl xl:text-5xl font-black tracking-tight leading-tight mb-3 md:mb-4 text-white max-w-xl mx-auto md:mx-0">
+                     Ancient wisdom,<br className="hidden lg:block"/><span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mt-1 inline-block md:mt-0"> illuminated by AI.</span>
                    </h2>
-                   <p className="text-slate-300 text-sm sm:text-base md:text-lg mb-6 md:mb-8 max-w-[280px] sm:max-w-sm md:max-w-xl leading-relaxed mx-auto md:mx-0">
-                     Explore an endless digital repository of sefarim and video classes, beautifully structured and enhanced by artificial intelligence.
+                   <p className="text-slate-300 text-sm sm:text-base md:text-base lg:text-lg mb-5 md:mb-6 max-w-xl leading-relaxed mx-auto md:mx-0">
+                     Explore an endless digital repository of sefarim, videos, and podcasts, beautifully structured and accessible anywhere.
                    </p>
                    {siteSettings.welcomeVideoUrl && (
                      <button 
                        onClick={() => setIsPlayingWelcome(true)}
-                       className="bg-indigo-600 text-white px-6 md:px-8 py-3.5 md:py-4 rounded-xl md:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 hover:shadow-indigo-500/40 hover:-translate-y-1 active:translate-y-0 active:scale-95 group w-full sm:w-auto justify-center"
+                       className="bg-indigo-600 text-white px-5 md:px-7 py-3 md:py-3.5 rounded-xl md:rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest flex items-center gap-2.5 hover:bg-indigo-500 transition-all shadow-xl shadow-indigo-600/20 hover:shadow-indigo-500/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 group w-full sm:w-auto justify-center"
                      >
-                       <Play className="w-4 h-4 sm:w-5 sm:h-5 fill-current group-hover:scale-110 transition-transform" /> Watch Intro
+                       <Play className="w-4 h-4 sm:w-4.5 sm:h-4.5 fill-current group-hover:scale-110 transition-transform" /> Watch Intro
                      </button>
                    )}
                  </div>
                  
                  {siteSettings.welcomeVideoUrl && (
-                   <div className="hidden md:block w-[380px] lg:w-[480px] shrink-0">
+                   <div className="hidden md:block w-[280px] lg:w-[380px] xl:w-[440px] shrink-0">
                      <div 
                        onClick={() => setIsPlayingWelcome(true)}
-                       className="relative aspect-video rounded-3xl overflow-hidden cursor-pointer group shadow-2xl border border-white/10 ring-4 ring-indigo-500/10 hover:ring-indigo-500/30 transition-all transform hover:-translate-y-2 hover:shadow-indigo-500/20"
+                       className="relative aspect-video rounded-2xl md:rounded-3xl overflow-hidden cursor-pointer group shadow-2xl border border-white/10 ring-4 ring-indigo-500/10 hover:ring-indigo-500/30 transition-all transform hover:-translate-y-1 hover:shadow-indigo-500/20"
                      >
                         <div className="absolute inset-0 bg-slate-800">
                           {siteSettings.logoUrl && (
@@ -789,8 +786,8 @@ export default function App() {
                         </div>
                         <div className="absolute inset-0 bg-gradient-to-tr from-indigo-900/60 via-transparent to-transparent mix-blend-overlay" />
                         <div className="absolute inset-0 flex items-center justify-center">
-                           <div className="w-16 h-16 rounded-full bg-indigo-600/90 backdrop-blur-md border border-indigo-400/30 text-white flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-500 transition-all duration-300 shadow-2xl shadow-indigo-900">
-                             <Play className="w-7 h-7 fill-current ml-1" />
+                           <div className="w-14 h-14 md:w-16 md:h-16 rounded-full bg-indigo-600/90 backdrop-blur-md border border-indigo-400/30 text-white flex items-center justify-center group-hover:scale-110 group-hover:bg-indigo-500 transition-all duration-300 shadow-2xl shadow-indigo-900">
+                             <Play className="w-6 h-6 md:w-7 md:h-7 fill-current ml-0.5" />
                            </div>
                         </div>
                      </div>
@@ -1510,10 +1507,6 @@ export default function App() {
           onClose={() => setShowSettingsModal(false)}
           onStatusMessage={showStatus}
         />
-      )}
-
-      {showAiModal && (
-        <AIChat onClose={() => setShowAiModal(false)} />
       )}
 
       <AddToHomescreen />
