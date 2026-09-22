@@ -1,5 +1,5 @@
 import React from 'react';
-import { BookOpen, Download, ShoppingCart, ChevronLeft, Share2, Check, Bookmark } from 'lucide-react';
+import { BookOpen, Download, ShoppingCart, ChevronLeft, Share2, Check, Bookmark, MessageCircle } from 'lucide-react';
 import { Book } from '../types';
 
 interface BookDetailsProps {
@@ -9,9 +9,10 @@ interface BookDetailsProps {
   onDownload: (epubUrl: string, title: string) => void;
   isSaved?: boolean;
   onToggleSave?: (id: string) => void;
+  onOpenWhatsAppShare?: () => void;
 }
 
-export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggleSave }: BookDetailsProps) {
+export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggleSave, onOpenWhatsAppShare }: BookDetailsProps) {
   const [copied, setCopied] = React.useState(false);
 
   React.useEffect(() => {
@@ -105,6 +106,17 @@ export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggl
                 {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Share2 className="w-5 h-5" />} 
                 {copied ? 'Copied!' : 'Share'}
               </button>
+              {onOpenWhatsAppShare && (
+                <button
+                  type="button"
+                  onClick={onOpenWhatsAppShare}
+                  className="bg-[#25D366]/20 backdrop-blur-md text-emerald-300 border border-[#25D366]/40 px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-[#25D366]/30 transition-all active:scale-95 shadow-lg shadow-[#25D366]/10"
+                  title="Share our WhatsApp community with friends"
+                >
+                  <MessageCircle className="w-5 h-5 text-[#25D366] fill-[#25D366]" />
+                  Invite Friends
+                </button>
+              )}
               {onToggleSave && (
                 <button
                   onClick={() => onToggleSave(book.id)}

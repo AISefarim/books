@@ -1,4 +1,4 @@
-import { BookOpen, Video, Library, MessageCircle, Headphones } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Headphones, Share2 } from 'lucide-react';
 
 interface NavbarProps {
   isAdmin: boolean;
@@ -11,9 +11,10 @@ interface NavbarProps {
   totalBooks?: number;
   totalVideos?: number;
   totalPodcasts?: number;
+  onOpenWhatsAppShare?: () => void;
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0 }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, onOpenWhatsAppShare }: NavbarProps) {
   return (
     <nav className="bg-slate-900/85 backdrop-blur-xl border-b border-slate-700/50 sticky top-0 z-40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
@@ -97,20 +98,34 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
         </div>
 
         {/* Action Buttons Section */}
-        <div className="hidden md:flex items-center gap-3 shrink-0">
+        <div className="hidden md:flex items-center gap-2.5 shrink-0">
           {whatsappUrl && (
-            <div className="relative group">
-              <div className="absolute inset-0 bg-[#25D366] rounded-xl animate-ping opacity-20" style={{ animationDuration: '3s' }}></div>
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative px-4 py-2 bg-[#25D366] text-white hover:bg-[#1fa14b] rounded-xl font-bold transition-all text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-[#25D366]/30 hover:shadow-[#25D366]/50 hover:-translate-y-0.5 active:scale-95 uppercase tracking-wide border border-white/20"
-              >
-                <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                Join WhatsApp
-              </a>
-            </div>
+            <>
+              <div className="relative group">
+                <div className="absolute inset-0 bg-[#25D366] rounded-xl animate-ping opacity-20" style={{ animationDuration: '3s' }}></div>
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative px-4 py-2 bg-[#25D366] text-white hover:bg-[#1fa14b] rounded-xl font-bold transition-all text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-[#25D366]/30 hover:shadow-[#25D366]/50 hover:-translate-y-0.5 active:scale-95 uppercase tracking-wide border border-white/20"
+                >
+                  <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
+                  Join WhatsApp
+                </a>
+              </div>
+
+              {onOpenWhatsAppShare && (
+                <button
+                  type="button"
+                  onClick={onOpenWhatsAppShare}
+                  className="px-3.5 py-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-xl font-bold transition-all text-xs sm:text-sm flex items-center gap-1.5 border border-emerald-500/30 hover:border-emerald-500/50 hover:-translate-y-0.5 active:scale-95 uppercase tracking-wide"
+                  title="Share WhatsApp Community with friends"
+                >
+                  <Share2 className="w-4 h-4" />
+                  Invite Friends
+                </button>
+              )}
+            </>
           )}
           {isAdmin && (
             <button
@@ -123,20 +138,34 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
         </div>
         
         {/* Mobile quick actions */}
-        <div className="md:hidden absolute top-3 right-4 flex items-center gap-2">
+        <div className="md:hidden absolute top-3 right-4 flex items-center gap-1.5">
           {whatsappUrl && (
-            <div className="relative pt-[2px]">
-              <div className="absolute inset-0 bg-[#25D366] rounded-full animate-ping opacity-20" style={{ animationDuration: '3s' }}></div>
-              <a
-                href={whatsappUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="relative px-3 py-1.5 bg-[#25D366] text-white rounded-full font-black transition-all text-[10px] sm:text-xs flex items-center gap-1 shadow-md shadow-[#25D366]/40 uppercase tracking-widest active:scale-95 border border-white/20"
-              >
-                <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
-                WhatsApp
-              </a>
-            </div>
+            <>
+              <div className="relative pt-[2px]">
+                <div className="absolute inset-0 bg-[#25D366] rounded-full animate-ping opacity-20" style={{ animationDuration: '3s' }}></div>
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="relative px-3 py-1.5 bg-[#25D366] text-white rounded-full font-black transition-all text-[10px] sm:text-xs flex items-center gap-1 shadow-md shadow-[#25D366]/40 uppercase tracking-widest active:scale-95 border border-white/20"
+                >
+                  <MessageCircle className="w-3.5 h-3.5 sm:w-4 sm:h-4 fill-current" />
+                  WhatsApp
+                </a>
+              </div>
+
+              {onOpenWhatsAppShare && (
+                <button
+                  type="button"
+                  onClick={onOpenWhatsAppShare}
+                  className="p-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-full border border-emerald-500/30 active:scale-95"
+                  title="Share WhatsApp Group with friends"
+                  aria-label="Invite friends to WhatsApp group"
+                >
+                  <Share2 className="w-3.5 h-3.5" />
+                </button>
+              )}
+            </>
           )}
           {isAdmin && (
              <button onClick={onToggleAdmin} className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-1 rounded-full border border-rose-500/30 relative z-10">

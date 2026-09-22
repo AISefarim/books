@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark, Headphones } from 'lucide-react';
+import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark, Headphones, MessageCircle } from 'lucide-react';
 import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Video } from '../types';
@@ -14,9 +14,10 @@ interface VideoDetailsProps {
   folderThumbnails?: Record<string, string>;
   isSaved?: boolean;
   onToggleSave?: (id: string, e?: React.MouseEvent) => void;
+  onOpenWhatsAppShare?: () => void;
 }
 
-export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, categoryThumbnails, folderThumbnails, isSaved, onToggleSave }: VideoDetailsProps) {
+export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, categoryThumbnails, folderThumbnails, isSaved, onToggleSave, onOpenWhatsAppShare }: VideoDetailsProps) {
   const [copied, setCopied] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(0);
   const [hasRated, setHasRated] = useState(() => {
@@ -225,6 +226,17 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
               {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />} 
               {copied ? 'Copied!' : 'Share Shiur'}
             </button>
+
+            {onOpenWhatsAppShare && (
+              <button
+                type="button"
+                onClick={onOpenWhatsAppShare}
+                className="bg-[#25D366]/20 text-emerald-300 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-[#25D366]/30 transition-all border border-[#25D366]/40 shadow-sm active:scale-95"
+                title="Share our WhatsApp community with friends"
+              >
+                <MessageCircle className="w-6 h-6 text-[#25D366] fill-[#25D366]" /> Invite Friends
+              </button>
+            )}
 
             {onToggleSave && (
               <button

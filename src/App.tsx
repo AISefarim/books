@@ -24,6 +24,9 @@ import { EditVideoModal } from './components/EditVideoModal';
 import { SiteSettingsModal } from './components/SiteSettingsModal';
 import { AddToHomescreen } from './components/AddToHomescreen';
 import { AddExistingBookModal } from './components/AddExistingBookModal';
+import { WhatsAppShareModal } from './components/WhatsAppShareModal';
+import { WhatsAppGrowthPrompt } from './components/WhatsAppGrowthPrompt';
+import { CommunityGrowthBanner } from './components/CommunityGrowthBanner';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -33,6 +36,7 @@ export default function App() {
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [showWhatsAppShareModal, setShowWhatsAppShareModal] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [readingBook, setReadingBook] = useState<Book | null>(null);
   const [editingBook, setEditingBook] = useState<Book | null>(null);
@@ -725,6 +729,7 @@ export default function App() {
         totalBooks={books.length}
         totalVideos={videos.length}
         totalPodcasts={audios.length}
+        onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
       />
 
       {/* Welcome Video Section (Only on main dashboard) */}
@@ -902,6 +907,7 @@ export default function App() {
             onDownload={(url, title) => handleDownload(url, title, selectedBook.id)}
             isSaved={savedBookIds.includes(selectedBook.id)}
             onToggleSave={toggleSaveBook}
+            onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
           />
         ) : selectedVideo ? (
           <VideoDetails
@@ -947,6 +953,7 @@ export default function App() {
             folderThumbnails={siteSettings.videoFolderThumbnails}
             isSaved={savedVideoIds.includes(selectedVideo.id)}
             onToggleSave={toggleSaveVideo}
+            onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
           />
         ) : activeTab === 'sefarim' ? (
           <>
@@ -1446,6 +1453,12 @@ export default function App() {
         ) : null}
       </main>
 
+      {/* Community Growth Banner to prompt visitors */}
+      <CommunityGrowthBanner 
+        whatsappUrl={bannerUrl} 
+        onOpenShareModal={() => setShowWhatsAppShareModal(true)} 
+      />
+
       <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-700/60 mt-8 relative">
         <p className="text-slate-400 text-sm font-medium max-w-2xl mx-auto leading-relaxed">
           <span className="font-bold text-slate-400">Please note:</span> These sefarim are generated using AI and have not been vetted by rabbinic authorities. We do not make any profit from the sale of physical books; they are printed and sold strictly at cost.
@@ -1513,6 +1526,21 @@ export default function App() {
         <SiteSettingsModal
           currentSettings={siteSettings}
           onClose={() => setShowSettingsModal(false)}
+          onStatusMessage={showStatus}
+        />
+      )}
+
+      {/* Floating Prompt to grow WhatsApp Community */}
+      <WhatsAppGrowthPrompt
+        whatsappUrl={bannerUrl}
+        onOpenShareModal={() => setShowWhatsAppShareModal(true)}
+      />
+
+      {/* Interactive Modal to share WhatsApp Community */}
+      {showWhatsAppShareModal && (
+        <WhatsAppShareModal
+          whatsappUrl={bannerUrl}
+          onClose={() => setShowWhatsAppShareModal(false)}
           onStatusMessage={showStatus}
         />
       )}
