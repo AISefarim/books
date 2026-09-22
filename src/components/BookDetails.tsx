@@ -78,30 +78,30 @@ export function BookDetails({ book, onBack, onRead, onDownload, isSaved, onToggl
             
             <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-4">
               <button
-                onClick={() => onDownload(book.epub, `${book.title}_eBook`)}
-                className="bg-slate-900 text-indigo-900 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-xl hover:shadow-2xl active:scale-95"
-              >
-                <Download className="w-5 h-5" /> Download eBook
-              </button>
-              <button
                 onClick={() => onRead(book.epub)}
-                className="bg-indigo-800/50 backdrop-blur-md text-white border border-indigo-500/30 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-700/50 transition-all active:scale-95"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2.5 transition-all shadow-xl shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 cursor-pointer"
               >
                 <BookOpen className="w-5 h-5" /> Read Online
+              </button>
+              <button
+                onClick={() => onDownload(book.epub, `${book.title}_eBook`)}
+                className="bg-slate-900/80 hover:bg-slate-800 text-white border border-slate-700/80 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+              >
+                <Download className="w-5 h-5" /> Download eBook
               </button>
               {book.buyLink && (
                 <a
                   href={book.buyLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="bg-emerald-500 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-emerald-600 transition-all shadow-xl hover:shadow-2xl active:scale-95"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2.5 transition-all shadow-xl shadow-emerald-600/30 hover:shadow-emerald-500/50 active:scale-95"
                 >
                   <ShoppingCart className="w-5 h-5" /> Buy Physical
                 </a>
               )}
               <button
                 onClick={handleShare}
-                className="bg-slate-900/10 backdrop-blur-md text-white border border-white/20 px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-900/20 transition-all active:scale-95"
+                className="bg-slate-900/40 backdrop-blur-md text-white border border-white/20 px-6 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-slate-900/60 transition-all active:scale-95 cursor-pointer"
               >
                 {copied ? <Check className="w-5 h-5 text-emerald-400" /> : <Share2 className="w-5 h-5" />} 
                 {copied ? 'Copied!' : 'Share'}

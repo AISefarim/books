@@ -50,7 +50,10 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
             <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse" />
             Featured Sefer
           </div>
-          <h2 className="text-3xl sm:text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full px-2">
+          <h2 
+            onClick={() => onSelect ? onSelect(currentBook) : onRead(currentBook.epub)}
+            className="text-3xl sm:text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full px-2 cursor-pointer hover:text-indigo-200 transition-colors"
+          >
             {currentBook.title}
           </h2>
         </div>
@@ -62,7 +65,10 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
             Featured Sefer
           </div>
           
-          <h2 className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full pb-2">
+          <h2 
+            onClick={() => onSelect ? onSelect(currentBook) : onRead(currentBook.epub)}
+            className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full pb-2 cursor-pointer hover:text-indigo-200 transition-colors"
+          >
             {currentBook.title}
           </h2>
           
@@ -75,16 +81,13 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
           </p>
           
           <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-4">
-            {currentBook.buyLink && (
-              <a
-                href={currentBook.buyLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-slate-900 text-indigo-900 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2 hover:bg-indigo-50 transition-all shadow-xl hover:shadow-2xl active:scale-95"
-              >
-                <ShoppingCart className="w-5 h-5" /> Buy Physical
-              </a>
-            )}
+            <button
+              type="button"
+              onClick={() => onSelect ? onSelect(currentBook) : onRead(currentBook.epub)}
+              className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2.5 transition-all shadow-xl shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 group cursor-pointer"
+            >
+              <BookOpen className="w-5 h-5 group-hover:scale-110 transition-transform" /> View Sefer
+            </button>
           </div>
         </div>
         

@@ -199,7 +199,7 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
           )}
 
           <div className="flex flex-wrap gap-4 pt-4">
-            {video.type !== 'audio' ? (
+            {video.type !== 'audio' && (
               <a
                 href={video.url}
                 target="_blank"
@@ -207,15 +207,6 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
                 className="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-700 transition-all shadow-xl hover:shadow-2xl active:scale-95 group"
               >
                 <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" /> Play Now
-              </a>
-            ) : (
-              <a
-                href={video.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-500 transition-all shadow-xl hover:shadow-2xl active:scale-95 group"
-              >
-                <Headphones className="w-6 h-6 group-hover:scale-110 transition-transform" /> Listen to Podcast <ExternalLink className="w-5 h-5 ml-1 opacity-75" />
               </a>
             )}
             

@@ -22,21 +22,21 @@ export function AudioPlayer({ url, title, onNext }: AudioPlayerProps) {
   const getPlatformInfo = (targetUrl: string) => {
     const lower = targetUrl.toLowerCase();
     if (lower.includes('spotify.com')) {
-      return { name: 'Spotify', color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20' };
+      return { name: 'Spotify', isKnown: true, color: 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20' };
     }
     if (lower.includes('apple.com') || lower.includes('podcasts.apple')) {
-      return { name: 'Apple Podcasts', color: 'bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20' };
+      return { name: 'Apple Podcasts', isKnown: true, color: 'bg-purple-500/10 text-purple-400 border-purple-500/30 hover:bg-purple-500/20' };
     }
     if (lower.includes('youtube.com') || lower.includes('youtu.be')) {
-      return { name: 'YouTube', color: 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20' };
+      return { name: 'YouTube', isKnown: true, color: 'bg-red-500/10 text-red-400 border-red-500/30 hover:bg-red-500/20' };
     }
     if (lower.includes('soundcloud.com')) {
-      return { name: 'SoundCloud', color: 'bg-orange-500/10 text-orange-400 border-orange-500/30 hover:bg-orange-500/20' };
+      return { name: 'SoundCloud', isKnown: true, color: 'bg-orange-500/10 text-orange-400 border-orange-500/30 hover:bg-orange-500/20' };
     }
     if (lower.includes('podbean.com')) {
-      return { name: 'Podbean', color: 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20' };
+      return { name: 'Podbean', isKnown: true, color: 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20' };
     }
-    return { name: 'Podcast Link', color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20' };
+    return { name: 'Podcast', isKnown: false, color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20' };
   };
 
   const platform = getPlatformInfo(url);
@@ -52,10 +52,12 @@ export function AudioPlayer({ url, title, onNext }: AudioPlayerProps) {
             </div>
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <span className="text-indigo-400 text-xs font-black uppercase tracking-widest">Podcast Link</span>
-                <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${platform.color}`}>
-                  {platform.name}
-                </span>
+                <span className="text-indigo-400 text-xs font-black uppercase tracking-widest">Podcast Episode</span>
+                {platform.isKnown && (
+                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${platform.color}`}>
+                    {platform.name}
+                  </span>
+                )}
               </div>
               <h3 className="text-white font-bold text-lg md:text-xl truncate max-w-[280px] sm:max-w-md">{title}</h3>
             </div>
@@ -67,8 +69,9 @@ export function AudioPlayer({ url, title, onNext }: AudioPlayerProps) {
             rel="noopener noreferrer"
             className="w-full sm:w-auto bg-indigo-600 text-white px-6 py-3.5 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2.5 hover:bg-indigo-500 transition-all shadow-lg hover:shadow-indigo-600/30 active:scale-95 group shrink-0"
           >
-            <span>Listen on {platform.name}</span>
-            <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+            <Headphones className="w-4 h-4 shrink-0" />
+            <span>{platform.isKnown ? `Listen on ${platform.name}` : 'Listen to Podcast'}</span>
+            <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
           </a>
         </div>
       </div>
