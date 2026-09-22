@@ -133,6 +133,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
         coverPath,
         epubPath,
         createdAt: timestamp,
+        type: 'sefer',
       };
 
       if (order !== undefined && !isNaN(order)) {

@@ -83,7 +83,15 @@ export default function App() {
       const allDocs = snapshot.docs.map(d => ({ id: d.id, ...(d.data() as any) }));
       
       const bookDocs = allDocs
-        .filter(d => d.id !== '_site_settings_' && !d.isSettingsDoc && d.type !== 'video' && d.type !== 'image')
+        .filter(d => 
+          d.id !== '_site_settings_' && 
+          !d.isSettingsDoc && 
+          d.type !== 'video' && 
+          d.type !== 'image' && 
+          d.type !== 'audio' && 
+          d.type !== 'podcast' &&
+          !d.audioPath
+        )
         .map(d => d as Book);
         
       bookDocs.sort((a, b) => {
@@ -108,7 +116,7 @@ export default function App() {
       setVideos(videoDocs);
 
       const audioDocs = allDocs
-        .filter(d => d.type === 'audio')
+        .filter(d => d.type === 'audio' || d.type === 'podcast' || !!d.audioPath)
         .map(d => d as unknown as Audio);
         
       audioDocs.sort((a, b) => {
@@ -120,7 +128,7 @@ export default function App() {
       setAudios(audioDocs);
 
       // Check for shared links
-      if (!hasCheckedSharedLink.current && (bookDocs.length > 0 || videoDocs.length > 0)) {
+      if (!hasCheckedSharedLink.current && (bookDocs.length > 0 || videoDocs.length > 0 || audioDocs.length > 0)) {
         hasCheckedSharedLink.current = true;
         const params = new URLSearchParams(window.location.search);
         let sharedBookId = params.get('book');
@@ -1333,15 +1341,15 @@ export default function App() {
               <h1 className="text-4xl md:text-5xl font-black text-slate-50 tracking-tighter leading-tight mb-4">
                 My Library
               </h1>
-              <p className="text-slate-400 font-medium">Your personal collection of saved sefarim and videos.</p>
+              <p className="text-slate-400 font-medium">Your personal collection of saved sefarim, videos, and podcasts.</p>
             </div>
 
             <div className="space-y-16">
               <div>
                 <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-800 pb-4">
-                  Saved Sefarim ({savedBookIds.length})
+                  Saved Sefarim ({books.filter(b => savedBookIds.includes(b.id)).length})
                 </h2>
-                {savedBookIds.length === 0 ? (
+                {books.filter(b => savedBookIds.includes(b.id)).length === 0 ? (
                   <div className="text-center py-12 bg-slate-950 rounded-[2rem] border border-slate-800 border-dashed">
                     <BookOpen className="w-12 h-12 text-slate-300 mx-auto mb-4" />
                     <p className="text-slate-400 font-medium tracking-wide">You haven't saved any sefarim yet.</p>

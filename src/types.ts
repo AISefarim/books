@@ -16,7 +16,7 @@ export interface Book {
   readCount?: number;
   downloadCount?: number;
   isFeatured?: boolean;
-  type?: 'sefer' | 'video';
+  type?: 'sefer' | 'video' | 'audio' | 'podcast';
 }
 
 export interface Audio {
