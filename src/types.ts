@@ -25,6 +25,7 @@ export interface Audio {
   url: string;
   category?: string;
   folder?: string;
+  subfolder?: string;
   createdAt: number;
   order?: number;
   type?: 'audio';
@@ -36,6 +37,7 @@ export interface Video {
   url: string;
   category: string;
   folder?: string;
+  subfolder?: string;
   createdAt: number;
   views?: number;
   type?: 'video' | 'audio';
@@ -44,3 +46,5 @@ export interface Video {
   ratingsCount?: number;
   comments?: { id: string, name: string, text: string, createdAt: number }[];
 }
+
+export type Media = Video;

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Image as ImageIcon, Loader2, Settings } from 'lucide-react';
+import { Plus, Image as ImageIcon, Loader2, Settings, Video as VideoIcon, Headphones } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
@@ -9,7 +9,7 @@ import { Video, Book, Audio } from '../types';
 interface AdminPanelProps {
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
   onOpenSettings: () => void;
-  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'images' | 'audio';
+  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'images' | 'audio' | 'media';
   videoCategories: string[];
   videos?: Video[];
   books?: Book[];
@@ -23,8 +23,11 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
   const [progress, setProgress] = useState({ label: '', percent: 0 });
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
   
+  const [mediaPublishType, setMediaPublishType] = useState<'video' | 'podcast'>('video');
   const [selectedFolder, setSelectedFolder] = useState('');
   const [newFolderInput, setNewFolderInput] = useState('');
+  const [selectedSubfolder, setSelectedSubfolder] = useState('_none_');
+  const [newSubfolderInput, setNewSubfolderInput] = useState('');
   const [selectedVideoCat, setSelectedVideoCat] = useState('');
   
   const [selectedBookSeries, setSelectedBookSeries] = useState('_none_');
@@ -42,9 +45,27 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
   const coverInputRef = useRef<HTMLInputElement>(null);
   const epubInputRef = useRef<HTMLInputElement>(null);
 
-  const videoFolders = Array.from(new Set(videos.filter(v => !selectedVideoCat || v.category === selectedVideoCat).map(v => v.folder || ''))).filter(f => f !== '') as string[];
-  const audioFolders = Array.from(new Set(audios.map(a => a.folder || ''))).filter(f => f !== '') as string[];
-  const relevantFolders = (activeTab === 'audio' || activeTab === 'podcasts') ? audioFolders : videoFolders;
+  const allMediaFolders = Array.from(new Set([
+    ...videos.map(v => v.folder || ''),
+    ...audios.map(a => a.folder || '')
+  ])).filter(Boolean) as string[];
+
+  const allMediaCategories = Array.from(new Set([
+    ...videoCategories,
+    ...videos.map(v => v.category || ''),
+    ...audios.map(a => a.category || '')
+  ])).filter(Boolean) as string[];
+
+  const currentEffectiveFolder = selectedFolder === 'new' ? newFolderInput.trim() : (selectedFolder === '_none_' ? '' : selectedFolder.trim());
+  const allMediaItems = [...videos, ...(audios as unknown as Video[])];
+  const existingSubfolders = Array.from(
+    new Set(
+      allMediaItems
+        .filter(i => (i.folder || '').trim() === currentEffectiveFolder && i.subfolder)
+        .map(i => (i.subfolder || '').trim())
+    )
+  ).filter(Boolean) as string[];
+
   const bookSeriesList = Array.from(new Set(books.map(b => b.series || ''))).filter(s => s !== '') as string[];
   const formRef = useRef<HTMLFormElement>(null);
 
@@ -160,7 +181,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
     }
   };
 
-  const handleAudioSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleMediaSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsUploading(true);
     const formData = new FormData(e.currentTarget);
@@ -171,70 +192,31 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
     const order = orderStr ? parseInt(orderStr, 10) : undefined;
 
     if (!title || !url) {
-      onStatusMessage('Please enter both podcast title and link URL!', 'error');
+      onStatusMessage(`Please enter both title and link URL!`, 'error');
       setIsUploading(false);
       return;
     }
-    
+
     const folderStateValue = selectedFolder === 'new' ? newFolderInput : selectedFolder;
     const finalFolder = folderStateValue === '_none_' ? '' : folderStateValue.trim();
 
-    try {
-      const timestamp = Date.now();
-
-      const docData: any = {
-        title,
-        url,
-        category: category || 'General',
-        folder: finalFolder,
-        createdAt: timestamp,
-        views: 0,
-        type: 'audio'
-      };
-
-      if (order !== undefined && !isNaN(order)) {
-        docData.order = order;
-      }
-
-      await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim'), docData);
-
-      onStatusMessage('Podcast published successfully!', 'success');
-      formRef.current?.reset();
-      setSelectedFolder('');
-      setNewFolderInput('');
-      setIsFormVisible(false);
-    } catch (err: any) {
-      console.error('Podcast publish error:', err);
-      onStatusMessage(`Error: ${err.message}`, 'error');
-    } finally {
-      setIsUploading(false);
+    let finalSubfolder = '';
+    if (finalFolder) {
+      const subfolderStateValue = selectedSubfolder === 'new' ? newSubfolderInput : selectedSubfolder;
+      finalSubfolder = subfolderStateValue === '_none_' ? '' : subfolderStateValue.trim();
     }
-  };
-
-  const handleVideoSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setIsUploading(true);
-    const formData = new FormData(e.currentTarget);
-    const title = formData.get('title') as string;
-    const url = formData.get('url') as string;
-    const category = formData.get('category') as string;
-    const folder = formData.get('folder') as string;
-    const orderStr = formData.get('order') as string;
-    const order = orderStr ? parseInt(orderStr, 10) : undefined;
-
-    const folderStateValue = selectedFolder === 'new' ? newFolderInput : selectedFolder;
-    const finalFolder = folderStateValue === '_none_' ? '' : folderStateValue.trim();
 
     try {
       const timestamp = Date.now();
       const docData: any = {
         title,
         url,
-        category,
+        category: category || (mediaPublishType === 'podcast' ? 'Podcast' : 'General'),
         folder: finalFolder,
+        subfolder: finalSubfolder,
         createdAt: timestamp,
         views: 0,
-        type: 'video'
+        type: mediaPublishType === 'podcast' ? 'audio' : 'video'
       };
 
       if (order !== undefined && !isNaN(order)) {
@@ -243,13 +225,16 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
 
       await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim'), docData);
 
-      onStatusMessage('Video published successfully!', 'success');
+      const label = mediaPublishType === 'podcast' ? 'Podcast' : 'Video';
+      onStatusMessage(`${label} published successfully!`, 'success');
       formRef.current?.reset();
       setSelectedFolder('');
       setNewFolderInput('');
+      setSelectedSubfolder('_none_');
+      setNewSubfolderInput('');
       setIsFormVisible(false);
     } catch (err: any) {
-      console.error('Video Upload Error:', err);
+      console.error('Media upload error:', err);
       onStatusMessage(`Error: ${err.message}`, 'error');
     } finally {
       setIsUploading(false);
@@ -273,10 +258,45 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
               onClick={() => setIsFormVisible(!isFormVisible)}
               className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
             >
-              <Plus className="w-5 h-5" /> New {activeTab === 'sefarim' ? 'Sefer' : activeTab === 'videos' ? 'Video' : (activeTab === 'podcasts' || activeTab === 'audio') ? 'Podcast' : 'Item'}
+              <Plus className="w-5 h-5" /> New {activeTab === 'sefarim' ? 'Sefer' : 'Media'}
             </button>
           </div>
         </div>
+
+        {isFormVisible && activeTab !== 'sefarim' && (
+          <div className="flex items-center justify-center gap-2 p-1.5 bg-slate-950 rounded-2xl border border-slate-800 max-w-sm mx-auto mb-6">
+            <button
+              type="button"
+              onClick={() => {
+                setMediaPublishType('video');
+                setSelectedFolder('');
+                setSelectedSubfolder('_none_');
+              }}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                mediaPublishType === 'video'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <VideoIcon className="w-4 h-4" /> Video
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMediaPublishType('podcast');
+                setSelectedFolder('');
+                setSelectedSubfolder('_none_');
+              }}
+              className={`flex-1 py-2.5 px-4 rounded-xl text-xs font-black uppercase tracking-wider flex items-center justify-center gap-2 transition-all ${
+                mediaPublishType === 'podcast'
+                  ? 'bg-indigo-600 text-white shadow-md'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Headphones className="w-4 h-4" /> Podcast
+            </button>
+          </div>
+        )}
 
         {isFormVisible && activeTab === 'sefarim' && (
           <form ref={formRef} onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6 p-8 bg-slate-950 rounded-3xl border border-slate-800">
@@ -413,129 +433,60 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
           </form>
         )}
 
-        {isFormVisible && activeTab === 'videos' && (
-          <form ref={formRef} onSubmit={handleVideoSubmit} className="grid grid-cols-1 gap-8 mt-6 p-8 bg-slate-950 rounded-3xl border border-slate-800">
+        {isFormVisible && activeTab !== 'sefarim' && (
+          <form ref={formRef} onSubmit={handleMediaSubmit} className="grid grid-cols-1 gap-8 mt-6 p-8 bg-slate-950 rounded-3xl border border-slate-800">
             <div className="space-y-5">
-              <input
-                name="title"
-                required
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold text-lg bg-slate-900"
-                placeholder="Video Title"
-              />
-              <input
-                name="url"
-                required
-                type="url"
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900"
-                placeholder="NotebookLM Link (e.g. https://notebooklm.google.com/...)"
-              />
-              <div className="grid grid-cols-2 gap-4">
-                <select
-                  name="category"
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-widest text-indigo-400 block mb-1">
+                  Publishing {mediaPublishType === 'podcast' ? 'Podcast' : 'Video'}
+                </span>
+                <input
+                  name="title"
                   required
-                  value={selectedVideoCat}
-                  onChange={(e) => setSelectedVideoCat(e.target.value)}
-                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900 appearance-none"
-                >
-                  <option value="">Select Category...</option>
-                  {videoCategories.map(cat => (
-                    <option key={cat} value={cat}>{cat}</option>
-                  ))}
-                </select>
-                
-                <div className="space-y-3">
-                  <select
-                    name="folder_select"
-                    required
-                    value={selectedFolder}
-                    onChange={(e) => setSelectedFolder(e.target.value)}
-                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900 appearance-none"
-                  >
-                    <option value="" disabled>Select Folder...</option>
-                    <option value="_none_">No Folder (Grid View)</option>
-                    {videoFolders.map(folder => (
-                      <option key={folder} value={folder}>{folder}</option>
-                    ))}
-                    <option value="new">+ Create New Folder</option>
-                  </select>
-                  
-                  {selectedFolder === 'new' && (
-                    <input
-                      name="new_folder"
-                      required
-                      value={newFolderInput}
-                      onChange={(e) => setNewFolderInput(e.target.value)}
-                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900 animate-in slide-in-from-top-2"
-                      placeholder="Enter new folder name"
-                      autoFocus
-                    />
-                  )}
-                </div>
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold text-lg bg-slate-900 text-slate-100"
+                  placeholder={mediaPublishType === 'podcast' ? "Podcast Episode Title" : "Video Title"}
+                />
               </div>
-              <input
-                name="order"
-                type="number"
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-200 focus:ring-4 focus:ring-indigo-100 outline-none transition-all font-bold bg-slate-900"
-                placeholder="Rank Order (1 is highest)"
-              />
 
-              <button
-                type="submit"
-                disabled={isUploading}
-                className="w-full bg-indigo-600 text-white p-5 rounded-2xl font-black uppercase tracking-[0.2em] hover:bg-indigo-600 transition-all flex items-center justify-center gap-3 shadow-xl active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {isUploading ? (
-                  <>
-                    <Loader2 className="w-5 h-5 animate-spin" /> SAVING...
-                  </>
-                ) : (
-                  'Publish Video'
-                )}
-              </button>
-            </div>
-          </form>
-        )}
-
-        {isFormVisible && (activeTab === 'audio' || activeTab === 'podcasts') && (
-          <form ref={formRef} onSubmit={handleAudioSubmit} className="grid grid-cols-1 gap-8 mt-6 p-8 bg-slate-950 rounded-3xl border border-slate-800">
-            <div className="space-y-5">
-              <input
-                name="title"
-                required
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold text-lg bg-slate-900 text-slate-100"
-                placeholder="Podcast Episode Title"
-              />
-              
               <input
                 name="url"
-                type="url"
                 required
-                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold text-base bg-slate-900 text-slate-100 placeholder:text-slate-500"
-                placeholder="Podcast Link URL (Spotify, Apple Podcasts, YouTube, MP3 link, etc.)"
+                type="url"
+                className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 placeholder:text-slate-500"
+                placeholder={mediaPublishType === 'podcast' ? "Podcast Link URL (Spotify, Apple Podcasts, YouTube, MP3...)" : "Video Link (NotebookLM, YouTube, Google Drive...)"}
               />
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
                   name="category"
-                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100"
-                  placeholder="Podcast Show / Series Name (Optional)"
+                  list="media-categories"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 placeholder:text-slate-500"
+                  placeholder="Category (e.g. AI Daf, AI Parasha, Series Name...)"
                 />
-                
+                <datalist id="media-categories">
+                  {allMediaCategories.map(cat => (
+                    <option key={cat} value={cat} />
+                  ))}
+                </datalist>
+
                 <div className="space-y-3">
                   <select
                     name="folder_select"
                     value={selectedFolder}
-                    onChange={(e) => setSelectedFolder(e.target.value)}
-                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 appearance-none"
+                    onChange={(e) => {
+                      setSelectedFolder(e.target.value);
+                      setSelectedSubfolder('_none_');
+                    }}
+                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 appearance-none cursor-pointer"
                   >
                     <option value="" disabled>Select Folder... (Optional)</option>
-                    <option value="_none_">No Folder (Standalone track)</option>
-                    {relevantFolders.map(folder => (
+                    <option value="_none_">No Folder (Top-level Grid)</option>
+                    {allMediaFolders.map(folder => (
                       <option key={folder} value={folder}>{folder}</option>
                     ))}
                     <option value="new">+ Create New Folder</option>
                   </select>
-                  
+
                   {selectedFolder === 'new' && (
                     <input
                       name="new_folder"
@@ -550,11 +501,40 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                 </div>
               </div>
 
+              {selectedFolder && selectedFolder !== '_none_' && (
+                <div className="space-y-3">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Subfolder (Optional)</label>
+                  <select
+                    name="subfolder_select"
+                    value={selectedSubfolder}
+                    onChange={(e) => setSelectedSubfolder(e.target.value)}
+                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 appearance-none cursor-pointer"
+                  >
+                    <option value="_none_">No Subfolder (Root of {currentEffectiveFolder || 'Folder'})</option>
+                    {existingSubfolders.map(sub => (
+                      <option key={sub} value={sub}>{sub}</option>
+                    ))}
+                    <option value="new">+ Create New Subfolder</option>
+                  </select>
+                  {selectedSubfolder === 'new' && (
+                    <input
+                      name="new_subfolder"
+                      required
+                      value={newSubfolderInput}
+                      onChange={(e) => setNewSubfolderInput(e.target.value)}
+                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 animate-in slide-in-from-top-2"
+                      placeholder="Enter new subfolder name"
+                      autoFocus
+                    />
+                  )}
+                </div>
+              )}
+
               <input
                 name="order"
                 type="number"
                 className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100"
-                placeholder="Rank Order (1 is highest)"
+                placeholder="Rank Order (1 is highest, optional)"
               />
 
               <button
@@ -567,7 +547,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                     <Loader2 className="w-5 h-5 animate-spin" /> SAVING...
                   </>
                 ) : (
-                  'Publish Podcast'
+                  `Publish ${mediaPublishType === 'podcast' ? 'Podcast' : 'Video'}`
                 )}
               </button>
             </div>

@@ -5,16 +5,18 @@ interface NavbarProps {
   onToggleAdmin: () => void;
   onHome: () => void;
   logoUrl?: string;
-  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio';
-  onTabChange: (tab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio') => void;
+  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media';
+  onTabChange: (tab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media') => void;
   whatsappUrl?: string;
   totalBooks?: number;
   totalVideos?: number;
   totalPodcasts?: number;
+  totalMedia?: number;
   onOpenWhatsAppShare?: () => void;
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, onOpenWhatsAppShare }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, onOpenWhatsAppShare }: NavbarProps) {
+  const mediaCount = totalMedia !== undefined ? totalMedia : (totalVideos + totalPodcasts);
   return (
     <nav className="bg-slate-900/85 backdrop-blur-xl border-b border-slate-700/50 sticky top-0 z-40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
@@ -34,66 +36,56 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
           )}
           <div>
             <h1 className="text-lg sm:text-xl font-black text-slate-50 tracking-tighter group-hover:text-indigo-400 transition-colors leading-tight">AI SEFARIM</h1>
-            <div className="flex items-center gap-1.5 sm:gap-2 mt-0.5">
-              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider border-r border-slate-700 pr-1.5 sm:pr-2">
+            <div className="flex items-center gap-2 mt-0.5">
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider border-r border-slate-700 pr-2">
                 <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400 shrink-0" />
-                {totalBooks.toLocaleString()} <span className="hidden sm:inline">Sefarim</span>
+                <span>{totalBooks.toLocaleString()}</span>
+                <span className="hidden sm:inline">Sefarim</span>
               </div>
-              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider border-r border-slate-700 pr-1.5 sm:pr-2">
-                <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400 shrink-0" />
-                {totalVideos.toLocaleString()} <span className="hidden sm:inline">Videos</span>
-              </div>
-              <div className="flex items-center gap-1 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
-                <Headphones className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400 shrink-0" />
-                {totalPodcasts.toLocaleString()} <span className="hidden sm:inline">Podcasts</span>
+              <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
+                <div className="flex items-center gap-1 text-indigo-400 shrink-0">
+                  <Video className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                  <Headphones className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
+                </div>
+                <span>{mediaCount.toLocaleString()}</span>
+                <span className="hidden sm:inline">Videos & Podcasts</span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Global Navigation - Center */}
-        <div className="bg-slate-800/80 backdrop-blur p-1 rounded-full flex self-stretch md:self-auto shadow-inner border border-slate-700 overflow-x-auto custom-scrollbar shrink-0">
+        <div className="bg-slate-800/90 backdrop-blur p-1 rounded-full flex self-stretch md:self-auto shadow-inner border border-slate-700 overflow-x-auto custom-scrollbar shrink-0">
           <button
             onClick={() => {
               onTabChange('sefarim');
               onHome();
             }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3.5 sm:px-4 md:px-5 lg:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
               activeTab === 'sefarim' 
-                ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40 scale-[1.02]' 
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 scale-95'
+                ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40' 
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
             }`}
           >
-            <Library className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            Sefarim
+            <Library className="w-4 h-4 shrink-0" />
+            <span>Sefarim</span>
           </button>
           <button
             onClick={() => {
-              onTabChange('videos');
+              onTabChange('media');
               onHome();
             }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3.5 sm:px-4 md:px-5 lg:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
-              activeTab === 'videos' 
-                ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40 scale-[1.02]' 
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 scale-95'
+            className={`flex-1 md:flex-none flex items-center justify-center gap-2.5 px-4 sm:px-5 md:px-6 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              activeTab === 'media' || activeTab === 'videos' || activeTab === 'podcasts' || activeTab === 'audio'
+                ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40' 
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
             }`}
           >
-            <Video className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            Videos
-          </button>
-          <button
-            onClick={() => {
-              onTabChange('podcasts');
-              onHome();
-            }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 px-3.5 sm:px-4 md:px-5 lg:px-6 py-1.5 sm:py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
-              activeTab === 'podcasts' || activeTab === 'audio'
-                ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40 scale-[1.02]' 
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 scale-95'
-            }`}
-          >
-            <Headphones className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
-            Podcasts
+            <div className="flex items-center gap-1.5 shrink-0">
+              <Video className="w-4 h-4 shrink-0" />
+              <Headphones className="w-3.5 h-3.5 shrink-0 opacity-90" />
+            </div>
+            <span>Videos & Podcasts</span>
           </button>
         </div>
 

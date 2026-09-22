@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment, setDoc, writeBatch } from 'firebase/firestore';
 import { ref, deleteObject, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { signInAnonymously } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download, Video as VideoIcon } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -22,7 +22,6 @@ import { ConfirmModal } from './components/ConfirmModal';
 import { EditBookModal } from './components/EditBookModal';
 import { EditVideoModal } from './components/EditVideoModal';
 import { SiteSettingsModal } from './components/SiteSettingsModal';
-import { AddToHomescreen } from './components/AddToHomescreen';
 import { AddExistingBookModal } from './components/AddExistingBookModal';
 import { WhatsAppShareModal } from './components/WhatsAppShareModal';
 import { WhatsAppGrowthPrompt } from './components/WhatsAppGrowthPrompt';
@@ -32,7 +31,7 @@ export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [audios, setAudios] = useState<Audio[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio'>('sefarim');
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media'>('sefarim');
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -107,32 +106,35 @@ export default function App() {
       setBooks(bookDocs);
       setIsLoading(false);
 
-      const videoDocs = allDocs
-        .filter(d => d.type === 'video')
-        .map(d => d as unknown as Video);
+      const mediaDocs = allDocs
+        .filter(d => 
+          d.id !== '_site_settings_' && 
+          !d.isSettingsDoc && 
+          (d.type === 'video' || d.type === 'audio' || d.type === 'podcast' || !!d.audioPath)
+        )
+        .map(d => {
+          const type = (d.type === 'audio' || d.type === 'podcast' || !!d.audioPath) ? 'audio' : 'video';
+          return {
+            ...d,
+            type,
+            category: d.category || 'General',
+            folder: d.folder || ''
+          } as unknown as Video;
+        });
         
-      videoDocs.sort((a, b) => {
+      mediaDocs.sort((a, b) => {
         const orderA = a.order || Number.MAX_SAFE_INTEGER;
         const orderB = b.order || Number.MAX_SAFE_INTEGER;
         if (orderA !== orderB) return orderA - orderB;
         return (b.createdAt || 0) - (a.createdAt || 0);
       });
-      setVideos(videoDocs);
+      setVideos(mediaDocs);
 
-      const audioDocs = allDocs
-        .filter(d => d.type === 'audio' || d.type === 'podcast' || !!d.audioPath)
-        .map(d => d as unknown as Audio);
-        
-      audioDocs.sort((a, b) => {
-        const orderA = a.order || Number.MAX_SAFE_INTEGER;
-        const orderB = b.order || Number.MAX_SAFE_INTEGER;
-        if (orderA !== orderB) return orderA - orderB;
-        return (b.createdAt || 0) - (a.createdAt || 0);
-      });
+      const audioDocs = mediaDocs.filter(m => m.type === 'audio') as unknown as Audio[];
       setAudios(audioDocs);
 
       // Check for shared links
-      if (!hasCheckedSharedLink.current && (bookDocs.length > 0 || videoDocs.length > 0 || audioDocs.length > 0)) {
+      if (!hasCheckedSharedLink.current && (bookDocs.length > 0 || mediaDocs.length > 0)) {
         hasCheckedSharedLink.current = true;
         const params = new URLSearchParams(window.location.search);
         let sharedBookId = params.get('book');
@@ -150,9 +152,9 @@ export default function App() {
           sharedSeries = decodeURIComponent(pathParts[2]);
         } else if (pathParts[1] === 'c' && pathParts[2]) {
           sharedCategory = decodeURIComponent(pathParts[2]);
-          if (pathParts[3] === 'videos') sharedTab = 'videos';
+          if (pathParts[3] === 'videos' || pathParts[3] === 'media') sharedTab = 'videos';
           if (pathParts[3] === 'sefarim') sharedTab = 'sefarim';
-          if (pathParts[3] === 'podcasts' || pathParts[3] === 'audio') sharedTab = 'podcasts';
+          if (pathParts[3] === 'podcasts' || pathParts[3] === 'audio') sharedTab = 'videos';
         } else if ((pathParts[1] === 'p' || pathParts[1] === 'a') && pathParts[2]) {
           sharedVideoId = pathParts[2];
         }
@@ -165,10 +167,10 @@ export default function App() {
             setIsDirectLinkEntry(true);
           }
         } else if (sharedVideoId) {
-          const videoToOpen = videoDocs.find(v => v.id === sharedVideoId) || (audioDocs.find(a => a.id === sharedVideoId) as unknown as Video);
+          const videoToOpen = mediaDocs.find(v => v.id === sharedVideoId);
           if (videoToOpen) {
             setSelectedVideo(videoToOpen);
-            setActiveTab(videoToOpen.type === 'audio' ? 'podcasts' : 'videos');
+            setActiveTab('videos');
             setIsDirectLinkEntry(true);
             updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', videoToOpen.id), {
               views: increment(1)
@@ -222,10 +224,12 @@ export default function App() {
   };
 
   const handleVideoDelete = async (id: string) => {
-    if (window.confirm('Are you sure you want to delete this video?')) {
+    const item = videos.find(v => v.id === id);
+    const label = item?.type === 'audio' ? 'podcast' : 'video';
+    if (window.confirm(`Are you sure you want to delete this ${label}?`)) {
       try {
         await deleteDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', id));
-        showStatus('Video deleted successfully.', 'success');
+        showStatus(`${label === 'podcast' ? 'Podcast' : 'Video'} deleted successfully.`, 'success');
       } catch (e: any) {
         showStatus(`Delete Error: ${e.message}`, 'error');
       }
@@ -674,23 +678,15 @@ export default function App() {
     return matchesCategory && matchesSearch;
   }).sort((a, b) => (b.readCount || 0) - (a.readCount || 0));
 
-  const strictVideoCategories = siteSettings.videoCategories || ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach"];
-  const videoCategories = Array.from(new Set([...strictVideoCategories, ...videos.map(v => v.category)])).sort() as string[];
+  const strictVideoCategories = siteSettings.videoCategories || ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach", "Miscellaneous"];
+  const videoCategories = Array.from(new Set([...strictVideoCategories, ...videos.map(v => v.category).filter(Boolean)])).sort() as string[];
   const filteredVideos = videos.filter(v => {
     const matchesCategory = selectedCategory ? (selectedCategory === 'Top Rated' ? true : v.category === selectedCategory) : true;
     const searchLower = searchQuery.toLowerCase();
-    const matchesSearch = searchLower === '' || (v.title || '').toLowerCase().includes(searchLower);
-    return matchesCategory && matchesSearch;
-  });
-
-  const podcastCategories = Array.from(new Set(audios.map(a => a.category).filter(Boolean))) as string[];
-  const filteredPodcasts = (audios as unknown as Video[]).filter(a => {
-    const matchesCategory = selectedCategory ? a.category === selectedCategory : true;
-    const searchLower = searchQuery.toLowerCase();
     const matchesSearch = searchLower === '' || 
-      (a.title || '').toLowerCase().includes(searchLower) ||
-      (a.category || '').toLowerCase().includes(searchLower) ||
-      (a.folder || '').toLowerCase().includes(searchLower);
+      (v.title || '').toLowerCase().includes(searchLower) ||
+      (v.folder || '').toLowerCase().includes(searchLower) ||
+      (v.category || '').toLowerCase().includes(searchLower);
     return matchesCategory && matchesSearch;
   });
 
@@ -727,8 +723,9 @@ export default function App() {
         onTabChange={setActiveTab}
         whatsappUrl={bannerUrl}
         totalBooks={books.length}
-        totalVideos={videos.length}
-        totalPodcasts={audios.length}
+        totalVideos={videos.filter(v => v.type !== 'audio').length}
+        totalPodcasts={videos.filter(v => v.type === 'audio').length}
+        totalMedia={videos.length}
         onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
       />
 
@@ -1094,14 +1091,14 @@ export default function App() {
               activeSeries={activeSeries}
             />
           </>
-        ) : activeTab === 'videos' ? (
-          <>
+        ) : (activeTab === 'media' || activeTab === 'videos' || activeTab === 'podcasts' || activeTab === 'audio') ? (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-7xl mx-auto px-4 md:px-0">
             {!isLoading && (
               <>
                 <div className="mb-6 flex flex-row gap-4 sm:gap-6 items-center justify-between bg-slate-900 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-700 shadow-sm max-w-2xl mx-auto md:mx-0">
                   <div className="flex items-center gap-3 w-auto justify-start">
-                    <div className="bg-indigo-50 p-2 rounded-xl border border-indigo-100 shrink-0 hidden sm:block">
-                      <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-600" />
+                    <div className="bg-indigo-500/10 p-2 rounded-xl border border-indigo-500/20 shrink-0 hidden sm:block">
+                      <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-400" />
                     </div>
                     <div className="flex flex-row items-baseline gap-2 text-left">
                       <h3 className="font-black text-slate-100 text-[14px] sm:text-base leading-tight">My Library</h3>
@@ -1113,7 +1110,7 @@ export default function App() {
                       setActiveTab('library');
                       window.scrollTo({ top: 0, behavior: 'smooth' });
                     }}
-                    className="w-auto px-4 py-1.5 sm:px-5 sm:py-2 bg-indigo-50 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-200 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
+                    className="w-auto px-4 py-1.5 sm:px-5 sm:py-2 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-500/30 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
                   >
                     View Library
                   </button>
@@ -1124,14 +1121,17 @@ export default function App() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search videos..."
+                    placeholder="Search videos & podcasts..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full pl-12 pr-32 py-3 bg-slate-900 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-200 shadow-sm"
+                    className="w-full pl-12 pr-36 py-3 bg-slate-900 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-200 shadow-sm"
                   />
-                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50/50 border border-indigo-100 text-indigo-600 rounded-xl pointer-events-none shadow-sm backdrop-blur-sm">
-                     <PlayCircle className="w-3.5 h-3.5 fill-indigo-200" />
-                     <span className="text-[11px] font-black uppercase tracking-wider">{selectedCategory ? filteredVideos.length : videos.length} Videos</span>
+                  <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 rounded-xl pointer-events-none shadow-sm backdrop-blur-sm">
+                     <div className="flex items-center gap-1 text-indigo-400">
+                       <VideoIcon className="w-3.5 h-3.5" />
+                       <Headphones className="w-3 h-3" />
+                     </div>
+                     <span className="text-[11px] font-black uppercase tracking-wider">{selectedCategory ? filteredVideos.length : videos.length} Media</span>
                   </div>
                 </div>
                 
@@ -1139,7 +1139,7 @@ export default function App() {
                   {selectedCategory && selectedCategory !== 'Top Rated' && (
                     <button
                       onClick={() => handleCategoryShare('videos')}
-                      className="px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-emerald-50 text-emerald-600 hover:bg-emerald-100 border border-emerald-200 shadow-sm w-full sm:w-auto justify-center"
+                      className="px-4 py-3 rounded-xl text-[11px] font-black uppercase tracking-widest transition-all flex items-center gap-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 border border-emerald-500/30 shadow-sm w-full sm:w-auto justify-center"
                     >
                       <Share2 className="w-4 h-4" /> Share Category
                     </button>
@@ -1155,7 +1155,7 @@ export default function App() {
                        ? 'bg-indigo-600 text-white shadow-md' 
                        : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border-2 border-slate-700'
                    }`}
-                >All Videos</button>
+                >All Media</button>
                 <button
                     onClick={() => {
                         setSelectedCategory(selectedCategory === 'Top Rated' ? null : 'Top Rated');
@@ -1188,28 +1188,42 @@ export default function App() {
 
             {!searchQuery && !selectedCategory ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                {videoCategories.map(cat => (
-                  <div 
-                    key={cat}
-                    onClick={() => {
-                        setSelectedCategory(cat);
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="bg-slate-900 rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-800 flex flex-col group cursor-pointer"
-                  >
-                    <div className="aspect-square rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
-                      {siteSettings.videoCategoryThumbnails?.[cat] ? (
-                        <img src={siteSettings.videoCategoryThumbnails[cat]} alt={cat} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
-                      ) : (
-                        <PlayCircle className="w-12 h-12 text-indigo-300 group-hover:text-indigo-500 transition-colors group-hover:scale-110 duration-300" />
-                      )}
+                {videoCategories.map(cat => {
+                  const catItems = videos.filter(v => v.category === cat);
+                  const videoCount = catItems.filter(v => v.type !== 'audio').length;
+                  const podcastCount = catItems.filter(v => v.type === 'audio').length;
+                  let countText = `${catItems.length} items`;
+                  if (videoCount > 0 && podcastCount > 0) {
+                    countText = `${videoCount} videos • ${podcastCount} podcasts`;
+                  } else if (podcastCount > 0) {
+                    countText = `${podcastCount} podcasts`;
+                  } else {
+                    countText = `${videoCount} videos`;
+                  }
+
+                  return (
+                    <div 
+                      key={cat}
+                      onClick={() => {
+                          setSelectedCategory(cat);
+                          window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="bg-slate-900 rounded-[2rem] p-5 shadow-sm hover:shadow-xl transition-all duration-300 border border-slate-800 flex flex-col group cursor-pointer"
+                    >
+                      <div className="aspect-square rounded-xl bg-indigo-50 flex items-center justify-center relative overflow-hidden mb-4 group-hover:bg-indigo-100 transition-colors">
+                        {siteSettings.videoCategoryThumbnails?.[cat] ? (
+                          <img src={siteSettings.videoCategoryThumbnails[cat]} alt={cat} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-500" />
+                        ) : (
+                          <PlayCircle className="w-12 h-12 text-indigo-300 group-hover:text-indigo-500 transition-colors group-hover:scale-110 duration-300" />
+                        )}
+                      </div>
+                      <h3 className="font-black text-xl text-slate-100 text-center uppercase tracking-tighter group-hover:text-indigo-600 transition-colors">{cat}</h3>
+                      <p className="text-center text-slate-400 text-sm font-medium mt-2">
+                        {countText}
+                      </p>
                     </div>
-                    <h3 className="font-black text-xl text-slate-100 text-center uppercase tracking-tighter group-hover:text-indigo-600 transition-colors">{cat}</h3>
-                    <p className="text-center text-slate-400 text-sm font-medium mt-2">
-                      {videos.filter(v => v.category === cat).length} videos
-                    </p>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <VideoGrid
@@ -1219,11 +1233,12 @@ export default function App() {
                 onEdit={setEditingVideo}
                 onDelete={handleVideoDelete}
                 onSelectVideo={handleVideoSelect}
-                onMoveToFolder={(videoId, newFolder) => {
+                onMoveToFolder={(videoId, newFolder, newSubfolder) => {
                   updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', videoId), {
                     folder: newFolder,
+                    subfolder: newSubfolder || '',
                     order: 0
-                  }).catch(err => console.error("Failed to move video to folder", err));
+                  }).catch(err => console.error("Failed to move media to folder", err));
                 }}
                 onReorder={selectedCategory && selectedCategory !== 'Top Rated' ? handleVideoReorder : undefined}
                 onFolderReorder={selectedCategory && selectedCategory !== 'Top Rated' ? handleFolderReorder : undefined}
@@ -1234,113 +1249,9 @@ export default function App() {
                 savedVideoIds={savedVideoIds}
                 onToggleSave={toggleSaveVideo}
                 disableFolders={selectedCategory === 'Top Rated'}
+                mediaLabel="Media"
               />
             )}
-          </>
-        ) : activeTab === 'podcasts' || activeTab === 'audio' ? (
-          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-7xl mx-auto px-4 md:px-0">
-            {!isLoading && (
-              <>
-                <div className="mb-6 flex flex-row gap-4 sm:gap-6 items-center justify-between bg-slate-900 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-700 shadow-sm max-w-2xl mx-auto md:mx-0">
-                  <div className="flex items-center gap-3 w-auto justify-start">
-                    <div className="bg-indigo-500/10 p-2 rounded-xl border border-indigo-500/20 shrink-0 hidden sm:block">
-                      <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-400" />
-                    </div>
-                    <div className="flex flex-row items-baseline gap-2 text-left">
-                      <h3 className="font-black text-slate-100 text-[14px] sm:text-base leading-tight">My Library</h3>
-                      <p className="text-[11px] sm:text-xs text-slate-400 font-medium hidden sm:block">{savedBookIds.length + savedVideoIds.length} saved items</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      setActiveTab('library');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="w-auto px-4 py-1.5 sm:px-5 sm:py-2 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-500/30 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
-                  >
-                    View Library
-                  </button>
-                </div>
-
-                <div className="mb-10 space-y-4">
-                  <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
-                    <div className="relative w-full md:w-96 lg:w-[28rem]">
-                      <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <input
-                        type="text"
-                        placeholder="Search podcasts..."
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full pl-12 pr-32 py-3 bg-slate-900 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-200 shadow-sm"
-                      />
-                      <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1.5 px-3 py-1.5 bg-indigo-950/60 border border-indigo-500/30 text-indigo-300 rounded-xl pointer-events-none shadow-sm backdrop-blur-sm">
-                         <Headphones className="w-3.5 h-3.5" />
-                         <span className="text-[11px] font-black uppercase tracking-wider">{filteredPodcasts.length} Podcasts</span>
-                      </div>
-                    </div>
-
-                    {selectedCategory && (
-                      <button
-                        onClick={() => setSelectedCategory(null)}
-                        className="text-xs font-bold text-slate-400 hover:text-slate-200"
-                      >
-                        Clear Filter
-                      </button>
-                    )}
-                  </div>
-
-                  {podcastCategories.length > 0 && (
-                    <div className="flex overflow-x-auto gap-2 pb-2 custom-scrollbar">
-                      <button
-                        onClick={() => setSelectedCategory(null)}
-                        className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
-                          selectedCategory === null 
-                            ? 'bg-indigo-600 text-white shadow-md' 
-                            : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border-2 border-slate-700'
-                        }`}
-                      >
-                        All Podcasts
-                      </button>
-                      {podcastCategories.map(cat => (
-                        <button
-                          key={cat}
-                          onClick={() => setSelectedCategory(cat)}
-                          className={`px-5 py-2.5 rounded-full whitespace-nowrap text-xs font-black uppercase tracking-widest transition-all ${
-                            selectedCategory === cat 
-                              ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-600 ring-offset-1' 
-                              : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border-2 border-slate-700'
-                          }`}
-                        >
-                          {cat}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-
-            <VideoGrid
-              videos={filteredPodcasts}
-              isLoading={isLoading}
-              isAdmin={isAdmin}
-              onEdit={setEditingVideo}
-              onDelete={handleAudioDelete}
-              onSelectVideo={handleVideoSelect}
-              onMoveToFolder={(audioId, newFolder) => {
-                updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', audioId), {
-                  folder: newFolder,
-                  order: 0
-                }).catch(err => console.error("Failed to move podcast to folder", err));
-              }}
-              categoryThumbnails={siteSettings.videoCategoryThumbnails}
-              folderThumbnails={siteSettings.videoFolderThumbnails}
-              folderOrder={siteSettings.videoFolderOrder}
-              onUpdateFolderThumbnail={handleUpdateFolderThumbnail}
-              savedVideoIds={savedVideoIds}
-              onToggleSave={toggleSaveVideo}
-              mediaLabel="Podcast"
-            />
           </div>
         ) : activeTab === 'library' ? (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-5xl mx-auto">
@@ -1397,12 +1308,12 @@ export default function App() {
 
               <div>
                 <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-800 pb-4">
-                  Saved Videos ({videos.filter(v => savedVideoIds.includes(v.id)).length})
+                  Saved Media ({videos.filter(v => savedVideoIds.includes(v.id)).length})
                 </h2>
                 {videos.filter(v => savedVideoIds.includes(v.id)).length === 0 ? (
                   <div className="text-center py-12 bg-slate-950 rounded-[2rem] border border-slate-800 border-dashed">
                     <PlayCircle className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                    <p className="text-slate-400 font-medium tracking-wide">You haven't saved any videos yet.</p>
+                    <p className="text-slate-400 font-medium tracking-wide">You haven't saved any media yet.</p>
                   </div>
                 ) : (
                   <VideoGrid
@@ -1417,34 +1328,7 @@ export default function App() {
                     onUpdateFolderThumbnail={handleUpdateFolderThumbnail}
                     savedVideoIds={savedVideoIds}
                     onToggleSave={toggleSaveVideo}
-                    mediaLabel="Video"
-                  />
-                )}
-              </div>
-
-              <div>
-                <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-800 pb-4">
-                  Saved Podcasts ({audios.filter(a => savedVideoIds.includes(a.id)).length})
-                </h2>
-                {audios.filter(a => savedVideoIds.includes(a.id)).length === 0 ? (
-                  <div className="text-center py-12 bg-slate-950 rounded-[2rem] border border-slate-800 border-dashed">
-                    <Headphones className="w-12 h-12 text-slate-400 mx-auto mb-4" />
-                    <p className="text-slate-400 font-medium tracking-wide">You haven't saved any podcasts yet.</p>
-                  </div>
-                ) : (
-                  <VideoGrid
-                    videos={audios.filter(a => savedVideoIds.includes(a.id)) as unknown as Video[]}
-                    isLoading={isLoading}
-                    isAdmin={isAdmin}
-                    onEdit={setEditingVideo}
-                    onDelete={handleAudioDelete}
-                    onSelectVideo={handleVideoSelect}
-                    categoryThumbnails={siteSettings.videoCategoryThumbnails}
-                    folderThumbnails={siteSettings.videoFolderThumbnails}
-                    onUpdateFolderThumbnail={handleUpdateFolderThumbnail}
-                    savedVideoIds={savedVideoIds}
-                    onToggleSave={toggleSaveVideo}
-                    mediaLabel="Podcast"
+                    mediaLabel="Media"
                   />
                 )}
               </div>
@@ -1544,8 +1428,6 @@ export default function App() {
           onStatusMessage={showStatus}
         />
       )}
-
-      <AddToHomescreen />
     </div>
   );
 }
