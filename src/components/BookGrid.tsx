@@ -396,7 +396,9 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
     );
   }
 
-  const seriesBooks = selectedSeries ? items.filter(b => (b.series || '') === selectedSeries) : items;
+  const seriesBooks = (selectedSeries ? items.filter(b => (b.series || '') === selectedSeries) : items)
+    .slice()
+    .sort((a, b) => (a.order || 0) - (b.order || 0));
 
   return (
     <div className="space-y-8 animate-in slide-in-from-right-4 fade-in duration-300">

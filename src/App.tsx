@@ -109,9 +109,13 @@ export default function App() {
         .map(d => d as Book);
         
       bookDocs.sort((a, b) => {
-        const orderA = a.order || Number.MAX_SAFE_INTEGER;
-        const orderB = b.order || Number.MAX_SAFE_INTEGER;
+        const orderA = a.order !== undefined && a.order !== null ? a.order : Number.MAX_SAFE_INTEGER;
+        const orderB = b.order !== undefined && b.order !== null ? b.order : Number.MAX_SAFE_INTEGER;
         if (orderA !== orderB) return orderA - orderB;
+        if (a.series && b.series && a.series === b.series) {
+          const titleComparison = a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' });
+          if (titleComparison !== 0) return titleComparison;
+        }
         return (b.createdAt || 0) - (a.createdAt || 0);
       });
       setBooks(bookDocs);
