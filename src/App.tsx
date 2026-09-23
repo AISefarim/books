@@ -560,6 +560,7 @@ export default function App() {
   };
 
   const handleBookSelect = (book: Book) => {
+    setSelectedVideo(null);
     setSelectedBook(book);
     setIsDirectLinkEntry(false);
     setPlayingDirectVideo(false);
@@ -571,6 +572,7 @@ export default function App() {
   };
 
   const handleVideoSelect = (video: Video) => {
+    setSelectedBook(null);
     setSelectedVideo(video);
     setIsDirectLinkEntry(false);
     setPlayingDirectVideo(false);
@@ -1009,6 +1011,8 @@ export default function App() {
             isSaved={savedBookIds.includes(selectedBook.id)}
             onToggleSave={toggleSaveBook}
             onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
+            relatedVideos={videos.filter(v => v.bookId === selectedBook.id)}
+            onSelectVideo={handleVideoSelect}
           />
         ) : selectedVideo ? (
           <VideoDetails
@@ -1055,6 +1059,14 @@ export default function App() {
             isSaved={savedVideoIds.includes(selectedVideo.id)}
             onToggleSave={toggleSaveVideo}
             onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
+            linkedBook={selectedVideo.bookId ? books.find(b => b.id === selectedVideo.bookId) ?? null : null}
+            onSelectBook={handleBookSelect}
+            onReadBook={(url, book) => {
+              setReadingBook(book);
+              updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
+                readCount: increment(1)
+              }).catch(err => console.error("Failed to increment read count", err));
+            }}
           />
         ) : activeTab === 'sefarim' ? (
           <>
@@ -1554,6 +1566,7 @@ export default function App() {
           video={editingVideo}
           videoCategories={strictVideoCategories}
           videos={videos}
+          books={books}
           onSave={handleVideoEditSave}
           onClose={() => setEditingVideo(null)}
         />

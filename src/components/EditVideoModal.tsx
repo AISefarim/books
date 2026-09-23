@@ -1,20 +1,22 @@
 import React, { useState } from 'react';
 import { X, Save, Loader2, Video as VideoIcon, Headphones } from 'lucide-react';
-import { Video } from '../types';
+import { Video, Book } from '../types';
 
 interface EditVideoModalProps {
   video: Video;
   videoCategories: string[];
   videos?: Video[];
+  books?: Book[];
   onSave: (id: string, updatedData: Partial<Video>) => Promise<void>;
   onClose: () => void;
 }
 
-export function EditVideoModal({ video, videoCategories, videos = [], onSave, onClose }: EditVideoModalProps) {
+export function EditVideoModal({ video, videoCategories, videos = [], books = [], onSave, onClose }: EditVideoModalProps) {
   const [mediaType, setMediaType] = useState<'video' | 'audio'>(video.type === 'audio' ? 'audio' : 'video');
   const [title, setTitle] = useState(video.title);
   const [url, setUrl] = useState(video.url);
   const [category, setCategory] = useState(video.category || '');
+  const [bookId, setBookId] = useState(video.bookId || '');
   
   const videoFolders = Array.from(new Set(
     videos
@@ -69,6 +71,7 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
         subfolder: finalSubfolder,
         type: mediaType,
         duration: duration.trim(),
+        bookId: bookId.trim() || undefined,
       };
       
       const parsedOrder = order ? parseInt(order, 10) : undefined;
@@ -278,6 +281,22 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
                 className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
               />
             </div>
+
+            {books && books.length > 0 && (
+              <div className="space-y-2 md:col-span-2">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Linked Sefer (Optional)</label>
+                <select
+                  value={bookId}
+                  onChange={(e) => setBookId(e.target.value)}
+                  className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-200"
+                >
+                  <option value="">None (Not linked to any Sefer)</option>
+                  {books.map(b => (
+                    <option key={b.id} value={b.id}>{b.title} {b.author ? `(${b.author})` : ''}</option>
+                  ))}
+                </select>
+              </div>
+            )}
           </div>
 
           <div className="pt-4 flex justify-end gap-4">

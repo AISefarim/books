@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark, Headphones, MessageCircle } from 'lucide-react';
+import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark, Headphones, MessageCircle, BookOpen } from 'lucide-react';
 import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
-import { Video } from '../types';
+import { Video, Book } from '../types';
 import { AudioPlayer } from './AudioPlayer';
 import { PodcastSocialCard } from './PodcastSocialCard';
 
@@ -16,9 +16,25 @@ interface VideoDetailsProps {
   isSaved?: boolean;
   onToggleSave?: (id: string, e?: React.MouseEvent) => void;
   onOpenWhatsAppShare?: () => void;
+  linkedBook?: Book | null;
+  onSelectBook?: (book: Book) => void;
+  onReadBook?: (epubUrl: string, book: Book) => void;
 }
 
-export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, categoryThumbnails, folderThumbnails, isSaved, onToggleSave, onOpenWhatsAppShare }: VideoDetailsProps) {
+export function VideoDetails({
+  video,
+  relatedVideos,
+  onBack,
+  onSelectVideo,
+  categoryThumbnails,
+  folderThumbnails,
+  isSaved,
+  onToggleSave,
+  onOpenWhatsAppShare,
+  linkedBook,
+  onSelectBook,
+  onReadBook
+}: VideoDetailsProps) {
   const [copied, setCopied] = useState(false);
   const [hoveredStar, setHoveredStar] = useState(0);
   const [hasRated, setHasRated] = useState(() => {
@@ -287,6 +303,62 @@ ${url}`;
           </div>
         </div>
       </div>
+
+      {/* Read This In The Book Section */}
+      {linkedBook && (
+        <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 rounded-[2.5rem] p-6 md:p-8 shadow-xl border border-indigo-500/20 mb-16 max-w-4xl mx-auto animate-in slide-in-from-bottom-4 fade-in duration-500">
+          <div className="flex flex-col sm:flex-row items-center sm:items-stretch gap-6">
+            <div 
+              onClick={() => onSelectBook ? onSelectBook(linkedBook) : onReadBook?.(linkedBook.epub, linkedBook)}
+              className="w-24 sm:w-28 shrink-0 aspect-[3/4] rounded-2xl overflow-hidden shadow-xl border border-white/10 group cursor-pointer hover:scale-105 transition-transform duration-300"
+            >
+              <img 
+                src={linkedBook.cover} 
+                alt={linkedBook.title} 
+                className="w-full h-full object-cover" 
+              />
+            </div>
+            <div className="flex-1 flex flex-col justify-between text-center sm:text-left">
+              <div>
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 text-xs font-bold uppercase tracking-wider mb-2.5">
+                  <BookOpen className="w-3.5 h-3.5" /> Read This In The Book
+                </span>
+                <h4 className="text-xl sm:text-2xl font-black text-white tracking-tight leading-snug">
+                  {linkedBook.title}
+                </h4>
+                {linkedBook.author && (
+                  <p className="text-xs sm:text-sm text-indigo-200/90 font-bold uppercase tracking-wider mt-1">
+                    By {linkedBook.author}
+                  </p>
+                )}
+                {linkedBook.desc && (
+                  <p className="text-xs sm:text-sm text-slate-400 line-clamp-2 mt-2 leading-relaxed">
+                    {linkedBook.desc}
+                  </p>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 mt-4">
+                {onSelectBook && (
+                  <button
+                    onClick={() => onSelectBook(linkedBook)}
+                    className="px-6 py-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-md shadow-indigo-600/30 hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2"
+                  >
+                    <BookOpen className="w-4 h-4" /> View Sefer Details
+                  </button>
+                )}
+                {onReadBook && linkedBook.epub && (
+                  <button
+                    onClick={() => onReadBook(linkedBook.epub, linkedBook)}
+                    className="px-6 py-3 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs uppercase tracking-wider transition-all border border-slate-700 flex items-center gap-2"
+                  >
+                    Read Online
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Dedicated Podcast WhatsApp & Social Audio Card */}
       {video.type === 'audio' && (
