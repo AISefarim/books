@@ -549,6 +549,9 @@ export default function App() {
   }, [books, videos]);
 
   const handleHome = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
     setSearchQuery('');
     setSelectedCategory(null);
     setReadingBook(null);
@@ -557,6 +560,16 @@ export default function App() {
     setIsDirectLinkEntry(false);
     setPlayingDirectVideo(false);
     window.history.replaceState({}, '', '/');
+  };
+
+  const handleOpenReader = (book: Book) => {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+    setReadingBook(book);
+    updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
+      readCount: increment(1)
+    }).catch(err => console.error("Failed to increment read count", err));
   };
 
   const handleBookSelect = (book: Book) => {
@@ -1002,10 +1015,7 @@ export default function App() {
             book={selectedBook}
             onBack={handleHome}
             onRead={(url) => {
-              setReadingBook(selectedBook);
-              updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', selectedBook.id), {
-                readCount: increment(1)
-              }).catch(err => console.error("Failed to increment read count", err));
+              handleOpenReader(selectedBook);
             }}
             onDownload={(url, title) => handleDownload(url, title, selectedBook.id)}
             isSaved={savedBookIds.includes(selectedBook.id)}
@@ -1062,10 +1072,7 @@ export default function App() {
             linkedBook={selectedVideo.bookId ? books.find(b => b.id === selectedVideo.bookId) ?? null : null}
             onSelectBook={handleBookSelect}
             onReadBook={(url, book) => {
-              setReadingBook(book);
-              updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
-                readCount: increment(1)
-              }).catch(err => console.error("Failed to increment read count", err));
+              handleOpenReader(book);
             }}
           />
         ) : activeTab === 'sefarim' ? (
@@ -1075,12 +1082,7 @@ export default function App() {
                 books={featuredBooks} 
                 onRead={(url) => {
                   const book = books.find(b => b.epub === url);
-                  if (book) {
-                    setReadingBook(book);
-                    updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
-                      readCount: increment(1)
-                    }).catch(err => console.error("Failed to increment read count", err));
-                  }
+                  if (book) handleOpenReader(book);
                 }}
                 onDownload={(url, title) => {
                   const book = books.find(b => b.epub === url);
@@ -1175,12 +1177,7 @@ export default function App() {
               onDelete={handleDeleteRequest}
               onRead={(url) => {
                 const book = books.find(b => b.epub === url);
-                if (book) {
-                  setReadingBook(book);
-                  updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
-                    readCount: increment(1)
-                  }).catch(err => console.error("Failed to increment read count", err));
-                }
+                if (book) handleOpenReader(book);
               }}
               onDownload={(url, title) => {
                 const book = books.find(b => b.epub === url);
@@ -1446,12 +1443,7 @@ export default function App() {
                     onDelete={handleDeleteRequest}
                     onRead={(url) => {
                       const book = books.find(b => b.epub === url);
-                      if (book) {
-                        setReadingBook(book);
-                        updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
-                          readCount: increment(1)
-                        }).catch(err => console.error("Failed to increment read count", err));
-                      }
+                      if (book) handleOpenReader(book);
                     }}
                     onDownload={(url, title) => {
                       const book = books.find(b => b.epub === url);
@@ -1540,7 +1532,12 @@ export default function App() {
       {readingBook && (
         <EpubReader
           book={readingBook}
-          onClose={() => setReadingBook(null)}
+          onClose={() => {
+            if (document.fullscreenElement) {
+              document.exitFullscreen().catch(() => {});
+            }
+            setReadingBook(null);
+          }}
         />
       )}
 

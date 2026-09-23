@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Book as BookIcon, Folder, ArrowLeft, Upload, BookOpen, Edit3, Download, Share2 } from 'lucide-react';
+import { Book as BookIcon, Folder, ArrowLeft, Upload, BookOpen, Edit3, Download, Share2, Sparkles } from 'lucide-react';
 import { Book } from '../types';
 import { BookCard } from './BookCard';
 import {
@@ -20,6 +20,16 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+
+export const isZoharSeries = (name: string): boolean => {
+  if (!name) return false;
+  const n = name.trim().toLowerCase();
+  return (
+    n === 'zohar hakadosh (sabbagh edition)' ||
+    (n.includes('zohar') && n.includes('sabbagh')) ||
+    n.includes('zohar hakadosh')
+  );
+};
 
 interface BookGridProps {
   books: Book[];
@@ -47,7 +57,7 @@ interface BookGridProps {
   activeSeries?: string | null;
 }
 
-function SortableSeriesWrapper({ seriesName, children }: any) {
+function SortableSeriesWrapper({ seriesName, isProminent, children }: any) {
   const {
     attributes,
     listeners,
@@ -65,7 +75,7 @@ function SortableSeriesWrapper({ seriesName, children }: any) {
   };
 
   return (
-    <div ref={setNodeRef} style={style} className="relative h-full">
+    <div ref={setNodeRef} style={style} className={`relative h-full ${isProminent ? 'col-span-1 sm:col-span-2 lg:col-span-2' : ''}`}>
       <div 
         {...attributes} 
         {...listeners} 
@@ -153,17 +163,21 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
     
     // Update series order
     const currentSeriesNames = Array.from(new Set(books.map(b => b.series || ''))).filter(s => s !== '');
-    let orderedNames = [...currentSeriesNames].sort();
-    if (seriesOrder && seriesOrder.length > 0) {
-       orderedNames = [...currentSeriesNames].sort((a, b) => {
-         const indexA = seriesOrder.indexOf(a);
-         const indexB = seriesOrder.indexOf(b);
-         if (indexA === -1 && indexB === -1) return a.localeCompare(b);
-         if (indexA === -1) return 1;
-         if (indexB === -1) return -1;
-         return indexA - indexB;
-       });
-    }
+    let orderedNames = [...currentSeriesNames].sort((a, b) => {
+      const aIsZohar = isZoharSeries(a);
+      const bIsZohar = isZoharSeries(b);
+      if (aIsZohar && !bIsZohar) return -1;
+      if (!aIsZohar && bIsZohar) return 1;
+
+      if (seriesOrder && seriesOrder.length > 0) {
+        const indexA = seriesOrder.indexOf(a);
+        const indexB = seriesOrder.indexOf(b);
+        if (indexA !== -1 && indexB !== -1) return indexA - indexB;
+        if (indexA !== -1) return -1;
+        if (indexB !== -1) return 1;
+      }
+      return a.localeCompare(b);
+    });
     setCurrentSeriesOrder(orderedNames);
   }, [books, seriesOrder]);
 
@@ -274,11 +288,108 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
     const standaloneBooks = books.filter(b => !(b.series || ''));
 
     const renderSeriesCard = (seriesName: string) => {
+      const isProminent = isZoharSeries(seriesName);
       const seriesBooks = books.filter(b => (b.series || '') === seriesName).sort((a, b) => (a.order || 0) - (b.order || 0));
       const count = seriesBooks.length;
       const book1 = seriesBooks[0];
       const book2 = seriesBooks.length > 1 ? seriesBooks[1] : null;
       const book3 = seriesBooks.length > 2 ? seriesBooks[2] : null;
+
+      if (isProminent) {
+        return (
+          <div 
+            onClick={() => handleSeriesSelect(seriesName)}
+            className="group cursor-pointer flex flex-col sm:flex-row h-full bg-gradient-to-br from-indigo-950/85 via-slate-950 to-slate-900 rounded-[3rem] p-6 sm:p-7 shadow-2xl hover:shadow-[0_0_50px_rgba(99,102,241,0.35)] transition-all duration-500 border-2 border-indigo-500/60 hover:border-indigo-400 ring-2 ring-indigo-500/20 hover:ring-indigo-500/40 relative overflow-hidden items-center gap-6 sm:gap-8"
+          >
+            {/* Ambient lighting effects */}
+            <div className="absolute top-0 right-0 w-80 h-80 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20 group-hover:bg-indigo-500/25 transition-all duration-700" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20 group-hover:bg-amber-500/20 transition-all duration-700" />
+
+            {/* 3D Book Stack */}
+            <div className="relative isolate w-44 sm:w-52 shrink-0 my-1">
+              <div className="absolute inset-0 bg-indigo-950 rounded-[2rem] translate-x-4 -translate-y-3 -z-20 border border-indigo-500/40 transition-transform duration-500 group-hover:translate-x-6 group-hover:-translate-y-5 rotate-4 origin-bottom-right overflow-hidden shadow-lg">
+                {book3?.cover ? (
+                  <img src={book3.cover} alt="" className="w-full h-full object-cover opacity-60" />
+                ) : null}
+              </div>
+              <div className="absolute inset-0 bg-slate-800 rounded-[2rem] translate-x-2 -translate-y-1.5 -z-10 border border-indigo-400/40 shadow-md transition-transform duration-500 group-hover:translate-x-3.5 group-hover:-translate-y-3 rotate-2 origin-bottom-right overflow-hidden">
+                {book2?.cover ? (
+                  <img src={book2.cover} alt="" className="w-full h-full object-cover opacity-80" />
+                ) : null}
+              </div>
+              
+              <div className="relative aspect-[3/4] rounded-[2rem] overflow-hidden bg-slate-900 shadow-2xl border-2 border-indigo-400/50 transition-all duration-500 flex items-center justify-center group-hover:-translate-y-1.5 group-hover:-translate-x-1.5 ring-1 ring-white/10">
+                {book1?.cover || seriesThumbnails?.[seriesName] ? (
+                  <>
+                    <img 
+                      src={book1?.cover || seriesThumbnails?.[seriesName]} 
+                      alt={seriesName} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 pointer-events-none" 
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+                  </>
+                ) : (
+                  <div className="w-24 h-24 bg-indigo-600/30 backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border border-indigo-400/50 shadow-inner">
+                    <BookOpen className="w-10 h-10 text-indigo-300 group-hover:text-white transition-colors duration-300 pointer-events-none" />
+                  </div>
+                )}
+              </div>
+            </div>
+            
+            {/* Info and Call to Action */}
+            <div className="flex-1 flex flex-col justify-between py-1 text-center sm:text-left z-10 w-full">
+              <div>
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 mb-3">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 via-indigo-500/20 to-purple-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase tracking-widest shadow-sm">
+                    <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                    Featured Flagship Series
+                  </span>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-indigo-500/10 text-indigo-300 border border-indigo-500/20 text-[10px] font-black uppercase tracking-widest">
+                    Sabbagh Edition
+                  </span>
+                </div>
+                
+                <h3 className="text-2xl sm:text-3xl font-black text-white tracking-tight leading-tight group-hover:text-amber-200 transition-colors drop-shadow-sm mb-2.5">
+                  {seriesName}
+                </h3>
+                
+                <p className="text-xs sm:text-sm text-slate-300/90 leading-relaxed max-w-xl mx-auto sm:mx-0 line-clamp-2 sm:line-clamp-3 mb-4 font-normal">
+                  {book1?.desc || "Authentic Holy Zohar translated and elucidated with comprehensive English commentary and sacred texts."}
+                </p>
+                
+                <div className="flex items-center justify-center sm:justify-start gap-3 text-xs font-bold uppercase tracking-widest text-slate-400 mb-5">
+                  <span className="px-3 py-1 rounded-lg bg-slate-900/90 border border-slate-800 text-amber-300 font-black shadow-sm">
+                    {count} {count === 1 ? 'Volume' : 'Volumes'} Available
+                  </span>
+                </div>
+              </div>
+              
+              <div className="flex flex-wrap items-center justify-center sm:justify-start gap-3 pt-3 border-t border-indigo-500/20">
+                <span className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 group-hover:bg-indigo-500 text-white font-black text-xs uppercase tracking-wider transition-all shadow-lg shadow-indigo-600/30 group-hover:shadow-indigo-500/50">
+                  <BookOpen className="w-4 h-4" /> Explore Complete Series
+                </span>
+                
+                {isAdmin && onRenameSeries && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const newName = window.prompt('Enter new series name:', seriesName);
+                      if (newName && newName.trim() !== '' && newName !== seriesName) {
+                        onRenameSeries(seriesName, newName.trim());
+                      }
+                    }}
+                    className="p-2.5 bg-slate-800 text-slate-400 hover:text-indigo-400 hover:bg-slate-900 rounded-xl shadow-sm border border-slate-700 transition-all ml-auto"
+                    title="Rename Series"
+                  >
+                    <Edit3 className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      }
+
       return (
         <div 
           onClick={() => handleSeriesSelect(seriesName)}
@@ -345,7 +456,7 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
           </div>
         </div>
       );
-    }
+    };
 
     return (
       <div className="space-y-12 animate-in fade-in zoom-in-95 duration-300">
@@ -354,7 +465,11 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
             <SortableContext items={currentSeriesOrder.map(s => `series-${s}`)} strategy={rectSortingStrategy}>
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
                 {currentSeriesOrder.map((seriesName) => (
-                  <SortableSeriesWrapper key={`series-${seriesName}`} seriesName={seriesName}>
+                  <SortableSeriesWrapper 
+                    key={`series-${seriesName}`} 
+                    seriesName={seriesName}
+                    isProminent={isZoharSeries(seriesName)}
+                  >
                     {renderSeriesCard(seriesName)}
                   </SortableSeriesWrapper>
                 ))}
@@ -364,9 +479,12 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
             {currentSeriesOrder.map(seriesName => (
-              <React.Fragment key={seriesName}>
+              <div 
+                key={seriesName} 
+                className={isZoharSeries(seriesName) ? 'col-span-1 sm:col-span-2 lg:col-span-2' : ''}
+              >
                 {renderSeriesCard(seriesName)}
-              </React.Fragment>
+              </div>
             ))}
           </div>
         )}
@@ -411,9 +529,17 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
             >
               <ArrowLeft className="w-4 h-4" /> All Series
             </button>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight px-2 border-l-2 border-slate-700">
-              {selectedSeries}
-            </h2>
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <h2 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight px-2 border-l-2 border-slate-700">
+                {selectedSeries}
+              </h2>
+              {isZoharSeries(selectedSeries) && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 via-indigo-500/20 to-purple-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase tracking-widest shadow-sm">
+                  <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                  Featured Series • Sabbagh Edition
+                </span>
+              )}
+            </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto sm:ml-auto">
               {onShareSeries && (
                 <button

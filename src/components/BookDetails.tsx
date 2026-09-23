@@ -27,6 +27,21 @@ export function BookDetails({
 }: BookDetailsProps) {
   const [copied, setCopied] = React.useState(false);
 
+  const sortedRelated = React.useMemo(() => {
+    if (!relatedVideos) return [];
+    return [...relatedVideos].sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+  }, [relatedVideos]);
+
+  const videoItems = React.useMemo(() => {
+    return sortedRelated.filter(v => v.category === 'AI Tanach');
+  }, [sortedRelated]);
+
+  const podcastItems = React.useMemo(() => {
+    return sortedRelated.filter(v => v.category !== 'AI Tanach');
+  }, [sortedRelated]);
+
+  const showSubheadings = podcastItems.length > 0 && videoItems.length > 0;
+
   React.useEffect(() => {
     window.scrollTo(0, 0);
   }, [book.id]);
@@ -159,7 +174,7 @@ export function BookDetails({
       </div>
 
       {/* Related Podcasts Section */}
-      {relatedVideos && relatedVideos.length > 0 && (
+      {sortedRelated.length > 0 && (
         <div className="mt-12 animate-in slide-in-from-bottom-6 fade-in duration-500">
           <div className="flex items-center gap-3 mb-6">
             <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
@@ -171,39 +186,125 @@ export function BookDetails({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {relatedVideos.map((video) => (
-              <div
-                key={video.id}
-                onClick={() => onSelectVideo?.(video)}
-                className="group cursor-pointer bg-slate-900 hover:bg-slate-800/90 rounded-2xl p-4 border border-slate-800 hover:border-indigo-500/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-4"
-              >
-                <div className="w-12 h-12 rounded-xl bg-indigo-950/80 border border-indigo-500/30 flex items-center justify-center shrink-0 text-indigo-400 group-hover:scale-105 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
-                  {video.type === 'audio' ? (
-                    <Headphones className="w-6 h-6" />
-                  ) : (
-                    <Play className="w-6 h-6 fill-current ml-0.5" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <h4 className="font-bold text-slate-100 group-hover:text-indigo-300 text-sm leading-snug line-clamp-2 transition-colors">
-                    {video.title}
+          {showSubheadings ? (
+            <div className="space-y-8">
+              {podcastItems.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                    Podcasts
                   </h4>
-                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400">
-                    {video.category && (
-                      <span className="font-semibold text-slate-400 truncate max-w-[130px]">{video.category}</span>
-                    )}
-                    {video.duration && (
-                      <>
-                        <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0"></span>
-                        <span className="shrink-0">{video.duration}</span>
-                      </>
-                    )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {podcastItems.map((video) => (
+                      <div
+                        key={video.id}
+                        onClick={() => onSelectVideo?.(video)}
+                        className="group cursor-pointer bg-slate-900 hover:bg-slate-800/90 rounded-2xl p-4 border border-slate-800 hover:border-indigo-500/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-4"
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-indigo-950/80 border border-indigo-500/30 flex items-center justify-center shrink-0 text-indigo-400 group-hover:scale-105 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                          {video.type === 'audio' ? (
+                            <Headphones className="w-6 h-6" />
+                          ) : (
+                            <Play className="w-6 h-6 fill-current ml-0.5" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-slate-100 group-hover:text-indigo-300 text-sm leading-snug line-clamp-2 transition-colors">
+                            {video.title}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400">
+                            {video.category && (
+                              <span className="font-semibold text-slate-400 truncate max-w-[130px]">{video.category}</span>
+                            )}
+                            {video.duration && (
+                              <>
+                                <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0"></span>
+                                <span className="shrink-0">{video.duration}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              )}
+
+              {videoItems.length > 0 && (
+                <div>
+                  <h4 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-3 flex items-center gap-2">
+                    Videos
+                  </h4>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {videoItems.map((video) => (
+                      <div
+                        key={video.id}
+                        onClick={() => onSelectVideo?.(video)}
+                        className="group cursor-pointer bg-slate-900 hover:bg-slate-800/90 rounded-2xl p-4 border border-slate-800 hover:border-indigo-500/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-4"
+                      >
+                        <div className="w-12 h-12 rounded-xl bg-indigo-950/80 border border-indigo-500/30 flex items-center justify-center shrink-0 text-indigo-400 group-hover:scale-105 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                          {video.type === 'audio' ? (
+                            <Headphones className="w-6 h-6" />
+                          ) : (
+                            <Play className="w-6 h-6 fill-current ml-0.5" />
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <h4 className="font-bold text-slate-100 group-hover:text-indigo-300 text-sm leading-snug line-clamp-2 transition-colors">
+                            {video.title}
+                          </h4>
+                          <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400">
+                            {video.category && (
+                              <span className="font-semibold text-slate-400 truncate max-w-[130px]">{video.category}</span>
+                            )}
+                            {video.duration && (
+                              <>
+                                <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0"></span>
+                                <span className="shrink-0">{video.duration}</span>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {sortedRelated.map((video) => (
+                <div
+                  key={video.id}
+                  onClick={() => onSelectVideo?.(video)}
+                  className="group cursor-pointer bg-slate-900 hover:bg-slate-800/90 rounded-2xl p-4 border border-slate-800 hover:border-indigo-500/30 transition-all duration-300 shadow-sm hover:shadow-xl hover:-translate-y-0.5 flex items-center gap-4"
+                >
+                  <div className="w-12 h-12 rounded-xl bg-indigo-950/80 border border-indigo-500/30 flex items-center justify-center shrink-0 text-indigo-400 group-hover:scale-105 group-hover:bg-indigo-600 group-hover:text-white transition-all shadow-sm">
+                    {video.type === 'audio' ? (
+                      <Headphones className="w-6 h-6" />
+                    ) : (
+                      <Play className="w-6 h-6 fill-current ml-0.5" />
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <h4 className="font-bold text-slate-100 group-hover:text-indigo-300 text-sm leading-snug line-clamp-2 transition-colors">
+                      {video.title}
+                    </h4>
+                    <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-400">
+                      {video.category && (
+                        <span className="font-semibold text-slate-400 truncate max-w-[130px]">{video.category}</span>
+                      )}
+                      {video.duration && (
+                        <>
+                          <span className="w-1 h-1 rounded-full bg-slate-600 shrink-0"></span>
+                          <span className="shrink-0">{video.duration}</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
     </div>

@@ -23,12 +23,23 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
   const toggleControls = () => setShowControls(v => !v);
 
   useEffect(() => {
+    if (document.documentElement.requestFullscreen) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+
     const handleFullscreenChange = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
 
+    setIsFullscreen(!!document.fullscreenElement);
+
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {});
+      }
+    };
   }, []);
 
   useEffect(() => {
@@ -115,12 +126,21 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
     rendition?.next();
   };
 
-  const toggleFullscreen = async () => {
-    if (!containerRef.current) return;
+  const handleClose = () => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    }
+    onClose();
+  };
 
+  const toggleFullscreen = async () => {
     try {
       if (!document.fullscreenElement) {
-        await containerRef.current.requestFullscreen();
+        if (document.documentElement.requestFullscreen) {
+          await document.documentElement.requestFullscreen();
+        } else if (containerRef.current?.requestFullscreen) {
+          await containerRef.current.requestFullscreen();
+        }
       } else {
         await document.exitFullscreen();
       }
@@ -138,7 +158,7 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
     >
       <div className={`absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center z-20 transition-opacity duration-300 bg-gradient-to-b from-black/20 to-transparent pointer-events-none ${showControls ? 'opacity-100' : 'opacity-0'}`}>
         <div className="flex items-center gap-2 sm:gap-4 pointer-events-auto">
-          <button onClick={onClose} className="p-2 sm:p-3 text-white hover:bg-slate-900/20 rounded-full transition-colors group backdrop-blur-sm shadow-sm" aria-label="Close">
+          <button onClick={handleClose} className="p-2 sm:p-3 text-white hover:bg-slate-900/20 rounded-full transition-colors group backdrop-blur-sm shadow-sm" aria-label="Close">
             <X className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform drop-shadow" />
           </button>
           <div className="bg-slate-900/90 backdrop-blur-md px-3 sm:px-4 py-1.5 sm:py-2 rounded-full shadow-lg border border-white/20">
