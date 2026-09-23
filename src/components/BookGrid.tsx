@@ -128,6 +128,11 @@ function SortableBookWrapper({ book, isAdmin, onEdit, onDelete, onRead, onDownlo
 export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries, onAddExistingBookToSeries, onReorder, searchQuery, onRenameSeries, seriesOrder, onSeriesReorder, onDownloadSeries, onShareSeries, onSeriesSelectChange, activeSeries = null }: BookGridProps) {
   const [selectedSeries, setSelectedSeries] = useState<string | null>(activeSeries);
   const [items, setItems] = useState(books);
+
+  useEffect(() => {
+    setItems(books);
+  }, [books]);
+
   const [currentSeriesOrder, setCurrentSeriesOrder] = useState<string[]>([]);
 
   useEffect(() => {
