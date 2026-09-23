@@ -16,7 +16,11 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
   const [url, setUrl] = useState(video.url);
   const [category, setCategory] = useState(video.category || '');
   
-  const videoFolders = Array.from(new Set(videos.filter(v => !category || v.category === category).map(v => v.folder || ''))).filter(f => f !== '') as string[];
+  const videoFolders = Array.from(new Set(
+    videos
+      .filter(v => (v.category || '').trim().toLowerCase() === category.trim().toLowerCase())
+      .map(v => (v.folder || '').trim())
+  )).filter(Boolean) as string[];
   
   // Initialize folder and subfolder states
   const initialFolder = video.folder || '';
@@ -31,7 +35,7 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
   const existingSubfolders = Array.from(
     new Set(
       videos
-        .filter(v => (v.folder || '') === currentEffectiveFolder && v.subfolder)
+        .filter(v => (v.category || '').trim().toLowerCase() === category.trim().toLowerCase() && (v.folder || '').trim() === currentEffectiveFolder && v.subfolder)
         .map(v => (v.subfolder || '').trim())
     )
   ).filter(Boolean) as string[];
@@ -173,7 +177,13 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
               <select
                 required
                 value={category}
-                onChange={(e) => setCategory(e.target.value)}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setSelectedFolder('_none_');
+                  setNewFolderInput('');
+                  setSelectedSubfolder('_none_');
+                  setNewSubfolderInput('');
+                }}
                 className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium appearance-none"
               >
                 <option value="">Select Category...</option>

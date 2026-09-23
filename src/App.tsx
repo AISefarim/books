@@ -833,6 +833,7 @@ export default function App() {
             books={books} 
             audios={audios}
             triggerAddBookToSeries={triggerAddBookToSeries}
+            currentCategory={selectedCategory && selectedCategory !== 'Top Rated' ? selectedCategory : undefined}
           />
         )}
 

@@ -15,9 +15,10 @@ interface AdminPanelProps {
   books?: Book[];
   audios?: Audio[];
   triggerAddBookToSeries?: { series: string, timestamp: number } | null;
+  currentCategory?: string | null;
 }
 
-export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videos = [], books = [], audios = [], triggerAddBookToSeries }: AdminPanelProps) {
+export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videos = [], books = [], audios = [], triggerAddBookToSeries, currentCategory }: AdminPanelProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState({ label: '', percent: 0 });
@@ -28,7 +29,8 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
   const [newFolderInput, setNewFolderInput] = useState('');
   const [selectedSubfolder, setSelectedSubfolder] = useState('_none_');
   const [newSubfolderInput, setNewSubfolderInput] = useState('');
-  const [selectedVideoCat, setSelectedVideoCat] = useState('');
+  const [selectedVideoCat, setSelectedVideoCat] = useState(currentCategory || '');
+  const [newVideoCatInput, setNewVideoCatInput] = useState('');
   
   const [selectedBookSeries, setSelectedBookSeries] = useState('_none_');
   const [newBookSeriesInput, setNewBookSeriesInput] = useState('');
@@ -42,26 +44,49 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
     }
   }, [triggerAddBookToSeries, activeTab]);
 
+  React.useEffect(() => {
+    if (currentCategory && currentCategory !== 'Top Rated') {
+      setSelectedVideoCat(currentCategory);
+      setSelectedFolder('');
+      setSelectedSubfolder('_none_');
+    }
+  }, [currentCategory]);
+
   const coverInputRef = useRef<HTMLInputElement>(null);
   const epubInputRef = useRef<HTMLInputElement>(null);
 
-  const allMediaFolders = Array.from(new Set([
-    ...videos.map(v => v.folder || ''),
-    ...audios.map(a => a.folder || '')
-  ])).filter(Boolean) as string[];
-
   const allMediaCategories = Array.from(new Set([
     ...videoCategories,
-    ...videos.map(v => v.category || ''),
-    ...audios.map(a => a.category || '')
+    ...videos.map(v => (v.category || '').trim()),
+    ...audios.map(a => (a.category || '').trim())
   ])).filter(Boolean) as string[];
 
-  const currentEffectiveFolder = selectedFolder === 'new' ? newFolderInput.trim() : (selectedFolder === '_none_' ? '' : selectedFolder.trim());
+  const effectiveCategory = selectedVideoCat === 'new' 
+    ? newVideoCatInput.trim() 
+    : selectedVideoCat.trim();
+
   const allMediaItems = [...videos, ...(audios as unknown as Video[])];
+
+  // ONLY show folders that belong to the selected category!
+  const categoryMediaFolders = Array.from(new Set(
+    allMediaItems
+      .filter(item => {
+        if (!effectiveCategory) return false;
+        return (item.category || '').trim().toLowerCase() === effectiveCategory.toLowerCase();
+      })
+      .map(v => (v.folder || '').trim())
+  )).filter(Boolean) as string[];
+
+  const currentEffectiveFolder = selectedFolder === 'new' ? newFolderInput.trim() : (selectedFolder === '_none_' ? '' : selectedFolder.trim());
+
   const existingSubfolders = Array.from(
     new Set(
       allMediaItems
-        .filter(i => (i.folder || '').trim() === currentEffectiveFolder && i.subfolder)
+        .filter(i => {
+          const matchCat = !effectiveCategory || (i.category || '').trim().toLowerCase() === effectiveCategory.toLowerCase();
+          const matchFolder = (i.folder || '').trim() === currentEffectiveFolder;
+          return matchCat && matchFolder && i.subfolder;
+        })
         .map(i => (i.subfolder || '').trim())
     )
   ).filter(Boolean) as string[];
@@ -187,12 +212,18 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
     const formData = new FormData(e.currentTarget);
     const title = (formData.get('title') as string)?.trim();
     const url = (formData.get('url') as string)?.trim();
-    const category = (formData.get('category') as string)?.trim();
+    const finalCategory = selectedVideoCat === 'new' ? newVideoCatInput.trim() : selectedVideoCat.trim();
     const orderStr = formData.get('order') as string;
     const order = orderStr ? parseInt(orderStr, 10) : undefined;
 
     if (!title || !url) {
       onStatusMessage(`Please enter both title and link URL!`, 'error');
+      setIsUploading(false);
+      return;
+    }
+
+    if (!finalCategory) {
+      onStatusMessage(`Please select or enter a Category!`, 'error');
       setIsUploading(false);
       return;
     }
@@ -211,7 +242,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
       const docData: any = {
         title,
         url,
-        category: category || (mediaPublishType === 'podcast' ? 'Podcast' : 'General'),
+        category: finalCategory,
         folder: finalFolder,
         subfolder: finalSubfolder,
         createdAt: timestamp,
@@ -228,6 +259,8 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
       const label = mediaPublishType === 'podcast' ? 'Podcast' : 'Video';
       onStatusMessage(`${label} published successfully!`, 'success');
       formRef.current?.reset();
+      setSelectedVideoCat(currentCategory || '');
+      setNewVideoCatInput('');
       setSelectedFolder('');
       setNewFolderInput('');
       setSelectedSubfolder('_none_');
@@ -457,19 +490,47 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
               />
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <input
-                  name="category"
-                  list="media-categories"
-                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 placeholder:text-slate-500"
-                  placeholder="Category (e.g. AI Daf, AI Parasha, Series Name...)"
-                />
-                <datalist id="media-categories">
-                  {allMediaCategories.map(cat => (
-                    <option key={cat} value={cat} />
-                  ))}
-                </datalist>
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Category</label>
+                  <select
+                    required
+                    value={selectedVideoCat}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedVideoCat(val);
+                      setSelectedFolder('');
+                      setNewFolderInput('');
+                      setSelectedSubfolder('_none_');
+                      setNewSubfolderInput('');
+                    }}
+                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 appearance-none cursor-pointer"
+                  >
+                    <option value="" disabled>Select Category...</option>
+                    {allMediaCategories.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="new">+ Create New Category</option>
+                  </select>
 
-                <div className="space-y-3">
+                  {selectedVideoCat === 'new' && (
+                    <input
+                      name="new_category"
+                      required
+                      value={newVideoCatInput}
+                      onChange={(e) => {
+                        setNewVideoCatInput(e.target.value);
+                        setSelectedFolder('');
+                        setSelectedSubfolder('_none_');
+                      }}
+                      className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 animate-in slide-in-from-top-2"
+                      placeholder="Enter new category name..."
+                      autoFocus
+                    />
+                  )}
+                </div>
+
+                <div className="space-y-2">
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Folder</label>
                   <select
                     name="folder_select"
                     value={selectedFolder}
@@ -477,14 +538,21 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                       setSelectedFolder(e.target.value);
                       setSelectedSubfolder('_none_');
                     }}
-                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 appearance-none cursor-pointer"
+                    disabled={!effectiveCategory}
+                    className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 appearance-none cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    <option value="" disabled>Select Folder... (Optional)</option>
-                    <option value="_none_">No Folder (Top-level Grid)</option>
-                    {allMediaFolders.map(folder => (
-                      <option key={folder} value={folder}>{folder}</option>
-                    ))}
-                    <option value="new">+ Create New Folder</option>
+                    {!effectiveCategory ? (
+                      <option value="" disabled>Select Category first...</option>
+                    ) : (
+                      <>
+                        <option value="" disabled>Select Folder... (Optional)</option>
+                        <option value="_none_">No Folder (Top-level in {effectiveCategory})</option>
+                        {categoryMediaFolders.map(folder => (
+                          <option key={folder} value={folder}>{folder}</option>
+                        ))}
+                        <option value="new">+ Create New Folder</option>
+                      </>
+                    )}
                   </select>
 
                   {selectedFolder === 'new' && (
@@ -494,7 +562,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                       value={newFolderInput}
                       onChange={(e) => setNewFolderInput(e.target.value)}
                       className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 animate-in slide-in-from-top-2"
-                      placeholder="Enter new folder name"
+                      placeholder={`Enter new folder name in ${effectiveCategory}`}
                       autoFocus
                     />
                   )}
