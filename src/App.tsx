@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment, setDoc, writeBatch } from 'firebase/firestore';
 import { ref, deleteObject, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { signInAnonymously } from 'firebase/auth';
+import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
 import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download, Video as VideoIcon } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
@@ -77,8 +77,19 @@ export default function App() {
   };
 
   useEffect(() => {
-    signInAnonymously(auth).catch((err) => {
-      showStatus(`Auth Error: ${err.message}`, 'error');
+    const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      if (user) {
+        if (user.email?.toLowerCase() === 'abrahamserouya@gmail.com') {
+          setIsAdmin(true);
+        } else {
+          setIsAdmin(false);
+        }
+      } else {
+        setIsAdmin(false);
+        signInAnonymously(auth).catch((err) => {
+          showStatus(`Auth Error: ${err.message}`, 'error');
+        });
+      }
     });
 
     const booksRef = collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim');
@@ -196,6 +207,7 @@ export default function App() {
     });
 
     return () => {
+      unsubscribeAuth();
       unsubscribeBooks();
       unsubscribeSettings();
     };
@@ -206,17 +218,25 @@ export default function App() {
     setTimeout(() => setStatus(null), 8000);
   };
 
-  const handleToggleAdmin = () => {
+  const handleToggleAdmin = async () => {
     if (isAdmin) {
-      setIsAdmin(false);
+      try {
+        await signOut(auth);
+        await signInAnonymously(auth);
+        setIsAdmin(false);
+        showStatus('Logged out of admin session.', 'success');
+      } catch (err: any) {
+        setIsAdmin(false);
+      }
     } else {
       setShowLoginModal(true);
     }
   };
 
-  const handleLogin = (password: string) => {
+  const handleLogin = () => {
     setIsAdmin(true);
     setShowLoginModal(false);
+    showStatus('Welcome Abraham! Signed in as Admin.', 'success');
   };
 
   const handleDeleteRequest = (id: string, coverPath: string, epubPath: string) => {

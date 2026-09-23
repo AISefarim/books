@@ -1,0 +1,43 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Check if user is signed in
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Verify admin identity: must be Abraham's verified Google account
+    function isAdmin() {
+      return isSignedIn() 
+        && request.auth.token.email != null
+        && request.auth.token.email.lower() == 'abrahamserouya@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    // Regular visitors can only increment views, readCount, downloadCount, ratings, and add comments
+    function isVisitorInteractionUpdate() {
+      return request.resource.data.diff(resource.data).affectedKeys()
+        .hasOnly(['views', 'readCount', 'downloadCount', 'ratingsSum', 'ratingsCount', 'comments']);
+    }
+
+    // Primary data collection used by AI Sefarim
+    match /artifacts/{appId}/public/data/sefarim/{docId} {
+      // Anyone can read books, videos, podcasts, and site settings
+      allow read: if true;
+
+      // Only Abraham can create or delete sefarim, videos, or settings
+      allow create, delete: if isAdmin();
+
+      // Abraham can update anything; regular visitors may ONLY update interaction fields
+      allow update: if isAdmin() || isVisitorInteractionUpdate();
+    }
+
+    // Secondary fallback in case collection is queried at root
+    match /sefarim/{docId} {
+      allow read: if true;
+      allow create, delete: if isAdmin();
+      allow update: if isAdmin() || isVisitorInteractionUpdate();
+    }
+  }
+}

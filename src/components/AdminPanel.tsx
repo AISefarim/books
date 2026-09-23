@@ -1,10 +1,11 @@
 import React, { useState, useRef } from 'react';
-import { Plus, Image as ImageIcon, Loader2, Settings, Video as VideoIcon, Headphones } from 'lucide-react';
+import { Plus, Image as ImageIcon, Loader2, Settings, Video as VideoIcon, Headphones, Layers, Check, Copy, MessageCircle, X } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
 import { compressImage } from '../lib/imageUtils';
 import { Video, Book, Audio } from '../types';
+import { BatchAddMedia } from './BatchAddMedia';
 
 interface AdminPanelProps {
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
@@ -20,6 +21,7 @@ interface AdminPanelProps {
 
 export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCategories, videos = [], books = [], audios = [], triggerAddBookToSeries, currentCategory }: AdminPanelProps) {
   const [isFormVisible, setIsFormVisible] = useState(false);
+  const [entryMode, setEntryMode] = useState<'single' | 'batch'>('single');
   const [isUploading, setIsUploading] = useState(false);
   const [progress, setProgress] = useState({ label: '', percent: 0 });
   const [coverPreview, setCoverPreview] = useState<string | null>(null);
@@ -34,6 +36,15 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
   
   const [selectedBookSeries, setSelectedBookSeries] = useState('_none_');
   const [newBookSeriesInput, setNewBookSeriesInput] = useState('');
+
+  const [lastPublishedShareInfo, setLastPublishedShareInfo] = useState<{
+    title: string;
+    shareUrl: string;
+    shareMessage: string;
+    type: 'video' | 'podcast';
+    autoCopied: boolean;
+  } | null>(null);
+  const [copiedShareInfo, setCopiedShareInfo] = useState(false);
 
   React.useEffect(() => {
     if (triggerAddBookToSeries) {
@@ -256,10 +267,39 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
         docData.order = order;
       }
 
-      await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim'), docData);
+      const docRef = await addDoc(collection(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim'), docData);
+
+      const seriesLabel = [finalCategory, finalFolder, finalSubfolder].filter(Boolean).join(' • ');
+      const shareUrl = `https://aisefarim.com/v/${docRef.id}`;
+      const durationLine = duration ? `⏱️ *Duration:* ${duration}\n\n` : '';
+      const shareMessage = `🎙️ *AI Sefarim: ${title}*
+
+${seriesLabel ? `📁 *Series:* ${seriesLabel}\n\n` : ''}${durationLine}🎧 *Listen now on AI Sefarim:*
+${shareUrl}`;
+
+      let autoCopied = false;
+      try {
+        await navigator.clipboard.writeText(shareMessage);
+        autoCopied = true;
+      } catch (clipErr) {
+        console.warn('Clipboard write error:', clipErr);
+      }
+
+      setLastPublishedShareInfo({
+        title,
+        shareUrl,
+        shareMessage,
+        type: mediaPublishType,
+        autoCopied
+      });
 
       const label = mediaPublishType === 'podcast' ? 'Podcast' : 'Video';
-      onStatusMessage(`${label} published successfully!`, 'success');
+      onStatusMessage(
+        autoCopied
+          ? `${label} published! Share info copied to clipboard.`
+          : `${label} published successfully!`,
+        'success'
+      );
       formRef.current?.reset();
       setSelectedVideoCat(currentCategory || '');
       setNewVideoCatInput('');
@@ -279,6 +319,76 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
   return (
     <div className="mb-16">
       <div className="bg-slate-900 p-8 rounded-[2.5rem] shadow-xl border border-indigo-50">
+        {lastPublishedShareInfo && (
+          <div className="mb-8 p-6 rounded-3xl bg-slate-950 border border-emerald-500/40 shadow-xl relative animate-in fade-in slide-in-from-top-3 duration-300">
+            <button
+              type="button"
+              onClick={() => setLastPublishedShareInfo(null)}
+              className="absolute top-5 right-5 p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+              aria-label="Dismiss banner"
+            >
+              <X className="w-4 h-4" />
+            </button>
+
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-800/80 mb-4">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center text-emerald-400">
+                  <Check className="w-5 h-5" />
+                </div>
+                <div>
+                  <h4 className="text-base font-black text-white flex items-center gap-2">
+                    <span>{lastPublishedShareInfo.type === 'podcast' ? 'Podcast' : 'Video'} Published!</span>
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                      {lastPublishedShareInfo.autoCopied ? 'Copied to Clipboard' : 'Share Ready'}
+                    </span>
+                  </h4>
+                  <p className="text-xs text-slate-400 font-medium truncate max-w-md">
+                    {lastPublishedShareInfo.title}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={async () => {
+                    await navigator.clipboard.writeText(lastPublishedShareInfo.shareMessage);
+                    setCopiedShareInfo(true);
+                    setTimeout(() => setCopiedShareInfo(false), 2000);
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all active:scale-95 border border-slate-700"
+                >
+                  {copiedShareInfo ? (
+                    <>
+                      <Check className="w-4 h-4 text-emerald-400" />
+                      <span className="text-emerald-400">Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Copy className="w-4 h-4 text-slate-400" />
+                      <span>Re-Copy Share Info</span>
+                    </>
+                  )}
+                </button>
+
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(lastPublishedShareInfo.shareMessage)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="px-4 py-2.5 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-slate-950 text-xs font-black uppercase tracking-wider flex items-center gap-2 transition-all shadow-md active:scale-95"
+                >
+                  <MessageCircle className="w-4 h-4 fill-current" />
+                  <span className="hidden sm:inline">WhatsApp</span>
+                </a>
+              </div>
+            </div>
+
+            <div className="bg-slate-900/90 rounded-2xl p-4 border border-slate-800 font-mono text-xs text-slate-200 whitespace-pre-line leading-relaxed select-all">
+              {lastPublishedShareInfo.shareMessage}
+            </div>
+          </div>
+        )}
+
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-3xl font-black text-slate-50 uppercase italic tracking-tighter">Publishing Portal</h2>
           <div className="flex items-center gap-3">
@@ -290,15 +400,50 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
               <Settings className="w-5 h-5" />
             </button>
             <button
-              onClick={() => setIsFormVisible(!isFormVisible)}
-              className="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black flex items-center gap-2 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-100"
+              onClick={() => {
+                if (isFormVisible && entryMode === 'batch') {
+                  setIsFormVisible(false);
+                } else {
+                  setIsFormVisible(true);
+                  setEntryMode('batch');
+                }
+              }}
+              className={`px-5 py-3 rounded-2xl font-black flex items-center gap-2 transition-all shadow-lg text-xs uppercase tracking-wider ${
+                isFormVisible && entryMode === 'batch'
+                  ? 'bg-amber-500 text-slate-950 shadow-amber-500/20'
+                  : 'bg-slate-800 text-slate-200 hover:bg-slate-700'
+              }`}
+            >
+              <Layers className="w-4 h-4" /> Batch Add
+            </button>
+            <button
+              onClick={() => {
+                if (isFormVisible && entryMode === 'single') {
+                  setIsFormVisible(false);
+                } else {
+                  setIsFormVisible(true);
+                  setEntryMode('single');
+                }
+              }}
+              className={`px-6 py-3 rounded-2xl font-black flex items-center gap-2 transition-all shadow-lg text-xs uppercase tracking-wider ${
+                isFormVisible && entryMode === 'single'
+                  ? 'bg-indigo-700 text-white shadow-indigo-100 ring-2 ring-indigo-400'
+                  : 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-indigo-100'
+              }`}
             >
               <Plus className="w-5 h-5" /> New {activeTab === 'sefarim' ? 'Sefer' : 'Media'}
             </button>
           </div>
         </div>
 
-        {isFormVisible && activeTab !== 'sefarim' && (
+        {isFormVisible && entryMode === 'batch' && (
+          <BatchAddMedia
+            existingCategories={allMediaCategories}
+            onStatusMessage={onStatusMessage}
+          />
+        )}
+
+        {isFormVisible && entryMode === 'single' && activeTab !== 'sefarim' && (
           <div className="flex items-center justify-center gap-2 p-1.5 bg-slate-950 rounded-2xl border border-slate-800 max-w-sm mx-auto mb-6">
             <button
               type="button"
@@ -333,7 +478,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
           </div>
         )}
 
-        {isFormVisible && activeTab === 'sefarim' && (
+        {isFormVisible && entryMode === 'single' && activeTab === 'sefarim' && (
           <form ref={formRef} onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-3 gap-8 mt-6 p-8 bg-slate-950 rounded-3xl border border-slate-800">
             <div className="lg:col-span-1">
               <label className="block text-xs font-black text-slate-400 uppercase mb-3 tracking-widest">Sefer Cover</label>
@@ -468,7 +613,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
           </form>
         )}
 
-        {isFormVisible && activeTab !== 'sefarim' && (
+        {isFormVisible && entryMode === 'single' && activeTab !== 'sefarim' && (
           <form ref={formRef} onSubmit={handleMediaSubmit} className="grid grid-cols-1 gap-8 mt-6 p-8 bg-slate-950 rounded-3xl border border-slate-800">
             <div className="space-y-5">
               <div>

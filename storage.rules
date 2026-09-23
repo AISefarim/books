@@ -1,0 +1,20 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Verify admin identity: must be Abraham's verified Google account
+    function isAdmin() {
+      return request.auth != null 
+        && request.auth.token.email != null
+        && request.auth.token.email.lower() == 'abrahamserouya@gmail.com'
+        && request.auth.token.email_verified == true;
+    }
+
+    // Anyone can read and download EPUB files, book covers, and folder thumbnails
+    match /{allPaths=**} {
+      allow read: if true;
+      // Only Abraham's Google account can upload, overwrite, or delete files in Storage
+      allow write: if isAdmin();
+    }
+  }
+}
