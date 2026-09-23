@@ -15,6 +15,8 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem('epub-font-size')) || 100);
+  const [theme, setTheme] = useState(() => localStorage.getItem('epub-theme') || 'light');
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -24,6 +26,23 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
   }, []);
+
+  useEffect(() => {
+    if (!rendition) return;
+    rendition.themes.register('light', { body: { background: '#F9F7F1', color: '#1a1a1a' } });
+    rendition.themes.register('sepia', { body: { background: '#f4ecd8', color: '#3b2f2f' } });
+    rendition.themes.register('dark', { body: { background: '#1a1a1a', color: '#e5e5e5' } });
+    rendition.themes.select(theme);
+    rendition.themes.fontSize(`${fontSize}%`);
+  }, [rendition, theme, fontSize]);
+
+  useEffect(() => {
+    localStorage.setItem('epub-font-size', String(fontSize));
+  }, [fontSize]);
+
+  useEffect(() => {
+    localStorage.setItem('epub-theme', theme);
+  }, [theme]);
 
   useEffect(() => {
     if (!viewerRef.current) return;
@@ -38,12 +57,20 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
       flow: 'paginated',
     });
 
-    newRendition.display().then(() => {
+    const savedCfi = localStorage.getItem(`epub-progress-${book.id}`);
+
+    newRendition.display(savedCfi || undefined).then(() => {
       setIsLoading(false);
     }).catch((err) => {
       console.error("EPUB Load Error:", err);
       setError("Failed to load the book directly in the browser. This is usually due to Firebase Storage CORS settings. Please download the book to read it.");
       setIsLoading(false);
+    });
+
+    newRendition.on('relocated', (location: any) => {
+      if (location?.start?.cfi) {
+        localStorage.setItem(`epub-progress-${book.id}`, location.start.cfi);
+      }
     });
 
     setRendition(newRendition);
@@ -56,7 +83,7 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
         // Ignore cleanup errors
       }
     };
-  }, [book.epub]);
+  }, [book.epub, book.id]);
 
   const handlePrev = () => {
     rendition?.prev();
@@ -81,7 +108,12 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
   };
 
   return (
-    <div ref={containerRef} className="fixed inset-0 z-[100] bg-[#F9F7F1] flex flex-col w-full h-full">
+    <div
+      ref={containerRef}
+      className={`fixed inset-0 z-[100] flex flex-col w-full h-full transition-colors duration-200 ${
+        theme === 'dark' ? 'bg-[#1a1a1a]' : theme === 'sepia' ? 'bg-[#f4ecd8]' : 'bg-[#F9F7F1]'
+      }`}
+    >
       <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center z-20 transition-opacity bg-gradient-to-b from-black/20 to-transparent pointer-events-none">
         <div className="flex items-center gap-2 sm:gap-4 pointer-events-auto">
           <button onClick={onClose} className="p-2 sm:p-3 text-white hover:bg-slate-900/20 rounded-full transition-colors group backdrop-blur-sm shadow-sm" aria-label="Close">
@@ -93,7 +125,28 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
             </h3>
           </div>
         </div>
-        <div className="flex items-center gap-2 sm:gap-3 pointer-events-auto">
+        <div className="flex items-center gap-1 sm:gap-2 pointer-events-auto">
+          <button
+            onClick={() => setFontSize(f => Math.max(70, f - 10))}
+            className="p-2 text-white hover:bg-slate-900/20 rounded-full transition-colors backdrop-blur-sm font-black text-xs min-w-[32px] drop-shadow"
+            title="Smaller text"
+          >
+            A-
+          </button>
+          <button
+            onClick={() => setFontSize(f => Math.min(200, f + 10))}
+            className="p-2 text-white hover:bg-slate-900/20 rounded-full transition-colors backdrop-blur-sm font-black text-xs min-w-[32px] drop-shadow"
+            title="Larger text"
+          >
+            A+
+          </button>
+          <button
+            onClick={() => setTheme(t => t === 'light' ? 'sepia' : t === 'sepia' ? 'dark' : 'light')}
+            className="p-2 text-white hover:bg-slate-900/20 rounded-full transition-colors backdrop-blur-sm text-sm drop-shadow"
+            title="Change theme"
+          >
+            {theme === 'light' ? '☀️' : theme === 'sepia' ? '📖' : '🌙'}
+          </button>
           <button
             onClick={toggleFullscreen}
             className="p-2 text-white hover:bg-slate-900/20 rounded-full transition-colors hidden sm:block backdrop-blur-sm drop-shadow"
@@ -114,13 +167,21 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
       
       <div className="flex-1 relative overflow-hidden flex justify-center w-full h-full pt-0">
         {isLoading && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-6 animate-pulse bg-[#F9F7F1] z-10 w-full h-full">
+          <div
+            className={`absolute inset-0 flex flex-col items-center justify-center gap-6 animate-pulse z-10 w-full h-full ${
+              theme === 'dark' ? 'bg-[#1a1a1a]' : theme === 'sepia' ? 'bg-[#f4ecd8]' : 'bg-[#F9F7F1]'
+            }`}
+          >
             <div className="animate-spin rounded-full h-10 w-10 border-4 border-indigo-600 border-t-transparent"></div>
             <span className="font-black text-[10px] text-slate-400 uppercase tracking-[0.4em]">Preparing Digital *ספר*...</span>
           </div>
         )}
         {error && (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-[#F9F7F1] z-10 p-8 text-center w-full h-full">
+          <div
+            className={`absolute inset-0 flex flex-col items-center justify-center gap-4 z-10 p-8 text-center w-full h-full ${
+              theme === 'dark' ? 'bg-[#1a1a1a]' : theme === 'sepia' ? 'bg-[#f4ecd8]' : 'bg-[#F9F7F1]'
+            }`}
+          >
             <AlertCircle className="w-12 h-12 text-rose-500 mb-2" />
             <h4 className="font-black text-xl text-slate-100 uppercase tracking-tight">Reader Unavailable</h4>
             <p className="text-slate-400 font-medium max-w-md">{error}</p>
