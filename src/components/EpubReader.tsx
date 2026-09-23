@@ -19,6 +19,8 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [fontSize, setFontSize] = useState(() => Number(localStorage.getItem('epub-font-size')) || 100);
   const [theme, setTheme] = useState(() => localStorage.getItem('epub-theme') || 'light');
+  const [showControls, setShowControls] = useState(true);
+  const toggleControls = () => setShowControls(v => !v);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -93,6 +95,7 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
     });
 
     setRendition(newRendition);
+    newRendition.on('click', toggleControls);
 
     return () => {
       try {
@@ -133,7 +136,7 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
         theme === 'dark' ? 'bg-[#1a1a1a]' : theme === 'sepia' ? 'bg-[#f4ecd8]' : 'bg-[#F9F7F1]'
       }`}
     >
-      <div className="absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center z-20 transition-opacity bg-gradient-to-b from-black/20 to-transparent pointer-events-none">
+      <div className={`absolute top-0 left-0 right-0 p-3 sm:p-4 flex justify-between items-center z-20 transition-opacity duration-300 bg-gradient-to-b from-black/20 to-transparent pointer-events-none ${showControls ? 'opacity-100' : 'opacity-0'}`}>
         <div className="flex items-center gap-2 sm:gap-4 pointer-events-auto">
           <button onClick={onClose} className="p-2 sm:p-3 text-white hover:bg-slate-900/20 rounded-full transition-colors group backdrop-blur-sm shadow-sm" aria-label="Close">
             <X className="w-5 h-5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform drop-shadow" />
@@ -214,12 +217,12 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
             </a>
           </div>
         )}
-        <div className="w-full max-w-[1200px] h-full flex z-0 relative pt-16 sm:pt-20 pb-16 sm:pb-0 px-2 sm:px-12">
+        <div onClick={toggleControls} className="w-full max-w-[1200px] h-full flex z-0 relative pt-16 sm:pt-20 pb-16 sm:pb-0 px-2 sm:px-12">
           <div ref={viewerRef} className="w-full h-full"></div>
           
           <button
             onClick={handlePrev}
-            className="absolute left-0 sm:left-4 top-1/2 -translate-y-1/2 p-2 sm:p-4 bg-slate-900/50 hover:bg-slate-900 text-slate-300 rounded-full shadow-md hover:shadow-lg transition-all backdrop-blur-md opacity-0 hover:opacity-100 sm:opacity-30 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 z-20 -ml-5 sm:ml-0 group"
+            className={`absolute left-0 sm:left-4 top-1/2 -translate-y-1/2 p-2 sm:p-4 bg-slate-900/50 hover:bg-slate-900 text-slate-300 rounded-full shadow-md hover:shadow-lg transition-all transition-opacity duration-300 backdrop-blur-md opacity-0 hover:opacity-100 sm:opacity-30 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 z-20 -ml-5 sm:ml-0 group ${showControls ? '' : ' opacity-0 pointer-events-none'}`}
           >
             <svg className="w-6 h-6 sm:w-8 sm:h-8 group-hover:-translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M15 19l-7-7 7-7" />
@@ -228,7 +231,7 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
           
           <button
             onClick={handleNext}
-            className="absolute right-0 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-4 bg-slate-900/50 hover:bg-slate-900 text-slate-300 rounded-full shadow-md hover:shadow-lg transition-all backdrop-blur-md opacity-0 hover:opacity-100 sm:opacity-30 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 z-20 -mr-5 sm:mr-0 group"
+            className={`absolute right-0 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-4 bg-slate-900/50 hover:bg-slate-900 text-slate-300 rounded-full shadow-md hover:shadow-lg transition-all transition-opacity duration-300 backdrop-blur-md opacity-0 hover:opacity-100 sm:opacity-30 flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 z-20 -mr-5 sm:mr-0 group ${showControls ? '' : ' opacity-0 pointer-events-none'}`}
           >
             <svg className="w-6 h-6 sm:w-8 sm:h-8 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M9 5l7 7-7 7" />
@@ -237,7 +240,7 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
         </div>
       </div>
 
-      <div className="sm:hidden absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-slate-900/90 backdrop-blur-md p-2 rounded-full shadow-xl border border-slate-800 z-20">
+      <div className={`sm:hidden absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-slate-900/90 backdrop-blur-md p-2 rounded-full shadow-xl border border-slate-800 z-20 transition-opacity duration-300 ${showControls ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
         <button
           onClick={handlePrev}
           className="px-6 py-2 bg-slate-800 text-slate-200 rounded-full font-black text-xs uppercase tracking-wider hover:bg-slate-700 transition-all focus:bg-indigo-100"
