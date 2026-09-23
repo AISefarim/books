@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { X, BookOpen, Download, AlertCircle, Maximize, Minimize } from 'lucide-react';
 import ePub, { Rendition } from 'epubjs';
 import { Book } from '../types';
+import { auth, db } from '../lib/firebase';
+import { doc, setDoc } from 'firebase/firestore';
 
 interface EpubReaderProps {
   book: Book;
@@ -38,10 +40,18 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
 
   useEffect(() => {
     localStorage.setItem('epub-font-size', String(fontSize));
+    if (auth.currentUser && !auth.currentUser.isAnonymous) {
+      const userRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'users', auth.currentUser.uid);
+      setDoc(userRef, { fontSize, updatedAt: Date.now() }, { merge: true }).catch(() => {});
+    }
   }, [fontSize]);
 
   useEffect(() => {
     localStorage.setItem('epub-theme', theme);
+    if (auth.currentUser && !auth.currentUser.isAnonymous) {
+      const userRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'users', auth.currentUser.uid);
+      setDoc(userRef, { theme, updatedAt: Date.now() }, { merge: true }).catch(() => {});
+    }
   }, [theme]);
 
   useEffect(() => {
@@ -70,6 +80,15 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
     newRendition.on('relocated', (location: any) => {
       if (location?.start?.cfi) {
         localStorage.setItem(`epub-progress-${book.id}`, location.start.cfi);
+        if (auth.currentUser && !auth.currentUser.isAnonymous) {
+          const userRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'users', auth.currentUser.uid);
+          setDoc(userRef, {
+            readingProgress: {
+              [book.id]: location.start.cfi
+            },
+            updatedAt: Date.now()
+          }, { merge: true }).catch(() => {});
+        }
       }
     });
 

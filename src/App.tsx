@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment, setDoc, writeBatch } from 'firebase/firestore';
 import { ref, deleteObject, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { signInAnonymously, onAuthStateChanged, signOut } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download, Video as VideoIcon } from 'lucide-react';
+import { signInAnonymously, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download, Video as VideoIcon, Cloud } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -26,6 +26,7 @@ import { AddExistingBookModal } from './components/AddExistingBookModal';
 import { WhatsAppShareModal } from './components/WhatsAppShareModal';
 import { WhatsAppGrowthPrompt } from './components/WhatsAppGrowthPrompt';
 import { CommunityGrowthBanner } from './components/CommunityGrowthBanner';
+import { SyncModal } from './components/SyncModal';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -60,13 +61,23 @@ export default function App() {
   const hasCheckedSharedLink = React.useRef(false);
   const [triggerAddBookToSeries, setTriggerAddBookToSeries] = useState<{series: string, timestamp: number} | null>(null);
   const [addExistingSeriesModal, setAddExistingSeriesModal] = useState<string | null>(null);
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [showSyncModal, setShowSyncModal] = useState(false);
 
   useEffect(() => {
     localStorage.setItem('savedBookIds', JSON.stringify(savedBookIds));
+    if (auth.currentUser && !auth.currentUser.isAnonymous) {
+      const userDocRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'users', auth.currentUser.uid);
+      setDoc(userDocRef, { savedBookIds, updatedAt: Date.now() }, { merge: true }).catch(() => {});
+    }
   }, [savedBookIds]);
 
   useEffect(() => {
     localStorage.setItem('savedVideoIds', JSON.stringify(savedVideoIds));
+    if (auth.currentUser && !auth.currentUser.isAnonymous) {
+      const userDocRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'users', auth.currentUser.uid);
+      setDoc(userDocRef, { savedVideoIds, updatedAt: Date.now() }, { merge: true }).catch(() => {});
+    }
   }, [savedVideoIds]);
 
   const toggleSaveBook = (id: string) => {
@@ -77,12 +88,58 @@ export default function App() {
   };
 
   useEffect(() => {
+    let unsubscribeUserDoc: (() => void) | null = null;
+
     const unsubscribeAuth = onAuthStateChanged(auth, (user) => {
+      setCurrentUser(user);
+
+      if (unsubscribeUserDoc) {
+        unsubscribeUserDoc();
+        unsubscribeUserDoc = null;
+      }
+
       if (user) {
         if (user.email?.toLowerCase() === 'abrahamserouya@gmail.com') {
           setIsAdmin(true);
         } else {
           setIsAdmin(false);
+        }
+
+        if (!user.isAnonymous) {
+          const userDocRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'users', user.uid);
+          unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.exists()) {
+              const data = docSnap.data();
+              if (Array.isArray(data.savedBookIds)) {
+                setSavedBookIds(prev => Array.from(new Set([...prev, ...data.savedBookIds])));
+              }
+              if (Array.isArray(data.savedVideoIds)) {
+                setSavedVideoIds(prev => Array.from(new Set([...prev, ...data.savedVideoIds])));
+              }
+              if (data.readingProgress && typeof data.readingProgress === 'object') {
+                Object.entries(data.readingProgress).forEach(([bookId, cfi]) => {
+                  if (typeof cfi === 'string' && !localStorage.getItem(`epub-progress-${bookId}`)) {
+                    localStorage.setItem(`epub-progress-${bookId}`, cfi);
+                  }
+                });
+              }
+              if (data.fontSize && !localStorage.getItem('epub-font-size')) {
+                localStorage.setItem('epub-font-size', String(data.fontSize));
+              }
+              if (data.theme && !localStorage.getItem('epub-theme')) {
+                localStorage.setItem('epub-theme', data.theme);
+              }
+            } else {
+              setDoc(userDocRef, {
+                email: user.email,
+                displayName: user.displayName,
+                savedBookIds: JSON.parse(localStorage.getItem('savedBookIds') || '[]'),
+                savedVideoIds: JSON.parse(localStorage.getItem('savedVideoIds') || '[]'),
+                createdAt: Date.now(),
+                updatedAt: Date.now()
+              }, { merge: true }).catch(() => {});
+            }
+          });
         }
       } else {
         setIsAdmin(false);
@@ -109,13 +166,9 @@ export default function App() {
         .map(d => d as Book);
         
       bookDocs.sort((a, b) => {
-        const orderA = a.order !== undefined && a.order !== null ? a.order : Number.MAX_SAFE_INTEGER;
-        const orderB = b.order !== undefined && b.order !== null ? b.order : Number.MAX_SAFE_INTEGER;
+        const orderA = a.order || Number.MAX_SAFE_INTEGER;
+        const orderB = b.order || Number.MAX_SAFE_INTEGER;
         if (orderA !== orderB) return orderA - orderB;
-        if (a.series && b.series && a.series === b.series) {
-          const titleComparison = a.title.localeCompare(b.title, undefined, { numeric: true, sensitivity: 'base' });
-          if (titleComparison !== 0) return titleComparison;
-        }
         return (b.createdAt || 0) - (a.createdAt || 0);
       });
       setBooks(bookDocs);
@@ -211,6 +264,7 @@ export default function App() {
     });
 
     return () => {
+      if (unsubscribeUserDoc) unsubscribeUserDoc();
       unsubscribeAuth();
       unsubscribeBooks();
       unsubscribeSettings();
@@ -220,6 +274,29 @@ export default function App() {
   const showStatus = (message: string, type: 'success' | 'error') => {
     setStatus({ message, type });
     setTimeout(() => setStatus(null), 8000);
+  };
+
+  const handleGoogleSignIn = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({ prompt: 'select_account' });
+      const result = await signInWithPopup(auth, provider);
+      showStatus(`Signed in as ${result.user.displayName || result.user.email}! Your library is synced.`, 'success');
+    } catch (err: any) {
+      if (err.code !== 'auth/popup-closed-by-user' && err.code !== 'auth/cancelled-popup-request') {
+        showStatus(`Sign in failed: ${err.message}`, 'error');
+      }
+    }
+  };
+
+  const handleGoogleSignOut = async () => {
+    try {
+      await signOut(auth);
+      await signInAnonymously(auth);
+      showStatus('Signed out. Local items remain saved on this device.', 'success');
+    } catch (err: any) {
+      console.error('Sign out error', err);
+    }
   };
 
   const handleToggleAdmin = async () => {
@@ -751,6 +828,8 @@ export default function App() {
         totalPodcasts={videos.filter(v => v.type === 'audio').length}
         totalMedia={videos.length}
         onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
+        currentUser={currentUser}
+        onOpenSync={() => setShowSyncModal(true)}
       />
 
       {/* Welcome Video Section (Only on main dashboard) */}
@@ -1288,6 +1367,55 @@ export default function App() {
             </div>
 
             <div className="space-y-16">
+              {/* Optional Cross-Device Sync Banner (Non-intrusive) */}
+              {!currentUser || currentUser.isAnonymous ? (
+                <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-slate-900 to-indigo-950/40 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
+                  <div className="flex items-center gap-3.5">
+                    <div className="w-11 h-11 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 shrink-0">
+                      <Cloud className="w-5 h-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-white text-sm">Save your progress across devices</h4>
+                      <p className="text-xs text-slate-400 mt-0.5">
+                        Optionally sign in with Google to sync your saved Sefarim, media, and reading position anywhere.
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleGoogleSignIn}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-100 text-slate-950 font-black text-xs uppercase tracking-wider transition-all shadow-md shrink-0 active:scale-95"
+                  >
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 24 24">
+                      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                    </svg>
+                    Sign in with Google
+                  </button>
+                </div>
+              ) : (
+                <div className="p-4 sm:p-5 rounded-2xl bg-slate-900/60 border border-slate-800 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400">
+                      <Cloud className="w-4 h-4" />
+                    </div>
+                    <div className="text-xs text-slate-300">
+                      <span className="text-emerald-400 font-bold">Cloud Sync Active:</span>{' '}
+                      <span className="text-white font-medium">{currentUser.email}</span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowSyncModal(true)}
+                    className="px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-bold transition-colors"
+                  >
+                    Manage Sync
+                  </button>
+                </div>
+              )}
+
               <div>
                 <h2 className="text-xl font-bold text-slate-400 uppercase tracking-widest mb-8 border-b border-slate-800 pb-4">
                   Saved Sefarim ({books.filter(b => savedBookIds.includes(b.id)).length})
@@ -1453,6 +1581,17 @@ export default function App() {
           onStatusMessage={showStatus}
         />
       )}
+
+      {/* Optional Cross-Device Progress & Library Sync Modal */}
+      <SyncModal
+        isOpen={showSyncModal}
+        onClose={() => setShowSyncModal(false)}
+        currentUser={currentUser}
+        onGoogleSignIn={handleGoogleSignIn}
+        onSignOut={handleGoogleSignOut}
+        savedBooksCount={savedBookIds.length}
+        savedVideosCount={savedVideoIds.length}
+      />
     </div>
   );
 }

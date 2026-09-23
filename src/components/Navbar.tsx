@@ -1,4 +1,5 @@
-import { BookOpen, Video, Library, MessageCircle, Headphones, Share2 } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud } from 'lucide-react';
+import { User } from 'firebase/auth';
 
 interface NavbarProps {
   isAdmin: boolean;
@@ -13,10 +14,13 @@ interface NavbarProps {
   totalPodcasts?: number;
   totalMedia?: number;
   onOpenWhatsAppShare?: () => void;
+  currentUser?: User | null;
+  onOpenSync?: () => void;
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, onOpenWhatsAppShare }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, onOpenWhatsAppShare, currentUser, onOpenSync }: NavbarProps) {
   const mediaCount = totalMedia !== undefined ? totalMedia : (totalVideos + totalPodcasts);
+  const isGoogleUser = currentUser && !currentUser.isAnonymous;
   return (
     <nav className="bg-slate-900/85 backdrop-blur-xl border-b border-slate-700/50 sticky top-0 z-40 shadow-sm">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
@@ -119,6 +123,39 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
               )}
             </>
           )}
+
+          {/* Optional Device Sync & Account Button */}
+          {onOpenSync && (
+            isGoogleUser ? (
+              <button
+                type="button"
+                onClick={onOpenSync}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-slate-800/80 hover:bg-slate-800 border border-slate-700/60 text-slate-200 text-xs font-medium transition-all group active:scale-95"
+                title="Google Account Synced - Click to view status"
+              >
+                {currentUser?.photoURL ? (
+                  <img src={currentUser.photoURL} alt="" className="w-5 h-5 rounded-full object-cover border border-indigo-400/40" />
+                ) : (
+                  <Cloud className="w-3.5 h-3.5 text-emerald-400" />
+                )}
+                <span className="truncate max-w-[80px] font-bold text-[11px] text-white">
+                  {currentUser?.displayName?.split(' ')[0] || 'Synced'}
+                </span>
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 shadow-sm shadow-emerald-400/50"></span>
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onOpenSync}
+                className="flex items-center gap-1.5 px-3 py-2 text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 rounded-xl transition-all text-xs font-bold border border-transparent hover:border-slate-700 active:scale-95"
+                title="Optional: Save your library and reading progress across devices"
+              >
+                <Cloud className="w-3.5 h-3.5 text-indigo-400" />
+                <span>Sync</span>
+              </button>
+            )
+          )}
+
           {isAdmin && (
             <button
               onClick={onToggleAdmin}
@@ -131,6 +168,18 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
         
         {/* Mobile quick actions */}
         <div className="md:hidden absolute top-3 right-4 flex items-center gap-1.5">
+          {onOpenSync && (
+            <button
+              type="button"
+              onClick={onOpenSync}
+              className="p-1.5 text-slate-300 hover:text-white bg-slate-800/80 rounded-full border border-slate-700/60 active:scale-95"
+              title="Sync library across devices"
+              aria-label="Sync progress across devices"
+            >
+              <Cloud className={`w-3.5 h-3.5 ${isGoogleUser ? 'text-emerald-400' : 'text-slate-400'}`} />
+            </button>
+          )}
+
           {whatsappUrl && (
             <>
               <div className="relative pt-[2px]">
