@@ -215,6 +215,7 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
     const finalCategory = selectedVideoCat === 'new' ? newVideoCatInput.trim() : selectedVideoCat.trim();
     const orderStr = formData.get('order') as string;
     const order = orderStr ? parseInt(orderStr, 10) : undefined;
+    const duration = (formData.get('duration') as string)?.trim();
 
     if (!title || !url) {
       onStatusMessage(`Please enter both title and link URL!`, 'error');
@@ -247,7 +248,8 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
         subfolder: finalSubfolder,
         createdAt: timestamp,
         views: 0,
-        type: mediaPublishType === 'podcast' ? 'audio' : 'video'
+        type: mediaPublishType === 'podcast' ? 'audio' : 'video',
+        ...(duration ? { duration } : {})
       };
 
       if (order !== undefined && !isNaN(order)) {
@@ -597,6 +599,17 @@ export function AdminPanel({ onStatusMessage, onOpenSettings, activeTab, videoCa
                   )}
                 </div>
               )}
+
+              <div className="space-y-1">
+                <label className="text-xs font-black uppercase tracking-widest text-slate-400">
+                  Duration Estimate (Optional)
+                </label>
+                <input
+                  name="duration"
+                  className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 placeholder:text-slate-500"
+                  placeholder="e.g. 18 min, ~20–25 min"
+                />
+              </div>
 
               <input
                 name="order"

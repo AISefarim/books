@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical, Play, Eye, Star, Bookmark, Headphones } from 'lucide-react';
+import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical, Play, Eye, Star, Bookmark, Headphones, MessageCircle, Clock } from 'lucide-react';
 import { Video } from '../types';
 
 interface VideoCardProps {
@@ -79,6 +79,15 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
                 {video.category || (isAudio ? 'Podcast' : 'Video')}
               </span>
             </div>
+
+            {isAudio && video.duration && (
+              <div className="absolute bottom-3 left-3 z-30">
+                <span className="bg-slate-900/95 backdrop-blur-md text-emerald-400 text-[9px] font-bold px-2 py-1 rounded-lg border border-emerald-500/20 flex items-center gap-1 shadow-sm">
+                  <Clock className="w-3 h-3 text-emerald-400" />
+                  {video.duration}
+                </span>
+              </div>
+            )}
           </>
         ) : (
           <div className="relative z-20 flex flex-col items-center">
@@ -160,6 +169,22 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
                 title={isSaved ? "Remove from Library" : "Save to Library"}
               >
                 <Bookmark className={`w-4 h-4 ${isSaved ? 'fill-indigo-600' : ''}`} />
+              </button>
+            )}
+            {isAudio && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const duration = video.duration || '~18–22 min';
+                  const seriesLabel = [video.category, video.folder, video.subfolder].filter(Boolean).join(' • ');
+                  const url = `${window.location.origin}/v/${video.id}`;
+                  const message = `🎙️ *AI Sefarim Podcast: ${video.title}*\n\n${seriesLabel ? `📁 *Series:* ${seriesLabel}\n` : ''}⏱️ *Duration:* ${duration}\n\n🎧 *Listen now on AI Sefarim:*\n${url}`;
+                  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`, '_blank');
+                }}
+                className="text-slate-400 hover:text-[#25D366] transition-colors p-2 rounded-full hover:bg-slate-950"
+                title="Share Episode to WhatsApp"
+              >
+                <MessageCircle className="w-4 h-4 hover:fill-[#25D366]" />
               </button>
             )}
             <button

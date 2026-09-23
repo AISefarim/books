@@ -29,6 +29,9 @@ export interface Audio {
   createdAt: number;
   order?: number;
   type?: 'audio';
+  duration?: string;
+  topics?: string[] | string;
+  description?: string;
 }
 
 export interface Video {
@@ -45,6 +48,9 @@ export interface Video {
   ratingsSum?: number;
   ratingsCount?: number;
   comments?: { id: string, name: string, text: string, createdAt: number }[];
+  duration?: string;
+  topics?: string[] | string;
+  description?: string;
 }
 
 export type Media = Video;

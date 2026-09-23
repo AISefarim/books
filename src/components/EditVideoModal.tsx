@@ -45,6 +45,7 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
   const [newSubfolderInput, setNewSubfolderInput] = useState(!isExistingSubfolder && initialSubfolder ? initialSubfolder : '');
 
   const [order, setOrder] = useState(video.order?.toString() || '');
+  const [duration, setDuration] = useState(video.duration || '');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,6 +68,7 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
         folder: finalFolder,
         subfolder: finalSubfolder,
         type: mediaType,
+        duration: duration.trim(),
       };
       
       const parsedOrder = order ? parseInt(order, 10) : undefined;
@@ -255,6 +257,17 @@ export function EditVideoModal({ video, videoCategories, videos = [], onSave, on
                 </div>
               </div>
             )}
+            <div className="space-y-2 md:col-span-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Duration Estimate (Optional)</label>
+              <input
+                type="text"
+                value={duration}
+                onChange={(e) => setDuration(e.target.value)}
+                placeholder="e.g. 18 min, ~20–25 min"
+                className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+              />
+            </div>
+
             <div className="space-y-2 md:col-span-2">
               <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Rank Order (1 is highest)</label>
               <input

@@ -4,6 +4,7 @@ import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Video } from '../types';
 import { AudioPlayer } from './AudioPlayer';
+import { PodcastSocialCard } from './PodcastSocialCard';
 
 interface VideoDetailsProps {
   video: Video;
@@ -79,17 +80,41 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
     return '▶️';
   };
 
+  const getPodcastShareMessage = () => {
+    const duration = video.duration || '~18–22 min';
+    const seriesLabel = [video.category, video.folder, video.subfolder].filter(Boolean).join(' • ');
+    const url = `${window.location.origin}/v/${video.id}`;
+
+    return `🎙️ *AI Sefarim Podcast: ${video.title}*
+
+${seriesLabel ? `📁 *Series:* ${seriesLabel}\n` : ''}⏱️ *Duration:* ${duration}
+
+🎧 *Listen now on AI Sefarim:*
+${url}`;
+  };
+
+  const handleShareToWhatsApp = () => {
+    const message = getPodcastShareMessage();
+    const whatsappUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(message)}`;
+    window.open(whatsappUrl, '_blank');
+  };
+
   const handleShare = async () => {
     const url = `${window.location.origin}/v/${video.id}`;
-    const emoji = getCategoryEmoji(video.category);
-    const shareText = `${emoji} ${video.category}: ${video.title}\n\n${url}`;
+    let shareTitle = `${video.category}: ${video.title}`;
+    let shareText = `${getCategoryEmoji(video.category)} ${video.category}: ${video.title}\n\n${url}`;
+
+    if (video.type === 'audio') {
+      shareTitle = `AI Sefarim Podcast: ${video.title}`;
+      shareText = getPodcastShareMessage();
+    }
     
     // Use native share menu if available (great for mobile WhatsApp/iMessage)
     if (navigator.share) {
       try {
         await navigator.share({
-          title: `${video.category}: ${video.title}`,
-          text: `${emoji} ${video.category}: ${video.title}`,
+          title: shareTitle,
+          text: shareText,
           url: url
         });
         return; // Success!
@@ -210,13 +235,34 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
               </a>
             )}
             
-            <button
-              onClick={handleShare}
-              className="bg-slate-950 text-slate-200 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-slate-800 transition-all border border-slate-700 shadow-sm active:scale-95"
-            >
-              {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />} 
-              {copied ? 'Copied!' : 'Share Shiur'}
-            </button>
+            {video.type === 'audio' ? (
+              <>
+                <button
+                  type="button"
+                  onClick={handleShareToWhatsApp}
+                  className="bg-[#25D366] hover:bg-[#20bd5a] text-slate-950 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 transition-all shadow-xl shadow-[#25D366]/20 active:scale-95 cursor-pointer"
+                  title="Share this episode to WhatsApp with show notes"
+                >
+                  <MessageCircle className="w-6 h-6 fill-slate-950" /> Share on WhatsApp
+                </button>
+
+                <button
+                  onClick={handleShare}
+                  className="bg-slate-950 text-slate-200 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-slate-800 transition-all border border-slate-700 shadow-sm active:scale-95"
+                >
+                  {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />} 
+                  {copied ? 'Copied!' : 'Copy Info'}
+                </button>
+              </>
+            ) : (
+              <button
+                onClick={handleShare}
+                className="bg-slate-950 text-slate-200 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-slate-800 transition-all border border-slate-700 shadow-sm active:scale-95"
+              >
+                {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />} 
+                {copied ? 'Copied!' : 'Share Shiur'}
+              </button>
+            )}
 
             {onOpenWhatsAppShare && (
               <button
@@ -241,6 +287,13 @@ export function VideoDetails({ video, relatedVideos, onBack, onSelectVideo, cate
           </div>
         </div>
       </div>
+
+      {/* Dedicated Podcast WhatsApp & Social Audio Card */}
+      {video.type === 'audio' && (
+        <div id="podcast-social-card" className="mb-16 max-w-4xl mx-auto">
+          <PodcastSocialCard video={video} />
+        </div>
+      )}
 
       {/* Ratings and Comments Section */}
       <div className="bg-slate-900 rounded-[2rem] p-8 shadow-sm border border-slate-800 mb-16 max-w-4xl mx-auto">
