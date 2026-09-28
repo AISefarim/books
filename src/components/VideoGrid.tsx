@@ -381,9 +381,15 @@ export function VideoGrid({
       if (idxB === -1) return -1;
       return idxA - idxB;
     });
-  } else if (featuredSeries && allFolders.includes(featuredSeries)) {
-    // If no custom manual reorder, put featured series first
-    allFolders = [featuredSeries, ...allFolders.filter(f => f !== featuredSeries)];
+  }
+
+  // Active featured series for the current category (with AI Parasha -> Bereshit default)
+  const activeFeaturedSeries = featuredSeries || (currentCategory === 'AI Parasha' ? 'Bereshit' : null);
+
+  // If a featured series is set, position it at the very top of allFolders
+  if (activeFeaturedSeries && allFolders.some(f => f.trim().toLowerCase() === activeFeaturedSeries.trim().toLowerCase())) {
+    const featF = allFolders.find(f => f.trim().toLowerCase() === activeFeaturedSeries.trim().toLowerCase())!;
+    allFolders = [featF, ...allFolders.filter(f => f !== featF)];
   }
 
   // Items in active main folder
@@ -492,14 +498,19 @@ export function VideoGrid({
     const looseVideos = items.filter(v => !getFolderHierarchy(v).folder);
     
     // Check if there is a featured series for the current category
-    const featuredEpisodes = (featuredSeries && currentCategory)
-      ? items.filter(v => getFolderHierarchy(v).folder === featuredSeries || (v.series && v.series === featuredSeries))
+    const featuredEpisodes = (activeFeaturedSeries && currentCategory)
+      ? items.filter(v => {
+          const folder = (getFolderHierarchy(v).folder || '').trim().toLowerCase();
+          const series = (v.series || '').trim().toLowerCase();
+          const target = activeFeaturedSeries.trim().toLowerCase();
+          return folder === target || series === target;
+        })
       : [];
     
     const foldersGrid = (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {allFolders.map(f => {
-          const isFeatured = f === featuredSeries;
+          const isFeatured = Boolean(activeFeaturedSeries && f.trim().toLowerCase() === activeFeaturedSeries.trim().toLowerCase());
           if (isAdmin && onFolderReorder) {
             return (
               <SortableFolderWrapper
@@ -526,7 +537,9 @@ export function VideoGrid({
               key={f}
               onClick={() => setSelectedFolder(f)}
               className={`group cursor-pointer flex flex-col h-full rounded-[2.2rem] p-1.5 transition-all duration-300 ${
-                isFeatured ? 'bg-amber-500/10 border-2 border-amber-500/50 shadow-xl shadow-amber-500/10 ring-2 ring-amber-500/20' : ''
+                isFeatured 
+                  ? 'col-span-1 sm:col-span-2 bg-gradient-to-br from-amber-500/15 via-slate-900 to-indigo-950/40 border-2 border-amber-500/60 shadow-2xl shadow-amber-500/20 ring-2 ring-amber-500/20' 
+                  : ''
               }`}
             >
               <div className={`relative aspect-square rounded-[2rem] overflow-hidden bg-slate-950 mb-4 shadow-sm border ${
@@ -534,9 +547,9 @@ export function VideoGrid({
               } group-hover:shadow-2xl group-hover:-translate-y-2 hover:border-indigo-100 transition-all duration-300`}>
                 {/* Featured Badge */}
                 {isFeatured && (
-                  <div className="absolute top-3.5 left-3.5 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-lg shadow-amber-500/40 backdrop-blur border border-amber-300 pointer-events-none">
-                    <Sparkles className="w-3 h-3 fill-slate-950" />
-                    <span>Featured</span>
+                  <div className="absolute top-3.5 left-3.5 z-20 flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-lg shadow-amber-500/40 backdrop-blur border border-amber-300 pointer-events-none">
+                    <Sparkles className="w-3.5 h-3.5 fill-slate-950" />
+                    <span>Featured Series</span>
                   </div>
                 )}
 
@@ -613,12 +626,16 @@ export function VideoGrid({
     return (
       <div className="space-y-10 animate-in fade-in zoom-in-95 duration-300">
         {/* Prominent Featured Series Banner in Current Category */}
-        {currentCategory && featuredSeries && featuredEpisodes.length > 0 && (
+        {currentCategory && activeFeaturedSeries && featuredEpisodes.length > 0 && (
           <FeaturedCategorySeries
-            seriesName={featuredSeries}
+            seriesName={activeFeaturedSeries}
             category={currentCategory}
             episodes={featuredEpisodes}
-            thumbnail={folderThumbnails?.[featuredSeries] || categoryThumbnails?.[currentCategory]}
+            thumbnail={
+              folderThumbnails?.[activeFeaturedSeries] || 
+              Object.entries(folderThumbnails || {}).find(([k]) => k.trim().toLowerCase() === activeFeaturedSeries.trim().toLowerCase())?.[1] ||
+              categoryThumbnails?.[currentCategory]
+            }
             isAdmin={isAdmin}
             onSelectVideo={onSelectVideo}
             onExploreSeries={(series) => setSelectedFolder(series)}
@@ -637,24 +654,24 @@ export function VideoGrid({
               <div>
                 <span className="font-bold text-slate-300">Featured Series in <strong className="text-white">{currentCategory}</strong>: </span>
                 <span className="font-black text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
-                  {featuredSeries || 'None Selected'}
+                  {activeFeaturedSeries || 'None Selected'}
                 </span>
               </div>
             </div>
             <div className="flex items-center gap-2">
               <select
-                value={featuredSeries || ''}
+                value={activeFeaturedSeries || ''}
                 onChange={(e) => onSetFeaturedSeries?.(e.target.value ? e.target.value : null)}
                 className="bg-slate-800 text-white font-bold text-xs px-3 py-2 rounded-xl border border-slate-700 outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
               >
                 <option value="">No Featured Series</option>
                 {allFolders.map(f => (
                   <option key={f} value={f}>
-                    {f} {f === featuredSeries ? '⭐ (Current Featured)' : ''}
+                    {f} {Boolean(activeFeaturedSeries && f.trim().toLowerCase() === activeFeaturedSeries.trim().toLowerCase()) ? '⭐ (Current Featured)' : ''}
                   </option>
                 ))}
               </select>
-              {featuredSeries && (
+              {activeFeaturedSeries && (
                 <button
                   type="button"
                   onClick={() => onSetFeaturedSeries?.(null)}
@@ -833,9 +850,9 @@ export function VideoGrid({
                   </button>
                   <h2 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight px-2 border-l-2 border-slate-700 flex items-center gap-2.5">
                     <span>{selectedFolder || 'Other'}</span>
-                    {featuredSeries && selectedFolder === featuredSeries && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase tracking-wider">
-                        <Sparkles className="w-3 h-3 text-amber-400" />
+                    {activeFeaturedSeries && selectedFolder?.trim().toLowerCase() === activeFeaturedSeries.trim().toLowerCase() && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase tracking-wider shadow-sm">
+                        <Sparkles className="w-3.5 h-3.5 text-amber-400 animate-pulse" />
                         Featured Series
                       </span>
                     )}

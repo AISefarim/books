@@ -1557,10 +1557,18 @@ export default function App() {
                               <PlayCircle className="w-12 h-12 text-indigo-300 group-hover:text-indigo-500 transition-colors group-hover:scale-110 duration-300" />
                             )}
                           </div>
-                          <h3 className="font-black text-xl text-slate-100 text-center uppercase tracking-tighter group-hover:text-indigo-600 transition-colors">{cat}</h3>
+                          <h3 className="font-black text-xl text-slate-100 text-center uppercase tracking-tighter group-hover:text-indigo-400 transition-colors">{cat}</h3>
                           <p className="text-center text-slate-400 text-sm font-medium mt-2">
                             {countText}
                           </p>
+                          {(siteSettings.categoryFeaturedSeries?.[cat] || (cat === 'AI Parasha' ? 'Bereshit' : undefined)) && (
+                            <div className="mt-2.5 flex items-center justify-center">
+                              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-indigo-500/20 text-amber-300 border border-amber-500/35 text-[10px] font-black uppercase tracking-wider shadow-sm">
+                                <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
+                                Featured: {siteSettings.categoryFeaturedSeries?.[cat] || (cat === 'AI Parasha' ? 'Bereshit' : undefined)}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       );
                     })}
@@ -1621,7 +1629,7 @@ export default function App() {
                   disableFolders={selectedCategory === 'Top Rated' || selectedCategory === 'Recently Uploaded'}
                   mediaLabel="Media"
                   currentCategory={selectedCategory}
-                  featuredSeries={selectedCategory ? siteSettings.categoryFeaturedSeries?.[selectedCategory] : undefined}
+                  featuredSeries={selectedCategory ? (siteSettings.categoryFeaturedSeries?.[selectedCategory] || (selectedCategory === 'AI Parasha' ? 'Bereshit' : undefined)) : undefined}
                   onSetFeaturedSeries={(series) => {
                     if (selectedCategory) {
                       handleSetCategoryFeaturedSeries(selectedCategory, series);

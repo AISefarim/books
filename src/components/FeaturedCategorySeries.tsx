@@ -46,6 +46,21 @@ export function parseMinutesFromDuration(durationStr?: string): number {
   return 0;
 }
 
+export function extractEpisodeNumber(title?: string): number | null {
+  if (!title) return null;
+  // Match "X of Y" (e.g. "Bereshit 1 of 14", "Bereshit 10 of 14")
+  const ofMatch = title.match(/(\d+)\s*(?:of|\/)\s*\d+/i);
+  if (ofMatch) return parseInt(ofMatch[1], 10);
+  
+  const epMatch = title.match(/(?:episode|ep|part|daf|aliyat)\s*(\d+)/i);
+  if (epMatch) return parseInt(epMatch[1], 10);
+
+  const numPrefix = title.match(/^(\d+)[\.\s\-]/);
+  if (numPrefix) return parseInt(numPrefix[1], 10);
+
+  return null;
+}
+
 export function formatTotalDuration(minutes: number): string {
   if (minutes <= 0) return '';
   const hrs = Math.floor(minutes / 60);
@@ -77,6 +92,11 @@ export function FeaturedCategorySeries({
   const sortedEpisodes = [...episodes].sort((a, b) => {
     if (a.order !== undefined && b.order !== undefined && a.order !== b.order) {
       return a.order - b.order;
+    }
+    const epA = extractEpisodeNumber(a.title);
+    const epB = extractEpisodeNumber(b.title);
+    if (epA !== null && epB !== null && epA !== epB) {
+      return epA - epB;
     }
     return (a.createdAt || 0) - (b.createdAt || 0);
   });
@@ -254,7 +274,9 @@ export function FeaturedCategorySeries({
             {/* Third layer background card */}
             {thirdEpisode && (
               <div className="absolute inset-0 bg-slate-800 rounded-3xl translate-x-5 -translate-y-4 -z-20 border border-indigo-500/20 transition-transform duration-500 group-hover/stack:translate-x-7 group-hover/stack:-translate-y-6 rotate-6 origin-bottom-right overflow-hidden shadow-md opacity-40">
-                {thirdEpisode.url && (
+                {thumbnail ? (
+                  <img src={thumbnail} alt="" className="w-full h-full object-cover opacity-60" />
+                ) : (
                   <div className="w-full h-full bg-slate-900 flex items-center justify-center">
                     <span className="text-xs font-bold text-slate-500">Ep 3</span>
                   </div>
@@ -265,9 +287,13 @@ export function FeaturedCategorySeries({
             {/* Second layer middle card */}
             {secondEpisode && (
               <div className="absolute inset-0 bg-indigo-950/80 rounded-3xl translate-x-2.5 -translate-y-2 -z-10 border border-indigo-400/30 shadow-lg transition-transform duration-500 group-hover/stack:translate-x-4 group-hover/stack:-translate-y-3 rotate-3 origin-bottom-right overflow-hidden opacity-75">
-                <div className="w-full h-full bg-slate-900/90 flex items-center justify-center">
-                  <span className="text-xs font-bold text-indigo-400">Ep 2</span>
-                </div>
+                {thumbnail ? (
+                  <img src={thumbnail} alt="" className="w-full h-full object-cover opacity-80" />
+                ) : (
+                  <div className="w-full h-full bg-slate-900/90 flex items-center justify-center">
+                    <span className="text-xs font-bold text-indigo-400">Ep 2</span>
+                  </div>
+                )}
               </div>
             )}
 
