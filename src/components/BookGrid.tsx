@@ -55,6 +55,7 @@ interface BookGridProps {
   onShareSeries?: (seriesName: string) => void;
   onSeriesSelectChange?: (seriesName: string | null) => void;
   activeSeries?: string | null;
+  disableSeries?: boolean;
 }
 
 function SortableSeriesWrapper({ seriesName, isProminent, children }: any) {
@@ -135,7 +136,7 @@ function SortableBookWrapper({ book, isAdmin, onEdit, onDelete, onRead, onDownlo
   );
 }
 
-export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries, onAddExistingBookToSeries, onReorder, searchQuery, onRenameSeries, seriesOrder, onSeriesReorder, onDownloadSeries, onShareSeries, onSeriesSelectChange, activeSeries = null }: BookGridProps) {
+export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, onDownload, onSelectBook, savedBookIds = [], onToggleSave, seriesThumbnails, onUpdateSeriesThumbnail, onAddBookToSeries, onAddExistingBookToSeries, onReorder, searchQuery, onRenameSeries, seriesOrder, onSeriesReorder, onDownloadSeries, onShareSeries, onSeriesSelectChange, activeSeries = null, disableSeries }: BookGridProps) {
   const [selectedSeries, setSelectedSeries] = useState<string | null>(activeSeries);
   const [items, setItems] = useState(books);
 
@@ -258,12 +259,14 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
 
   const seriesNames = Array.from(new Set(books.map(b => b.series || ''))).filter(s => s !== '').sort();
 
-  if (searchQuery) {
+  if (searchQuery || disableSeries) {
     return (
       <div className="space-y-12 animate-in fade-in zoom-in-95 duration-300">
-        <h3 className="text-xl font-black text-slate-100 tracking-tight leading-tight px-4 mb-6 border-l-4 border-indigo-500 rounded-sm">
-          Search Results ({books.length})
-        </h3>
+        {searchQuery && (
+          <h3 className="text-xl font-black text-slate-100 tracking-tight leading-tight px-4 mb-6 border-l-4 border-indigo-500 rounded-sm">
+            Search Results ({books.length})
+          </h3>
+        )}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
           {books.map((book) => (
             <BookCard
