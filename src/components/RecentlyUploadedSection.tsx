@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Clock, Sparkles, Play, Bookmark, Share2, Check, MessageCircle, Edit2, Trash2, Eye, Star, ChevronRight } from 'lucide-react';
+import { Clock, Sparkles, Play, Bookmark, Share2, Check, MessageCircle, Edit2, Trash2, Eye, Star, ChevronRight, CheckCircle2 } from 'lucide-react';
 import { Video } from '../types';
+import { hasDeviceWatched } from '../lib/deviceTracker';
 
 interface RecentlyUploadedSectionProps {
   videos: Video[];
@@ -144,6 +145,13 @@ export function RecentlyUploadedSection({
                   <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-slate-900 text-slate-300 border-slate-700/80">
                     {video.category}
                   </span>
+
+                  {/* Watched on this device indicator */}
+                  {hasDeviceWatched(video.id) && (
+                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 rounded-md flex items-center gap-1">
+                      <CheckCircle2 className="w-2.5 h-2.5" /> Watched
+                    </span>
+                  )}
 
                   {/* Series / Folder */}
                   {video.folder && (

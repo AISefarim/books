@@ -5,9 +5,10 @@ interface AudioPlayerProps {
   url: string;
   title: string;
   onNext?: () => void;
+  onPlay?: () => void;
 }
 
-export function AudioPlayer({ url, title, onNext }: AudioPlayerProps) {
+export function AudioPlayer({ url, title, onNext, onPlay }: AudioPlayerProps) {
   const audioRef = useRef<HTMLAudioElement>(null);
   const [isPlaying, setIsPlaying] = useState(false);
   const [progress, setProgress] = useState(0);
@@ -84,6 +85,7 @@ export function AudioPlayer({ url, title, onNext }: AudioPlayerProps) {
         audioRef.current.pause();
       } else {
         audioRef.current.play();
+        onPlay?.();
       }
       setIsPlaying(!isPlaying);
     }

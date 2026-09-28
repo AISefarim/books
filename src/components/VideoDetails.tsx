@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark, Headphones, MessageCircle, BookOpen } from 'lucide-react';
+import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark, Headphones, MessageCircle, BookOpen, Smartphone, CheckCircle2 } from 'lucide-react';
 import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Video, Book } from '../types';
 import { AudioPlayer } from './AudioPlayer';
 import { PodcastSocialCard } from './PodcastSocialCard';
+import { getDeviceWatchStats, recordDeviceWatch, hasDeviceWatched } from '../lib/deviceTracker';
 
 interface VideoDetailsProps {
   video: Video;
@@ -44,6 +45,31 @@ export function VideoDetails({
   const [commentName, setCommentName] = useState('');
   const [commentText, setCommentText] = useState('');
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+
+  // Device watch count tracking (total videos/podcasts combined watched by this device)
+  const [deviceStats, setDeviceStats] = useState(() => getDeviceWatchStats());
+
+  React.useEffect(() => {
+    // Record this watch on this device
+    const updated = recordDeviceWatch(video.id);
+    setDeviceStats(updated);
+
+    const handleDeviceWatchUpdated = (e: any) => {
+      if (e?.detail) {
+        setDeviceStats({
+          totalWatchedCount: e.detail.totalWatchedCount,
+          watchedIds: e.detail.watchedIds || []
+        });
+      } else {
+        setDeviceStats(getDeviceWatchStats());
+      }
+    };
+
+    window.addEventListener('device-watch-updated', handleDeviceWatchUpdated);
+    return () => {
+      window.removeEventListener('device-watch-updated', handleDeviceWatchUpdated);
+    };
+  }, [video.id]);
 
   React.useEffect(() => {
     window.scrollTo(0, 0);
@@ -208,7 +234,7 @@ ${url}`;
         {/* Right side: Info and Actions */}
         <div className="flex flex-col gap-6 w-full md:w-2/3">
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
               <span className="bg-indigo-950/60 text-indigo-400 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-indigo-500/30">
                 {video.category || (video.type === 'audio' ? 'Podcast' : 'General')}
               </span>
@@ -217,11 +243,20 @@ ${url}`;
                 {new Date(video.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
               </span>
               {video.views !== undefined && (
-                <span className="text-slate-400 text-sm font-medium flex items-center gap-1.5 ml-2">
+                <span className="text-slate-400 text-sm font-medium flex items-center gap-1.5">
                   <Eye className="w-4 h-4" />
                   {video.views} views
                 </span>
               )}
+              {/* Total videos/podcasts watched by this device */}
+              <div 
+                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-xs font-bold tracking-tight shadow-sm"
+                title="Total videos and podcasts watched on this device"
+              >
+                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
+                <span>Device Watched:</span>
+                <span className="font-black text-white bg-emerald-500/20 px-1.5 py-0.2 rounded-md">{deviceStats.totalWatchedCount} total</span>
+              </div>
             </div>
             
             <h1 className="text-3xl md:text-5xl font-black text-slate-50 tracking-tight leading-tight">
@@ -234,7 +269,11 @@ ${url}`;
               <AudioPlayer 
                 url={video.url} 
                 title={video.title} 
-                onNext={upNextVideo ? () => onSelectVideo(upNextVideo) : undefined} 
+                onNext={upNextVideo ? () => onSelectVideo(upNextVideo) : undefined}
+                onPlay={() => {
+                  const updated = recordDeviceWatch(video.id);
+                  setDeviceStats(updated);
+                }}
               />
             </div>
           )}
@@ -300,6 +339,16 @@ ${url}`;
                 {isSaved ? 'Saved' : 'Save'}
               </button>
             )}
+          </div>
+
+          {/* Device Watch Statistics Pill */}
+          <div className="pt-2">
+            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-slate-950/70 border border-slate-800 text-slate-300 text-xs sm:text-sm font-medium">
+              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
+                <Smartphone className="w-3.5 h-3.5" />
+              </div>
+              <span>This device has watched a total of <strong className="text-emerald-400 font-black">{deviceStats.totalWatchedCount}</strong> {deviceStats.totalWatchedCount === 1 ? 'video/podcast' : 'videos/podcasts'}.</span>
+            </div>
           </div>
         </div>
       </div>

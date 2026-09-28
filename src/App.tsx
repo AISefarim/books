@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment, setDoc, writeBatch } from 'firebase/firestore';
 import { ref, deleteObject, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { signInAnonymously, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download, Video as VideoIcon, Cloud, Clock, Folder, Sparkles } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download, Video as VideoIcon, Cloud, Clock, Folder, Sparkles, Smartphone } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -29,6 +29,7 @@ import { CommunityGrowthBanner } from './components/CommunityGrowthBanner';
 import { SyncModal } from './components/SyncModal';
 import { RecentlyUploadedSection } from './components/RecentlyUploadedSection';
 import { NewReleasesSection } from './components/NewReleasesSection';
+import { recordDeviceWatch, getDeviceWatchStats } from './lib/deviceTracker';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -65,6 +66,22 @@ export default function App() {
   const [addExistingSeriesModal, setAddExistingSeriesModal] = useState<string | null>(null);
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [showSyncModal, setShowSyncModal] = useState(false);
+  const [deviceStats, setDeviceStats] = useState(() => getDeviceWatchStats());
+
+  useEffect(() => {
+    const handleDeviceWatchUpdated = (e: any) => {
+      if (e?.detail) {
+        setDeviceStats({
+          totalWatchedCount: e.detail.totalWatchedCount,
+          watchedIds: e.detail.watchedIds || []
+        });
+      } else {
+        setDeviceStats(getDeviceWatchStats());
+      }
+    };
+    window.addEventListener('device-watch-updated', handleDeviceWatchUpdated);
+    return () => window.removeEventListener('device-watch-updated', handleDeviceWatchUpdated);
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('savedBookIds', JSON.stringify(savedBookIds));
@@ -242,6 +259,7 @@ export default function App() {
             setSelectedVideo(videoToOpen);
             setActiveTab('videos');
             setIsDirectLinkEntry(true);
+            recordDeviceWatch(videoToOpen.id);
             updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', videoToOpen.id), {
               views: increment(1)
             }).catch(err => console.error("Failed to increment video views", err));
@@ -591,6 +609,7 @@ export default function App() {
     setSelectedVideo(video);
     setIsDirectLinkEntry(false);
     setPlayingDirectVideo(false);
+    recordDeviceWatch(video.id);
     const url = new URL(window.location.href);
     url.searchParams.set('video', video.id);
     url.searchParams.delete('book');
@@ -1306,7 +1325,7 @@ export default function App() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-7xl mx-auto px-4 md:px-0">
             {!isLoading && (
               <>
-                <div className="mb-6 flex flex-row gap-4 sm:gap-6 items-center justify-between bg-slate-900 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-700 shadow-sm max-w-2xl mx-auto md:mx-0">
+                <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-center justify-between bg-slate-900 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-700 shadow-sm max-w-4xl mx-auto md:mx-0">
                   <div className="flex items-center gap-3 w-auto justify-start">
                     <div className="bg-indigo-500/10 p-2 rounded-xl border border-indigo-500/20 shrink-0 hidden sm:block">
                       <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-400" />
@@ -1316,15 +1335,28 @@ export default function App() {
                       <p className="text-[11px] sm:text-xs text-slate-400 font-medium hidden sm:block">{savedBookIds.length + savedVideoIds.length} saved items</p>
                     </div>
                   </div>
-                  <button
-                    onClick={() => {
-                      setActiveTab('library');
-                      window.scrollTo({ top: 0, behavior: 'smooth' });
-                    }}
-                    className="w-auto px-4 py-1.5 sm:px-5 sm:py-2 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-500/30 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
-                  >
-                    View Library
-                  </button>
+
+                  <div className="flex items-center justify-between sm:justify-end gap-3">
+                    {/* Device Watched Total Counter */}
+                    <div 
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold"
+                      title="Total videos and podcasts you have watched on this device"
+                    >
+                      <Smartphone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
+                      <span className="hidden xs:inline">Device Watched:</span>
+                      <span className="font-black text-white bg-emerald-500/20 px-1.5 py-0.5 rounded-md">{deviceStats.totalWatchedCount} total</span>
+                    </div>
+
+                    <button
+                      onClick={() => {
+                        setActiveTab('library');
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                      }}
+                      className="w-auto px-4 py-1.5 sm:px-5 sm:py-2 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-500/30 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
+                    >
+                      View Library
+                    </button>
+                  </div>
                 </div>
                 <div className="mb-10 space-y-4">
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between">

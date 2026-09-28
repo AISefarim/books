@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical, Play, Eye, Star, Bookmark, Headphones, MessageCircle, Clock } from 'lucide-react';
+import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical, Play, Eye, Star, Bookmark, Headphones, MessageCircle, Clock, CheckCircle2 } from 'lucide-react';
 import { Video } from '../types';
+import { hasDeviceWatched } from '../lib/deviceTracker';
 
 interface VideoCardProps {
   key?: string | number;
@@ -53,6 +54,16 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
     >
       <div className="aspect-square rounded-[1rem] bg-slate-950 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800/50">
         
+        {/* Watched on this device badge indicator */}
+        {hasDeviceWatched(video.id) && (
+          <div className="absolute top-3 left-3 z-30 pointer-events-none">
+            <span className="bg-emerald-950/90 backdrop-blur-md text-emerald-400 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border border-emerald-500/30 shadow-md flex items-center gap-1">
+              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+              Watched
+            </span>
+          </div>
+        )}
+
         {categoryThumbnail ? (
           <>
             <img 
