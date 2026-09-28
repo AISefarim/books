@@ -52,6 +52,7 @@ export interface Video {
   topics?: string[] | string;
   description?: string;
   bookId?: string;
+  series?: string;
 }
 
 export type Media = Video;

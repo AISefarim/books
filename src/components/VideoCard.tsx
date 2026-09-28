@@ -54,13 +54,12 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
     >
       <div className="aspect-square rounded-[1rem] bg-slate-950 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800/50">
         
-        {/* Watched on this device badge indicator with subtle gamification */}
+        {/* Watched on this device badge indicator */}
         {hasDeviceWatched(video.id) && (
           <div className="absolute top-3 left-3 z-30 pointer-events-none">
             <span className="bg-emerald-950/95 backdrop-blur-md text-emerald-300 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-emerald-500/40 shadow-lg flex items-center gap-1.5 ring-1 ring-emerald-400/20">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
               <span>Learned</span>
-              <span className="text-[9px] bg-emerald-500/30 text-emerald-200 px-1 py-0.2 rounded font-black">+1 XP</span>
             </span>
           </div>
         )}

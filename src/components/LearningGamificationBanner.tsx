@@ -52,6 +52,29 @@ export function LearningGamificationBanner({
                 <span className="text-indigo-400 font-black">{deviceStats.totalBooksRead}</span>
                 <span className="text-slate-300 font-medium">Books read</span>
               </span>
+              {deviceStats.todayWatchCount >= 2 ? (
+                <>
+                  <span className="text-slate-600 hidden sm:inline select-none">•</span>
+                  <span 
+                    className="flex items-center gap-1 bg-amber-500/15 text-amber-300 px-2.5 py-1 rounded-xl border border-amber-500/30 text-xs font-black shadow-sm"
+                    title="1.2x multiplier applied to all videos & podcasts watched after the 1st one today"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-amber-400 fill-current" />
+                    <span>1.2x Daily Bonus Active ({deviceStats.todayWatchCount} today)</span>
+                  </span>
+                </>
+              ) : deviceStats.todayWatchCount === 1 ? (
+                <>
+                  <span className="text-slate-600 hidden sm:inline select-none">•</span>
+                  <span 
+                    className="flex items-center gap-1 bg-slate-950/60 text-emerald-400 px-2.5 py-1 rounded-xl border border-slate-800 text-xs font-bold"
+                    title="Next video or podcast today unlocks a 1.2x multiplier!"
+                  >
+                    <Zap className="w-3.5 h-3.5 text-emerald-400" />
+                    <span>Next shiur earns 1.2x bonus today!</span>
+                  </span>
+                </>
+              ) : null}
             </div>
           </div>
         </div>

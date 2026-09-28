@@ -1,12 +1,12 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark, Headphones, MessageCircle, BookOpen, Smartphone, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark, Headphones, MessageCircle, BookOpen, Smartphone, CheckCircle2, Clock, Zap } from 'lucide-react';
 import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Video, Book } from '../types';
 import { AudioPlayer } from './AudioPlayer';
 import { PodcastSocialCard } from './PodcastSocialCard';
 import { LearningGamificationBanner } from './LearningGamificationBanner';
-import { getDeviceWatchStats, recordDeviceWatch, hasDeviceWatched } from '../lib/deviceTracker';
+import { getDeviceWatchStats, recordDeviceWatch, hasDeviceWatched, calculateMediaPoints } from '../lib/deviceTracker';
 
 interface VideoDetailsProps {
   video: Video;
@@ -52,7 +52,7 @@ export function VideoDetails({
 
   React.useEffect(() => {
     // Record this watch on this device
-    const updated = recordDeviceWatch(video.id);
+    const updated = recordDeviceWatch(video.id, video);
     setDeviceStats(updated);
 
     const handleDeviceWatchUpdated = () => {
@@ -245,6 +245,38 @@ ${url}`;
               <span className="bg-indigo-950/60 text-indigo-400 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-indigo-500/30">
                 {video.category || (video.type === 'audio' ? 'Podcast' : 'General')}
               </span>
+              {video.duration && (
+                <span className="text-slate-300 text-xs font-bold flex items-center gap-1.5 bg-slate-800/80 px-2.5 py-1 rounded-lg border border-slate-700">
+                  <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                  <span>{video.duration}</span>
+                </span>
+              )}
+              {(() => {
+                const isPodcast = video.type === 'audio';
+                const calc = calculateMediaPoints(video.type || 'video', video.duration, deviceStats.todayWatchCount >= 1 ? 1 : 0);
+                return (
+                  <>
+                    {isPodcast && calc.isPodcastBonus && (
+                      <span 
+                        className="text-[11px] font-bold text-indigo-300 bg-indigo-500/15 px-2.5 py-1 rounded-lg border border-indigo-500/30 flex items-center gap-1 shadow-sm"
+                        title={`Longer podcast duration (${calc.durationMinutes} min) awards higher base points!`}
+                      >
+                        <Headphones className="w-3.5 h-3.5 text-indigo-400" />
+                        <span>Longer Shiur: +{calc.basePoints} pts</span>
+                      </span>
+                    )}
+                    {deviceStats.todayWatchCount >= 1 && (
+                      <span 
+                        className="text-[11px] font-black text-amber-300 bg-amber-500/15 px-2.5 py-1 rounded-lg border border-amber-500/30 flex items-center gap-1 shadow-sm"
+                        title="1.2x multiplier applied for 2nd+ video/podcast watched today"
+                      >
+                        <Zap className="w-3.5 h-3.5 text-amber-400 fill-current" />
+                        <span>1.2x Daily Bonus Active</span>
+                      </span>
+                    )}
+                  </>
+                );
+              })()}
               <span className="text-slate-400 text-sm font-medium flex items-center gap-1.5">
                 <Calendar className="w-4 h-4" />
                 {new Date(video.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
@@ -279,7 +311,7 @@ ${url}`;
                 title={video.title} 
                 onNext={upNextVideo ? () => onSelectVideo(upNextVideo) : undefined}
                 onPlay={() => {
-                  const updated = recordDeviceWatch(video.id);
+                  const updated = recordDeviceWatch(video.id, video);
                   setDeviceStats(updated);
                 }}
               />
@@ -292,6 +324,10 @@ ${url}`;
                 href={video.url}
                 target="_blank"
                 rel="noopener noreferrer"
+                onClick={() => {
+                  const updated = recordDeviceWatch(video.id, video);
+                  setDeviceStats(updated);
+                }}
                 className="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-700 transition-all shadow-xl hover:shadow-2xl active:scale-95 group"
               >
                 <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" /> Play Now

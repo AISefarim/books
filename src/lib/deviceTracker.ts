@@ -7,9 +7,13 @@ const READ_BOOK_IDS_KEY = 'ai_sefarim_read_book_ids';
 const READ_BOOK_COUNT_KEY = 'ai_sefarim_read_book_count';
 const DOWNLOADED_BOOK_IDS_KEY = 'ai_sefarim_downloaded_book_ids';
 const DOWNLOADED_BOOK_COUNT_KEY = 'ai_sefarim_downloaded_book_count';
+const WATCH_EVENTS_KEY = 'ai_sefarim_watch_events';
+const MEDIA_REGISTRY_KEY = 'ai_sefarim_media_registry';
 
 // XP and Session multipliers:
-// - Video / podcast: +1 session, +10 XP
+// - Video / podcast: +1 session, +10 XP (base)
+// - Longer podcasts: scale up to 50 XP
+// - 2nd+ video/podcast of the day: 1.2x multiplier
 // - EPUB reading: +3 sessions, +30 XP (substantially more than video/podcast)
 // - Book download: +8 sessions, +80 XP (especially high XP rewards)
 export const SESSIONS_PER_MEDIA = 1;
@@ -20,6 +24,27 @@ export const XP_PER_EPUB = 30;
 
 export const SESSIONS_PER_DOWNLOAD = 8;
 export const XP_PER_DOWNLOAD = 80;
+
+export interface WatchEvent {
+  mediaId: string;
+  timestamp: number;
+  dateStr: string; // YYYY-MM-DD
+  mediaType: 'video' | 'audio';
+  duration?: string;
+  durationMinutes: number;
+  basePoints: number;
+  multiplier: number; // 1.0 for 1st, 1.2 for 2nd+
+  points: number;
+  sessionCredit: number; // 1.0 for 1st, 1.2 for 2nd+
+  isPodcastBonus: boolean;
+}
+
+export interface TodayWatchSummary {
+  todayCount: number;
+  multiplierActive: boolean;
+  currentMultiplier: number;
+  todayPoints: number;
+}
 
 export interface DeviceWatchStats {
   totalWatchedCount: number; // Combined total sessions
@@ -33,6 +58,8 @@ export interface DeviceWatchStats {
   readBooksCount: number;
   downloadedBooksCount: number;
   totalBooksRead: number;
+  todayWatchCount: number;
+  isDailyMultiplierActive: boolean;
 }
 
 export interface MilestoneBadge {
@@ -415,6 +442,180 @@ function notifyStatsUpdated() {
   }
 }
 
+export function parseDurationMinutes(duration?: string): number {
+  if (!duration) return 0;
+  const str = duration.trim().toLowerCase();
+  
+  // Format hh:mm:ss or mm:ss
+  if (str.includes(':')) {
+    const parts = str.split(':').map(p => parseFloat(p) || 0);
+    if (parts.length === 3) {
+      return parts[0] * 60 + parts[1] + parts[2] / 60;
+    } else if (parts.length === 2) {
+      return parts[0] + parts[1] / 60;
+    }
+  }
+  
+  // Format "1 hr 20 min" or "45 min" or "1.5 hours"
+  let totalMin = 0;
+  const hrMatch = str.match(/(\d+(?:\.\d+)?)\s*(?:hr|hour|h\b)/);
+  if (hrMatch) {
+    totalMin += parseFloat(hrMatch[1]) * 60;
+  }
+  const minMatch = str.match(/(\d+(?:\.\d+)?)\s*(?:min|m\b)(?!s)/);
+  if (minMatch) {
+    totalMin += parseFloat(minMatch[1]);
+  }
+  const secMatch = str.match(/(\d+(?:\.\d+)?)\s*(?:sec|s\b)/);
+  if (secMatch) {
+    totalMin += parseFloat(secMatch[1]) / 60;
+  }
+  
+  if (totalMin > 0) return totalMin;
+  
+  const plain = parseFloat(str);
+  if (!isNaN(plain)) {
+    return plain > 180 ? plain / 60 : plain;
+  }
+  
+  return 0;
+}
+
+export function getTodayDateStr(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function calculateMediaPoints(
+  mediaType: 'video' | 'audio',
+  durationStr?: string,
+  watchIndexToday = 0
+): {
+  basePoints: number;
+  multiplier: number;
+  finalPoints: number;
+  sessionCredit: number;
+  isPodcastBonus: boolean;
+  durationMinutes: number;
+} {
+  const durationMinutes = parseDurationMinutes(durationStr);
+  let basePoints = 10;
+  let isPodcastBonus = false;
+
+  // Higher scores for longer podcasts
+  if (mediaType === 'audio') {
+    if (durationMinutes >= 120) {
+      basePoints = 50;
+      isPodcastBonus = true;
+    } else if (durationMinutes >= 90) {
+      basePoints = 40;
+      isPodcastBonus = true;
+    } else if (durationMinutes >= 75) {
+      basePoints = 35;
+      isPodcastBonus = true;
+    } else if (durationMinutes >= 60) {
+      basePoints = 30;
+      isPodcastBonus = true;
+    } else if (durationMinutes >= 45) {
+      basePoints = 25;
+      isPodcastBonus = true;
+    } else if (durationMinutes >= 30) {
+      basePoints = 20;
+      isPodcastBonus = true;
+    } else if (durationMinutes >= 15) {
+      basePoints = 15;
+      isPodcastBonus = true;
+    } else {
+      basePoints = 10;
+    }
+  }
+
+  // 1.2 multiplier for all videos/podcasts watched after the 1st one of the day
+  // (aka the 2nd video/podcast of the day is 1.2 credit, same with 3rd, 4th etc)
+  const multiplier = watchIndexToday >= 1 ? 1.2 : 1.0;
+  const finalPoints = Math.round(basePoints * multiplier);
+  const sessionCredit = watchIndexToday >= 1 ? 1.2 : 1.0;
+
+  return {
+    basePoints,
+    multiplier,
+    finalPoints,
+    sessionCredit,
+    isPodcastBonus,
+    durationMinutes
+  };
+}
+
+export function saveMediaMeta(id: string, meta: { type?: 'video' | 'audio'; duration?: string }) {
+  try {
+    const raw = localStorage.getItem(MEDIA_REGISTRY_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    map[id] = {
+      type: meta.type || 'video',
+      duration: meta.duration || ''
+    };
+    localStorage.setItem(MEDIA_REGISTRY_KEY, JSON.stringify(map));
+  } catch {
+    // ignore
+  }
+}
+
+export function getMediaMeta(id: string): { type?: 'video' | 'audio'; duration?: string } | null {
+  try {
+    const raw = localStorage.getItem(MEDIA_REGISTRY_KEY);
+    if (!raw) return null;
+    const map = JSON.parse(raw);
+    return map[id] || null;
+  } catch {
+    return null;
+  }
+}
+
+export function registerMediaList(mediaList: Array<{ id: string; type?: 'video' | 'audio'; duration?: string }>) {
+  try {
+    const raw = localStorage.getItem(MEDIA_REGISTRY_KEY);
+    const map = raw ? JSON.parse(raw) : {};
+    for (const item of mediaList) {
+      if (item && item.id) {
+        map[item.id] = {
+          type: item.type || 'video',
+          duration: item.duration || ''
+        };
+      }
+    }
+    localStorage.setItem(MEDIA_REGISTRY_KEY, JSON.stringify(map));
+  } catch {
+    // ignore
+  }
+}
+
+export function getTodayWatchSummary(): TodayWatchSummary {
+  try {
+    const todayStr = getTodayDateStr();
+    const rawEvents = localStorage.getItem(WATCH_EVENTS_KEY);
+    const events: WatchEvent[] = rawEvents ? JSON.parse(rawEvents) : [];
+    const todayEvents = events.filter(e => e.dateStr === todayStr);
+    const todayPoints = todayEvents.reduce((sum, e) => sum + e.points, 0);
+
+    return {
+      todayCount: todayEvents.length,
+      multiplierActive: todayEvents.length >= 1,
+      currentMultiplier: todayEvents.length >= 1 ? 1.2 : 1.0,
+      todayPoints
+    };
+  } catch {
+    return {
+      todayCount: 0,
+      multiplierActive: false,
+      currentMultiplier: 1.0,
+      todayPoints: 0
+    };
+  }
+}
+
 /**
  * Retrieves the device's comprehensive watch and reading stats.
  */
@@ -432,16 +633,53 @@ export function getDeviceWatchStats(): DeviceWatchStats {
     const downloadedBookIds: string[] = rawDownloadIds ? JSON.parse(rawDownloadIds) : [];
     const downloadedBooksCount = Number(localStorage.getItem(DOWNLOADED_BOOK_COUNT_KEY)) || downloadedBookIds.length;
 
-    // Calculate total sessions and total XP
-    const totalSessions =
-      watchedMediaCount * SESSIONS_PER_MEDIA +
-      readBooksCount * SESSIONS_PER_EPUB +
-      downloadedBooksCount * SESSIONS_PER_DOWNLOAD;
+    const rawEvents = localStorage.getItem(WATCH_EVENTS_KEY);
+    const events: WatchEvent[] = rawEvents ? JSON.parse(rawEvents) : [];
+    const todayStr = getTodayDateStr();
+    const todayEvents = events.filter(e => e.dateStr === todayStr);
+    const todayWatchCount = todayEvents.length;
+    const isDailyMultiplierActive = todayWatchCount >= 1;
 
-    const totalXp =
-      watchedMediaCount * XP_PER_MEDIA +
+    let mediaPoints = 0;
+    let mediaSessions = 0;
+    const countedMediaIds = new Set<string>();
+
+    for (const ev of events) {
+      mediaPoints += ev.points || 10;
+      mediaSessions += ev.sessionCredit || 1;
+      countedMediaIds.add(ev.mediaId);
+    }
+
+    // For any media in watchedIds not covered by events (e.g. legacy history):
+    for (const id of watchedIds) {
+      if (!countedMediaIds.has(id)) {
+        const meta = getMediaMeta(id);
+        const calc = calculateMediaPoints(meta?.type || 'video', meta?.duration, 0);
+        mediaPoints += calc.finalPoints;
+        mediaSessions += 1;
+        countedMediaIds.add(id);
+      }
+    }
+
+    // Baseline fallback
+    if (mediaPoints < watchedMediaCount * 10) {
+      mediaPoints = watchedMediaCount * 10;
+    }
+    if (mediaSessions < watchedMediaCount) {
+      mediaSessions = watchedMediaCount;
+    }
+
+    const totalSessions = Math.round(
+      mediaSessions +
+      readBooksCount * SESSIONS_PER_EPUB +
+      downloadedBooksCount * SESSIONS_PER_DOWNLOAD
+    );
+
+    const totalScore = Math.round(
+      mediaPoints +
       readBooksCount * XP_PER_EPUB +
-      downloadedBooksCount * XP_PER_DOWNLOAD;
+      downloadedBooksCount * XP_PER_DOWNLOAD
+    );
 
     const totalBooksRead = Math.max(
       readBooksCount + downloadedBooksCount,
@@ -451,15 +689,17 @@ export function getDeviceWatchStats(): DeviceWatchStats {
     return {
       totalWatchedCount: totalSessions,
       totalSessions,
-      totalXp,
-      totalScore: totalXp,
+      totalXp: totalScore,
+      totalScore,
       watchedIds,
       readBookIds,
       downloadedBookIds,
       watchedMediaCount,
       readBooksCount,
       downloadedBooksCount,
-      totalBooksRead
+      totalBooksRead,
+      todayWatchCount,
+      isDailyMultiplierActive
     };
   } catch (err) {
     console.error('Failed to read device stats from localStorage', err);
@@ -474,7 +714,9 @@ export function getDeviceWatchStats(): DeviceWatchStats {
       watchedMediaCount: 0,
       readBooksCount: 0,
       downloadedBooksCount: 0,
-      totalBooksRead: 0
+      totalBooksRead: 0,
+      todayWatchCount: 0,
+      isDailyMultiplierActive: false
     };
   }
 }
@@ -537,19 +779,72 @@ export function getGamificationStats(totalCount: number, optionalXp?: number): G
 }
 
 /**
- * Records a video/podcast watch (+1 session, +10 XP).
+ * Records a video/podcast watch (+1 session, +10 XP base, bonus for longer podcasts, 1.2x for 2nd+ of the day).
  */
-export function recordDeviceWatch(mediaId: string): DeviceWatchStats {
+export function recordDeviceWatch(
+  mediaId: string,
+  meta?: { type?: 'video' | 'audio'; duration?: string } | any
+): DeviceWatchStats {
   try {
-    const current = getDeviceWatchStats();
-    let newCount = current.watchedMediaCount;
-    let newIds = [...current.watchedIds];
+    const todayStr = getTodayDateStr();
+    const rawEvents = localStorage.getItem(WATCH_EVENTS_KEY);
+    let events: WatchEvent[] = rawEvents ? JSON.parse(rawEvents) : [];
 
-    if (!newIds.includes(mediaId)) {
-      newIds.push(mediaId);
-      newCount += 1;
-      localStorage.setItem(WATCHED_MEDIA_IDS_KEY, JSON.stringify(newIds));
-      localStorage.setItem(WATCHED_COUNT_KEY, String(newCount));
+    let mediaType: 'video' | 'audio' = 'video';
+    let duration = '';
+    if (meta) {
+      if (meta.type === 'audio' || meta.type === 'video') {
+        mediaType = meta.type;
+      }
+      if (typeof meta.duration === 'string') {
+        duration = meta.duration;
+      }
+      saveMediaMeta(mediaId, { type: mediaType, duration });
+    } else {
+      const cached = getMediaMeta(mediaId);
+      if (cached) {
+        mediaType = cached.type || 'video';
+        duration = cached.duration || '';
+      }
+    }
+
+    // Check how many videos/podcasts watched today
+    const todayEvents = events.filter(e => e.dateStr === todayStr);
+    const existingToday = todayEvents.find(e => e.mediaId === mediaId);
+
+    // If not yet watched today, record the watch event
+    if (!existingToday) {
+      const watchIndexToday = todayEvents.length; // 0 for 1st, 1 for 2nd (1.2x), etc.
+      const calc = calculateMediaPoints(mediaType, duration, watchIndexToday);
+
+      const newEvent: WatchEvent = {
+        mediaId,
+        timestamp: Date.now(),
+        dateStr: todayStr,
+        mediaType,
+        duration,
+        durationMinutes: calc.durationMinutes,
+        basePoints: calc.basePoints,
+        multiplier: calc.multiplier,
+        points: calc.finalPoints,
+        sessionCredit: calc.sessionCredit,
+        isPodcastBonus: calc.isPodcastBonus
+      };
+
+      events.push(newEvent);
+      localStorage.setItem(WATCH_EVENTS_KEY, JSON.stringify(events));
+    }
+
+    // Also maintain unique watched IDs
+    const rawIds = localStorage.getItem(WATCHED_MEDIA_IDS_KEY);
+    let watchedIds: string[] = rawIds ? JSON.parse(rawIds) : [];
+    let count = Number(localStorage.getItem(WATCHED_COUNT_KEY)) || watchedIds.length;
+
+    if (!watchedIds.includes(mediaId)) {
+      watchedIds.push(mediaId);
+      count += 1;
+      localStorage.setItem(WATCHED_MEDIA_IDS_KEY, JSON.stringify(watchedIds));
+      localStorage.setItem(WATCHED_COUNT_KEY, String(count));
     }
 
     notifyStatsUpdated();

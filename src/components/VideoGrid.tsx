@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Video } from '../types';
 import { VideoCard } from './VideoCard';
-import { PlayCircle, Folder, Plus, ArrowLeft, CheckSquare, Square, Upload, FolderPlus, ChevronRight } from 'lucide-react';
+import { PlayCircle, Folder, Plus, ArrowLeft, CheckSquare, Square, Upload, FolderPlus, ChevronRight, Star, Sparkles } from 'lucide-react';
+import { FeaturedCategorySeries } from './FeaturedCategorySeries';
 import {
   DndContext,
   closestCenter,
@@ -60,6 +61,9 @@ interface VideoGridProps {
   onToggleSave?: (id: string, e: React.MouseEvent) => void;
   disableFolders?: boolean;
   mediaLabel?: 'Video' | 'Audio' | 'Podcast' | 'Media';
+  currentCategory?: string | null;
+  featuredSeries?: string | null;
+  onSetFeaturedSeries?: (seriesName: string | null) => void;
 }
 
 function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo, categoryThumbnail, isSaved, onToggleSave, isSelected, onToggleSelect }: any) {
@@ -128,7 +132,7 @@ function getMediaBreakdownText(mediaItems: Video[], mediaLabel = 'Media') {
   return `0 ${mediaLabel}s`;
 }
 
-function SortableFolderWrapper({ folder, items, folderThumbnails, isAdmin, onUpdateFolderThumbnail, onSelectFolder, mediaLabel = 'Media' }: any) {
+function SortableFolderWrapper({ folder, items, folderThumbnails, isAdmin, onUpdateFolderThumbnail, onSelectFolder, mediaLabel = 'Media', isFeatured = false, onToggleFeature, currentCategory }: any) {
   const {
     attributes,
     listeners,
@@ -153,19 +157,52 @@ function SortableFolderWrapper({ folder, items, folderThumbnails, isAdmin, onUpd
     <div ref={setNodeRef} style={style} {...attributes}>
       <div 
         onClick={() => onSelectFolder(folder)}
-        className="group cursor-pointer flex flex-col h-full"
+        className={`group cursor-pointer flex flex-col h-full rounded-[2.2rem] p-1.5 transition-all duration-300 ${
+          isFeatured ? 'bg-amber-500/10 border-2 border-amber-500/50 shadow-xl shadow-amber-500/10 ring-2 ring-amber-500/20' : ''
+        }`}
       >
-        <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-slate-950 mb-4 shadow-sm border border-slate-800 group-hover:shadow-2xl group-hover:-translate-y-2 hover:border-indigo-100 transition-all duration-300">
+        <div className={`relative aspect-square rounded-[2rem] overflow-hidden bg-slate-950 mb-4 shadow-sm border ${
+          isFeatured ? 'border-amber-500/50' : 'border-slate-800'
+        } group-hover:shadow-2xl group-hover:-translate-y-2 hover:border-indigo-100 transition-all duration-300`}>
+          {/* Featured Badge */}
+          {isFeatured && (
+            <div className="absolute top-3.5 left-3.5 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-lg shadow-amber-500/40 backdrop-blur border border-amber-300 pointer-events-none">
+              <Sparkles className="w-3 h-3 fill-slate-950" />
+              <span>Featured</span>
+            </div>
+          )}
+
           {isAdmin && (
             <div 
               {...listeners} 
               onClick={(e) => e.stopPropagation()} 
-              className="absolute top-4 left-4 z-[60] bg-slate-900/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-700 cursor-grab hover:scale-110 transition-all text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 active:cursor-grabbing"
+              className={`absolute top-4 ${isFeatured ? 'left-24' : 'left-4'} z-[60] bg-slate-900/90 backdrop-blur rounded-lg p-1.5 shadow-sm border border-slate-700 cursor-grab hover:scale-110 transition-all text-slate-400 hover:text-indigo-600 opacity-0 group-hover:opacity-100 active:cursor-grabbing`}
               title="Drag to reorder"
             >
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="12" r="1"/><circle cx="9" cy="5" r="1"/><circle cx="9" cy="19" r="1"/><circle cx="15" cy="12" r="1"/><circle cx="15" cy="5" r="1"/><circle cx="15" cy="19" r="1"/></svg>
             </div>
           )}
+
+          {isAdmin && onToggleFeature && (
+            <div className={`absolute top-4 ${isFeatured ? 'right-14' : 'left-14'} z-[60]`}>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onToggleFeature(isFeatured ? null : folder);
+                }}
+                className={`p-2 rounded-xl backdrop-blur-md shadow-sm transition-all flex items-center justify-center ${
+                  isFeatured 
+                    ? 'bg-amber-500 text-slate-950 hover:bg-rose-500 hover:text-white' 
+                    : 'bg-slate-900/90 text-slate-400 hover:text-amber-400 hover:bg-slate-800 opacity-0 group-hover:opacity-100'
+                }`}
+                title={isFeatured ? `Unfeature series from ${currentCategory || 'category'}` : `Feature this series in ${currentCategory || 'category'}`}
+              >
+                <Star className={`w-4 h-4 ${isFeatured ? 'fill-slate-950 text-slate-950' : 'text-slate-300 hover:text-amber-400'}`} />
+              </button>
+            </div>
+          )}
+
           {isAdmin && onUpdateFolderThumbnail && (
             <div className="absolute top-4 right-4 z-[60]">
               <label 
@@ -190,17 +227,22 @@ function SortableFolderWrapper({ folder, items, folderThumbnails, isAdmin, onUpd
             <img src={folderThumbnails[folder]} alt={displayName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 pointer-events-none" />
           ) : (
             <div className="absolute inset-0 bg-slate-950/50 group-hover:bg-indigo-50/10 transition-colors duration-500 pointer-events-none flex items-center justify-center">
-              <div className="w-24 h-24 bg-indigo-50/80 backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border border-indigo-100/50 group-hover:border-indigo-600 shadow-inner">
-                <Folder className="w-10 h-10 text-indigo-400 group-hover:text-white transition-colors duration-300 pointer-events-none" />
+              <div className={`w-24 h-24 ${isFeatured ? 'bg-amber-500/20 border-amber-400/50' : 'bg-indigo-50/80 border-indigo-100/50'} backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border shadow-inner`}>
+                <Folder className={`w-10 h-10 ${isFeatured ? 'text-amber-300' : 'text-indigo-400'} group-hover:text-white transition-colors duration-300 pointer-events-none`} />
               </div>
             </div>
           )}
         </div>
         
         <div className="px-2">
-          <h3 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors break-words hyphens-auto">
-            {displayName}
-          </h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight leading-tight group-hover:text-indigo-400 transition-colors break-words hyphens-auto">
+              {displayName}
+            </h3>
+            {isFeatured && (
+              <span className="text-amber-400" title="Featured Series">⭐</span>
+            )}
+          </div>
           <p className="text-xs font-bold mt-2 uppercase tracking-widest text-slate-400">
             {getMediaBreakdownText(folderItems, mediaLabel)}
           </p>
@@ -287,7 +329,28 @@ function SubfolderCard({
   );
 }
 
-export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSelectVideo, onReorder, onFolderReorder, onMoveToFolder, categoryThumbnails, folderThumbnails, folderOrder, onUpdateFolderThumbnail, savedVideoIds = [], onToggleSave, disableFolders, mediaLabel = 'Video' }: VideoGridProps) {
+export function VideoGrid({ 
+  videos, 
+  isLoading, 
+  isAdmin, 
+  onEdit, 
+  onDelete, 
+  onSelectVideo, 
+  onReorder, 
+  onFolderReorder, 
+  onMoveToFolder, 
+  categoryThumbnails, 
+  folderThumbnails, 
+  folderOrder, 
+  onUpdateFolderThumbnail, 
+  savedVideoIds = [], 
+  onToggleSave, 
+  disableFolders, 
+  mediaLabel = 'Video',
+  currentCategory,
+  featuredSeries,
+  onSetFeaturedSeries
+}: VideoGridProps) {
   const [items, setItems] = useState(videos);
   const [selectedFolder, setSelectedFolder] = useState<string | null>(null);
   const [selectedSubfolder, setSelectedSubfolder] = useState<string | null>(null);
@@ -318,6 +381,9 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
       if (idxB === -1) return -1;
       return idxA - idxB;
     });
+  } else if (featuredSeries && allFolders.includes(featuredSeries)) {
+    // If no custom manual reorder, put featured series first
+    allFolders = [featuredSeries, ...allFolders.filter(f => f !== featuredSeries)];
   }
 
   // Items in active main folder
@@ -425,9 +491,15 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
   if (selectedFolder === null && !disableFolders) {
     const looseVideos = items.filter(v => !getFolderHierarchy(v).folder);
     
+    // Check if there is a featured series for the current category
+    const featuredEpisodes = (featuredSeries && currentCategory)
+      ? items.filter(v => getFolderHierarchy(v).folder === featuredSeries || (v.series && v.series === featuredSeries))
+      : [];
+    
     const foldersGrid = (
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {allFolders.map(f => {
+          const isFeatured = f === featuredSeries;
           if (isAdmin && onFolderReorder) {
             return (
               <SortableFolderWrapper
@@ -439,6 +511,9 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
                 mediaLabel={mediaLabel}
                 onUpdateFolderThumbnail={onUpdateFolderThumbnail}
                 onSelectFolder={setSelectedFolder}
+                isFeatured={isFeatured}
+                onToggleFeature={onSetFeaturedSeries}
+                currentCategory={currentCategory}
               />
             );
           }
@@ -450,9 +525,41 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
             <div 
               key={f}
               onClick={() => setSelectedFolder(f)}
-              className="group cursor-pointer flex flex-col h-full"
+              className={`group cursor-pointer flex flex-col h-full rounded-[2.2rem] p-1.5 transition-all duration-300 ${
+                isFeatured ? 'bg-amber-500/10 border-2 border-amber-500/50 shadow-xl shadow-amber-500/10 ring-2 ring-amber-500/20' : ''
+              }`}
             >
-              <div className="relative aspect-square rounded-[2rem] overflow-hidden bg-slate-950 mb-4 shadow-sm border border-slate-800 group-hover:shadow-2xl group-hover:-translate-y-2 hover:border-indigo-100 transition-all duration-300">
+              <div className={`relative aspect-square rounded-[2rem] overflow-hidden bg-slate-950 mb-4 shadow-sm border ${
+                isFeatured ? 'border-amber-500/50' : 'border-slate-800'
+              } group-hover:shadow-2xl group-hover:-translate-y-2 hover:border-indigo-100 transition-all duration-300`}>
+                {/* Featured Badge */}
+                {isFeatured && (
+                  <div className="absolute top-3.5 left-3.5 z-20 flex items-center gap-1 px-2.5 py-1 rounded-full bg-gradient-to-r from-amber-500 to-amber-600 text-slate-950 font-black text-[10px] uppercase tracking-wider shadow-lg shadow-amber-500/40 backdrop-blur border border-amber-300 pointer-events-none">
+                    <Sparkles className="w-3 h-3 fill-slate-950" />
+                    <span>Featured</span>
+                  </div>
+                )}
+
+                {isAdmin && onSetFeaturedSeries && (
+                  <div className={`absolute top-4 ${isFeatured ? 'right-14' : 'left-4'} z-[60]`}>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSetFeaturedSeries(isFeatured ? null : f);
+                      }}
+                      className={`p-2 rounded-xl backdrop-blur-md shadow-sm transition-all flex items-center justify-center ${
+                        isFeatured 
+                          ? 'bg-amber-500 text-slate-950 hover:bg-rose-500 hover:text-white' 
+                          : 'bg-slate-900/90 text-slate-400 hover:text-amber-400 hover:bg-slate-800 opacity-0 group-hover:opacity-100'
+                      }`}
+                      title={isFeatured ? `Unfeature series from ${currentCategory || 'category'}` : `Feature this series in ${currentCategory || 'category'}`}
+                    >
+                      <Star className={`w-4 h-4 ${isFeatured ? 'fill-slate-950 text-slate-950' : 'text-slate-300 hover:text-amber-400'}`} />
+                    </button>
+                  </div>
+                )}
+
                 {isAdmin && onUpdateFolderThumbnail && (
                   <div className="absolute top-4 right-4 z-[60]">
                     <label 
@@ -477,17 +584,22 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
                   <img src={folderThumbnails[f]} alt={displayName} className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105 pointer-events-none" />
                 ) : (
                   <div className="absolute inset-0 bg-slate-950/50 group-hover:bg-indigo-50/10 transition-colors duration-500 pointer-events-none flex items-center justify-center">
-                    <div className="w-24 h-24 bg-indigo-50/80 backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border border-indigo-100/50 group-hover:border-indigo-600 shadow-inner">
-                      <Folder className="w-10 h-10 text-indigo-400 group-hover:text-white transition-colors duration-300 pointer-events-none" />
+                    <div className={`w-24 h-24 ${isFeatured ? 'bg-amber-500/20 border-amber-400/50' : 'bg-indigo-50/80 border-indigo-100/50'} backdrop-blur rounded-full flex items-center justify-center group-hover:bg-indigo-600 group-hover:scale-110 transition-all duration-500 border shadow-inner`}>
+                      <Folder className={`w-10 h-10 ${isFeatured ? 'text-amber-300' : 'text-indigo-400'} group-hover:text-white transition-colors duration-300 pointer-events-none`} />
                     </div>
                   </div>
                 )}
               </div>
               
               <div className="px-2">
-                <h3 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight leading-tight group-hover:text-indigo-600 transition-colors break-words hyphens-auto">
-                  {displayName}
-                </h3>
+                <div className="flex items-center gap-1.5">
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight leading-tight group-hover:text-indigo-400 transition-colors break-words hyphens-auto">
+                    {displayName}
+                  </h3>
+                  {isFeatured && (
+                    <span className="text-amber-400" title="Featured Series">⭐</span>
+                  )}
+                </div>
                 <p className="text-xs font-bold mt-2 uppercase tracking-widest text-slate-400">
                   {getMediaBreakdownText(folderItems, mediaLabel)}
                 </p>
@@ -499,9 +611,73 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
     );
 
     return (
-      <div className="space-y-12 animate-in fade-in zoom-in-95 duration-300">
+      <div className="space-y-10 animate-in fade-in zoom-in-95 duration-300">
+        {/* Prominent Featured Series Banner in Current Category */}
+        {currentCategory && featuredSeries && featuredEpisodes.length > 0 && (
+          <FeaturedCategorySeries
+            seriesName={featuredSeries}
+            category={currentCategory}
+            episodes={featuredEpisodes}
+            thumbnail={folderThumbnails?.[featuredSeries] || categoryThumbnails?.[currentCategory]}
+            isAdmin={isAdmin}
+            onSelectVideo={onSelectVideo}
+            onExploreSeries={(series) => setSelectedFolder(series)}
+            onUnfeature={isAdmin ? () => onSetFeaturedSeries?.(null) : undefined}
+            onUpdateThumbnail={onUpdateFolderThumbnail}
+          />
+        )}
+
+        {/* Admin Bar to Select/Change Featured Series in Category */}
+        {isAdmin && currentCategory && allFolders.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 sm:p-4 rounded-2xl bg-slate-900/90 border border-slate-800 text-xs shadow-sm">
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400 shrink-0">
+                <Star className="w-3.5 h-3.5 fill-amber-400" />
+              </div>
+              <div>
+                <span className="font-bold text-slate-300">Featured Series in <strong className="text-white">{currentCategory}</strong>: </span>
+                <span className="font-black text-amber-300 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
+                  {featuredSeries || 'None Selected'}
+                </span>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <select
+                value={featuredSeries || ''}
+                onChange={(e) => onSetFeaturedSeries?.(e.target.value ? e.target.value : null)}
+                className="bg-slate-800 text-white font-bold text-xs px-3 py-2 rounded-xl border border-slate-700 outline-none focus:ring-2 focus:ring-amber-500 cursor-pointer"
+              >
+                <option value="">No Featured Series</option>
+                {allFolders.map(f => (
+                  <option key={f} value={f}>
+                    {f} {f === featuredSeries ? '⭐ (Current Featured)' : ''}
+                  </option>
+                ))}
+              </select>
+              {featuredSeries && (
+                <button
+                  type="button"
+                  onClick={() => onSetFeaturedSeries?.(null)}
+                  className="px-3 py-2 rounded-xl bg-slate-800 hover:bg-rose-500/20 text-slate-400 hover:text-rose-300 border border-slate-700 font-bold transition-colors"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
         {allFolders.length > 0 && (
           <div>
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-black text-slate-200 tracking-tight flex items-center gap-2">
+                <Folder className="w-4 h-4 text-indigo-400" />
+                <span>All Series & Folders in {currentCategory || 'Category'}</span>
+              </h3>
+              <span className="text-xs font-bold text-slate-400">
+                {allFolders.length} {allFolders.length === 1 ? 'Series' : 'Series / Folders'}
+              </span>
+            </div>
             {isAdmin && onFolderReorder ? (
               <DndContext 
                 sensors={sensors}
@@ -655,8 +831,14 @@ export function VideoGrid({ videos, isLoading, isAdmin, onEdit, onDelete, onSele
                   >
                     <ArrowLeft className="w-3.5 h-3.5" /> All Folders
                   </button>
-                  <h2 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight px-2 border-l-2 border-slate-700">
-                    {selectedFolder || 'Other'}
+                  <h2 className="text-xl sm:text-2xl font-black text-slate-100 tracking-tight px-2 border-l-2 border-slate-700 flex items-center gap-2.5">
+                    <span>{selectedFolder || 'Other'}</span>
+                    {featuredSeries && selectedFolder === featuredSeries && (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[10px] font-black uppercase tracking-wider">
+                        <Sparkles className="w-3 h-3 text-amber-400" />
+                        Featured Series
+                      </span>
+                    )}
                   </h2>
                   {currentSubfolders.length > 0 && (
                     <span className="text-xs font-bold text-slate-400 bg-slate-900 px-3 py-1 rounded-full border border-slate-800">

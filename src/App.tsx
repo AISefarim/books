@@ -30,7 +30,7 @@ import { SyncModal } from './components/SyncModal';
 import { RecentlyUploadedSection } from './components/RecentlyUploadedSection';
 import { NewReleasesSection } from './components/NewReleasesSection';
 import { LearningGamificationBanner } from './components/LearningGamificationBanner';
-import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats } from './lib/deviceTracker';
+import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats, registerMediaList } from './lib/deviceTracker';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -51,7 +51,18 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
-  const [siteSettings, setSiteSettings] = useState<{ bannerUrl?: string, logoUrl?: string, videoCategories?: string[], videoCategoryThumbnails?: Record<string, string>, welcomeVideoUrl?: string, videoFolderThumbnails?: Record<string, string>, videoFolderOrder?: string[], seriesThumbnails?: Record<string, string>, seriesOrder?: string[] }>({});
+  const [siteSettings, setSiteSettings] = useState<{ 
+    bannerUrl?: string, 
+    logoUrl?: string, 
+    videoCategories?: string[], 
+    videoCategoryThumbnails?: Record<string, string>, 
+    welcomeVideoUrl?: string, 
+    videoFolderThumbnails?: Record<string, string>, 
+    videoFolderOrder?: string[], 
+    seriesThumbnails?: Record<string, string>, 
+    seriesOrder?: string[],
+    categoryFeaturedSeries?: Record<string, string>
+  }>({});
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [isPlayingWelcome, setIsPlayingWelcome] = useState(false);
   const [isDirectLinkEntry, setIsDirectLinkEntry] = useState(false);
@@ -214,6 +225,7 @@ export default function App() {
         return (b.createdAt || 0) - (a.createdAt || 0);
       });
       setVideos(mediaDocs);
+      registerMediaList(mediaDocs);
 
       const audioDocs = mediaDocs.filter(m => m.type === 'audio') as unknown as Audio[];
       setAudios(audioDocs);
@@ -257,7 +269,7 @@ export default function App() {
             setSelectedVideo(videoToOpen);
             setActiveTab('videos');
             setIsDirectLinkEntry(true);
-            recordDeviceWatch(videoToOpen.id);
+            recordDeviceWatch(videoToOpen.id, videoToOpen);
             updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', videoToOpen.id), {
               views: increment(1)
             }).catch(err => console.error("Failed to increment video views", err));
@@ -406,6 +418,27 @@ export default function App() {
     } catch (err: any) {
       console.error(err);
       showStatus(`Failed to update folder thumbnail: ${err.message}`, 'error');
+    }
+  };
+
+  const handleSetCategoryFeaturedSeries = async (category: string, seriesName: string | null) => {
+    try {
+      const current = siteSettings.categoryFeaturedSeries || {};
+      const updated = { ...current };
+      if (seriesName && seriesName.trim()) {
+        updated[category] = seriesName.trim();
+      } else {
+        delete updated[category];
+      }
+      await setDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', '_site_settings_'), {
+        categoryFeaturedSeries: updated,
+        isSettingsDoc: true
+      }, { merge: true });
+      setSiteSettings(prev => ({ ...prev, categoryFeaturedSeries: updated }));
+      showStatus(seriesName ? `Featured "${seriesName}" in ${category}!` : `Removed featured series from ${category}`, 'success');
+    } catch (err: any) {
+      console.error("Failed to update featured series:", err);
+      showStatus(`Failed to update featured series: ${err.message}`, 'error');
     }
   };
 
@@ -612,7 +645,7 @@ export default function App() {
     setSelectedVideo(video);
     setIsDirectLinkEntry(false);
     setPlayingDirectVideo(false);
-    recordDeviceWatch(video.id);
+    recordDeviceWatch(video.id, video);
     const url = new URL(window.location.href);
     url.searchParams.set('video', video.id);
     url.searchParams.delete('book');
@@ -1587,6 +1620,13 @@ export default function App() {
                   onToggleSave={toggleSaveVideo}
                   disableFolders={selectedCategory === 'Top Rated' || selectedCategory === 'Recently Uploaded'}
                   mediaLabel="Media"
+                  currentCategory={selectedCategory}
+                  featuredSeries={selectedCategory ? siteSettings.categoryFeaturedSeries?.[selectedCategory] : undefined}
+                  onSetFeaturedSeries={(series) => {
+                    if (selectedCategory) {
+                      handleSetCategoryFeaturedSeries(selectedCategory, series);
+                    }
+                  }}
                 />
               </>
             )}

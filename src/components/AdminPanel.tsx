@@ -677,7 +677,7 @@ ${shareUrl}`;
                 </div>
 
                 <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Folder</label>
+                  <label className="text-xs font-black uppercase tracking-widest text-slate-400">Series / Folder (Optional)</label>
                   <select
                     name="folder_select"
                     value={selectedFolder}
@@ -692,12 +692,12 @@ ${shareUrl}`;
                       <option value="" disabled>Select Category first...</option>
                     ) : (
                       <>
-                        <option value="" disabled>Select Folder... (Optional)</option>
-                        <option value="_none_">No Folder (Top-level in {effectiveCategory})</option>
+                        <option value="" disabled>Select Series / Folder... (Optional)</option>
+                        <option value="_none_">No Series/Folder (Top-level in {effectiveCategory})</option>
                         {categoryMediaFolders.map(folder => (
                           <option key={folder} value={folder}>{folder}</option>
                         ))}
-                        <option value="new">+ Create New Folder</option>
+                        <option value="new">+ Create New Series / Folder</option>
                       </>
                     )}
                   </select>
@@ -709,7 +709,7 @@ ${shareUrl}`;
                       value={newFolderInput}
                       onChange={(e) => setNewFolderInput(e.target.value)}
                       className="w-full p-4 rounded-2xl border-none ring-1 ring-slate-700 focus:ring-4 focus:ring-indigo-500/20 outline-none transition-all font-bold bg-slate-900 text-slate-100 animate-in slide-in-from-top-2"
-                      placeholder={`Enter new folder name in ${effectiveCategory}`}
+                      placeholder={`Enter new series or folder name in ${effectiveCategory}`}
                       autoFocus
                     />
                   )}

@@ -198,7 +198,7 @@ export function EditVideoModal({ video, videoCategories, videos = [], books = []
               </select>
             </div>
             <div className="space-y-2">
-              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Folder</label>
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Series / Folder</label>
               <div className="space-y-3">
                 <select
                   value={selectedFolder}
@@ -208,12 +208,12 @@ export function EditVideoModal({ video, videoCategories, videos = [], books = []
                   }}
                   className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium appearance-none cursor-pointer"
                 >
-                  <option value="" disabled>Select Folder...</option>
-                  <option value="_none_">No Folder (Top-level Grid)</option>
+                  <option value="" disabled>Select Series / Folder...</option>
+                  <option value="_none_">No Series/Folder (Top-level Grid)</option>
                   {videoFolders.map(f => (
                     <option key={f} value={f}>{f}</option>
                   ))}
-                  <option value="new">+ Create New Folder</option>
+                  <option value="new">+ Create New Series / Folder</option>
                 </select>
                 
                 {selectedFolder === 'new' && (
@@ -222,7 +222,7 @@ export function EditVideoModal({ video, videoCategories, videos = [], books = []
                     required
                     value={newFolderInput}
                     onChange={(e) => setNewFolderInput(e.target.value)}
-                    placeholder="Enter new folder name..."
+                    placeholder="Enter new series or folder name..."
                     className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium animate-in slide-in-from-top-2"
                     autoFocus
                   />
