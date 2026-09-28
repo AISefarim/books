@@ -30,12 +30,15 @@ export function LearningGamificationBanner({
             <Trophy className="w-6 h-6 text-emerald-400" />
           </div>
           <div>
-            <div className="flex items-center gap-2.5">
+            <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
               <h3 className="text-base sm:text-lg font-black text-white tracking-tight leading-snug">
-                Your Score:
+                Your Score
               </h3>
               <span className="inline-block bg-emerald-500/30 text-white px-2.5 py-0.5 rounded-lg border border-emerald-400/50 text-base sm:text-lg font-black shadow-sm">
                 {stats.totalScore ?? stats.totalXp}
+              </span>
+              <span className="text-emerald-300 font-black text-base sm:text-lg tracking-tight">
+                Torah Points
               </span>
             </div>
             
