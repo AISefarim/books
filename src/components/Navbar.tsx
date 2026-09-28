@@ -186,21 +186,6 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
         
         {/* Mobile quick actions */}
         <div className="md:hidden absolute top-3 right-4 flex items-center gap-1.5">
-          {totalViewed !== undefined && (
-            <button
-              type="button"
-              onClick={() => {
-                onTabChange('library');
-                onHome();
-              }}
-              className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 rounded-full border border-emerald-500/30 text-[10px] font-black active:scale-95 shadow-sm"
-              title={`You have viewed ${totalViewed} total videos and podcasts`}
-            >
-              <Eye className="w-3 h-3 text-emerald-400" />
-              <span className="text-white font-black">{totalViewed}</span>
-            </button>
-          )}
-
           {onOpenSync && (
             <button
               type="button"
@@ -232,7 +217,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 <button
                   type="button"
                   onClick={onOpenWhatsAppShare}
-                  className="p-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-full border border-emerald-500/30 active:scale-95"
+                  className="p-1.5 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-full border border-emerald-500/30 active:scale-95 hidden sm:flex"
                   title="Share WhatsApp Group with friends"
                   aria-label="Invite friends to WhatsApp group"
                 >

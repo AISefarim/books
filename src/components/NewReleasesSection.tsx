@@ -114,17 +114,11 @@ export function NewReleasesSection({
                     </span>
                   </div>
 
-                  {/* Read button overlay on hover */}
-                  <div className="absolute inset-0 bg-slate-950/65 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-2">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onRead(book.epub);
-                      }}
-                      className="px-2.5 py-1 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-[11px] uppercase tracking-wider shadow-md transform scale-90 group-hover:scale-100 transition-transform flex items-center gap-1"
-                    >
-                      <BookOpen className="w-3 h-3" /> Read
-                    </button>
+                  {/* View Sefer button overlay on hover (pointer-events-none so click opens book page) */}
+                  <div className="absolute inset-0 bg-slate-950/65 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5 p-2 pointer-events-none">
+                    <div className="px-2.5 py-1 rounded-lg bg-indigo-600 text-white font-bold text-[11px] uppercase tracking-wider shadow-md transform scale-90 group-hover:scale-100 transition-transform flex items-center gap-1">
+                      <BookOpen className="w-3 h-3" /> View Sefer
+                    </div>
                   </div>
                 </div>
 

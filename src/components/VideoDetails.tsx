@@ -250,7 +250,7 @@ ${url}`;
               )}
               {/* Total videos/podcasts watched by this person/device */}
               <div 
-                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300 border-2 border-emerald-500/40 text-xs font-black tracking-tight shadow-md"
+                className="hidden sm:inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300 border-2 border-emerald-500/40 text-xs font-black tracking-tight shadow-md"
                 title="Total videos and podcasts combined that you have viewed on this device"
               >
                 <Eye className="w-4 h-4 text-emerald-400 shrink-0" />

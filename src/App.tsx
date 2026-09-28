@@ -1338,18 +1338,17 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center justify-between sm:justify-end gap-3">
-                    {/* Total Viewed Counter */}
+                    {/* Total Viewed Counter - Desktop only to keep mobile header clean and spacious */}
                     <div 
-                      className="flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-emerald-500/15 border-2 border-emerald-500/35 text-emerald-300 text-xs sm:text-sm font-bold shadow-sm"
+                      className="hidden md:flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-emerald-500/15 border-2 border-emerald-500/35 text-emerald-300 text-xs sm:text-sm font-bold shadow-sm"
                       title="Total combined videos and podcasts you have viewed on this device"
                     >
                       <Eye className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span className="hidden sm:inline">You've Viewed:</span>
-                      <span className="sm:hidden">Viewed:</span>
+                      <span>You've Viewed:</span>
                       <span className="font-black text-white bg-emerald-500/30 px-2 py-0.5 rounded-lg border border-emerald-400/40 text-xs sm:text-sm">
                         {deviceStats.totalWatchedCount} Total
                       </span>
-                      <span className="text-[10px] text-emerald-400 font-semibold hidden md:inline">(videos & podcasts)</span>
+                      <span className="text-[10px] text-emerald-400 font-semibold hidden lg:inline">(videos & podcasts)</span>
                     </div>
 
                     <button
