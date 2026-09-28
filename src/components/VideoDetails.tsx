@@ -248,14 +248,16 @@ ${url}`;
                   {video.views} views
                 </span>
               )}
-              {/* Total videos/podcasts watched by this device */}
+              {/* Total videos/podcasts watched by this person/device */}
               <div 
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/25 text-xs font-bold tracking-tight shadow-sm"
-                title="Total videos and podcasts watched on this device"
+                className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 text-emerald-300 border-2 border-emerald-500/40 text-xs font-black tracking-tight shadow-md"
+                title="Total videos and podcasts combined that you have viewed on this device"
               >
-                <Smartphone className="w-3.5 h-3.5 text-emerald-400" />
-                <span>Device Watched:</span>
-                <span className="font-black text-white bg-emerald-500/20 px-1.5 py-0.2 rounded-md">{deviceStats.totalWatchedCount} total</span>
+                <Eye className="w-4 h-4 text-emerald-400 shrink-0" />
+                <span>Total Viewed by You:</span>
+                <span className="font-black text-white bg-emerald-500/30 px-2 py-0.5 rounded-md border border-emerald-400/40 text-xs">
+                  {deviceStats.totalWatchedCount} {deviceStats.totalWatchedCount === 1 ? 'item' : 'total (videos & podcasts)'}
+                </span>
               </div>
             </div>
             
@@ -341,13 +343,36 @@ ${url}`;
             )}
           </div>
 
-          {/* Device Watch Statistics Pill */}
+          {/* Dedicated Personal Viewing Activity Banner */}
           <div className="pt-2">
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 rounded-2xl bg-slate-950/70 border border-slate-800 text-slate-300 text-xs sm:text-sm font-medium">
-              <div className="w-6 h-6 rounded-lg bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center text-emerald-400 shrink-0">
-                <Smartphone className="w-3.5 h-3.5" />
+            <div className="rounded-2xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-indigo-950/40 border-2 border-emerald-500/35 p-4 sm:p-5 shadow-xl">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3.5">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 shrink-0 shadow-md">
+                    <Eye className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs font-black uppercase tracking-wider text-emerald-400">
+                        Your Personal Viewing Total
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Videos & Podcasts Combined
+                      </span>
+                    </div>
+                    <p className="text-sm sm:text-base font-bold text-white mt-1">
+                      You have viewed a total of <span className="inline-block bg-emerald-500/25 text-emerald-300 px-2.5 py-0.5 rounded-lg border border-emerald-400/40 text-lg sm:text-xl font-black">{deviceStats.totalWatchedCount}</span> {deviceStats.totalWatchedCount === 1 ? 'video/podcast' : 'videos & podcasts'} on this device.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 self-start sm:self-auto bg-slate-950/90 px-3.5 py-2 rounded-xl border border-emerald-500/30 shrink-0 shadow-inner">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span className="text-xs font-bold text-emerald-300">
+                    This {video.type === 'audio' ? 'podcast' : 'video'} is counted
+                  </span>
+                </div>
               </div>
-              <span>This device has watched a total of <strong className="text-emerald-400 font-black">{deviceStats.totalWatchedCount}</strong> {deviceStats.totalWatchedCount === 1 ? 'video/podcast' : 'videos/podcasts'}.</span>
             </div>
           </div>
         </div>

@@ -57,9 +57,9 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
         {/* Watched on this device badge indicator */}
         {hasDeviceWatched(video.id) && (
           <div className="absolute top-3 left-3 z-30 pointer-events-none">
-            <span className="bg-emerald-950/90 backdrop-blur-md text-emerald-400 text-[9px] font-black uppercase tracking-wider px-2 py-1 rounded-lg border border-emerald-500/30 shadow-md flex items-center gap-1">
-              <CheckCircle2 className="w-3 h-3 text-emerald-400" />
-              Watched
+            <span className="bg-emerald-950/95 backdrop-blur-md text-emerald-300 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-emerald-500/40 shadow-lg flex items-center gap-1.5 ring-1 ring-emerald-400/20">
+              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
+              Viewed by you
             </span>
           </div>
         )}

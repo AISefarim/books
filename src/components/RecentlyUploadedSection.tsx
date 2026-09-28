@@ -148,8 +148,8 @@ export function RecentlyUploadedSection({
 
                   {/* Watched on this device indicator */}
                   {hasDeviceWatched(video.id) && (
-                    <span className="text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-1.5 py-0.5 rounded-md flex items-center gap-1">
-                      <CheckCircle2 className="w-2.5 h-2.5" /> Watched
+                    <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/40 px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Viewed by you
                     </span>
                   )}
 

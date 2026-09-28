@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment, setDoc, writeBatch } from 'firebase/firestore';
 import { ref, deleteObject, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { signInAnonymously, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download, Video as VideoIcon, Cloud, Clock, Folder, Sparkles, Smartphone } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download, Video as VideoIcon, Cloud, Clock, Folder, Sparkles, Smartphone, Eye } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -892,6 +892,7 @@ export default function App() {
         totalVideos={videos.filter(v => v.type !== 'audio').length}
         totalPodcasts={videos.filter(v => v.type === 'audio').length}
         totalMedia={videos.length}
+        totalViewed={deviceStats.totalWatchedCount}
         onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
         currentUser={currentUser}
         onOpenSync={() => setShowSyncModal(true)}
@@ -1337,14 +1338,18 @@ export default function App() {
                   </div>
 
                   <div className="flex items-center justify-between sm:justify-end gap-3">
-                    {/* Device Watched Total Counter */}
+                    {/* Total Viewed Counter */}
                     <div 
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/25 text-emerald-400 text-xs font-bold"
-                      title="Total videos and podcasts you have watched on this device"
+                      className="flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-emerald-500/15 border-2 border-emerald-500/35 text-emerald-300 text-xs sm:text-sm font-bold shadow-sm"
+                      title="Total combined videos and podcasts you have viewed on this device"
                     >
-                      <Smartphone className="w-3.5 h-3.5 text-emerald-400 shrink-0" />
-                      <span className="hidden xs:inline">Device Watched:</span>
-                      <span className="font-black text-white bg-emerald-500/20 px-1.5 py-0.5 rounded-md">{deviceStats.totalWatchedCount} total</span>
+                      <Eye className="w-4 h-4 text-emerald-400 shrink-0" />
+                      <span className="hidden sm:inline">You've Viewed:</span>
+                      <span className="sm:hidden">Viewed:</span>
+                      <span className="font-black text-white bg-emerald-500/30 px-2 py-0.5 rounded-lg border border-emerald-400/40 text-xs sm:text-sm">
+                        {deviceStats.totalWatchedCount} Total
+                      </span>
+                      <span className="text-[10px] text-emerald-400 font-semibold hidden md:inline">(videos & podcasts)</span>
                     </div>
 
                     <button
@@ -1582,6 +1587,30 @@ export default function App() {
             </div>
 
             <div className="space-y-16">
+              {/* Personal Viewing Activity & Total Watched Banner */}
+              <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-indigo-950/40 border-2 border-emerald-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 shrink-0 shadow-md">
+                    <Eye className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-black text-white text-base sm:text-lg">Your Personal Viewing Total</h3>
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Videos + Podcasts Combined
+                      </span>
+                    </div>
+                    <p className="text-xs sm:text-sm text-slate-300 mt-1">
+                      You have viewed a total of <strong className="text-emerald-400 font-black text-base">{deviceStats.totalWatchedCount}</strong> {deviceStats.totalWatchedCount === 1 ? 'video or podcast' : 'videos and podcasts'} on this device.
+                    </p>
+                  </div>
+                </div>
+                <div className="px-5 py-2.5 rounded-2xl bg-slate-950/80 border border-emerald-500/30 self-stretch sm:self-auto text-center shrink-0 shadow-inner">
+                  <span className="block text-2xl sm:text-3xl font-black text-emerald-400">{deviceStats.totalWatchedCount}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Viewed</span>
+                </div>
+              </div>
+
               {/* Optional Cross-Device Sync Banner (Non-intrusive) */}
               {!currentUser || currentUser.isAnonymous ? (
                 <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-slate-900 to-indigo-950/40 border border-slate-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-sm">
@@ -1681,6 +1710,46 @@ export default function App() {
                 ) : (
                   <VideoGrid
                     videos={videos.filter(v => savedVideoIds.includes(v.id))}
+                    isLoading={isLoading}
+                    isAdmin={isAdmin}
+                    onEdit={setEditingVideo}
+                    onDelete={handleVideoDelete}
+                    onSelectVideo={handleVideoSelect}
+                    categoryThumbnails={siteSettings.videoCategoryThumbnails}
+                    folderThumbnails={siteSettings.videoFolderThumbnails}
+                    onUpdateFolderThumbnail={handleUpdateFolderThumbnail}
+                    savedVideoIds={savedVideoIds}
+                    onToggleSave={toggleSaveVideo}
+                    mediaLabel="Media"
+                  />
+                )}
+              </div>
+
+              <div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-8 border-b border-slate-800 pb-4">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2.5">
+                      <Eye className="w-5 h-5 text-emerald-400" />
+                      <span>Videos & Podcasts Watched ({videos.filter(v => deviceStats.watchedIds.includes(v.id)).length})</span>
+                    </h2>
+                    <p className="text-xs text-slate-400 font-medium mt-1">
+                      All media you have viewed on this device (combined videos and podcasts)
+                    </p>
+                  </div>
+                  <span className="px-3.5 py-1.5 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 self-start sm:self-auto shadow-sm">
+                    {deviceStats.totalWatchedCount} Total Watched
+                  </span>
+                </div>
+
+                {videos.filter(v => deviceStats.watchedIds.includes(v.id)).length === 0 ? (
+                  <div className="text-center py-12 bg-slate-950 rounded-[2rem] border border-slate-800 border-dashed">
+                    <Eye className="w-12 h-12 text-slate-600 mx-auto mb-4" />
+                    <p className="text-slate-400 font-medium tracking-wide">You haven't viewed any videos or podcasts on this device yet.</p>
+                    <p className="text-xs text-slate-500 mt-1">Whenever you open or listen to any video or podcast, it is counted towards your total and shown here.</p>
+                  </div>
+                ) : (
+                  <VideoGrid
+                    videos={videos.filter(v => deviceStats.watchedIds.includes(v.id))}
                     isLoading={isLoading}
                     isAdmin={isAdmin}
                     onEdit={setEditingVideo}

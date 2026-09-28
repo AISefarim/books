@@ -1,4 +1,4 @@
-import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye } from 'lucide-react';
 import { User } from 'firebase/auth';
 
 interface NavbarProps {
@@ -13,12 +13,13 @@ interface NavbarProps {
   totalVideos?: number;
   totalPodcasts?: number;
   totalMedia?: number;
+  totalViewed?: number;
   onOpenWhatsAppShare?: () => void;
   currentUser?: User | null;
   onOpenSync?: () => void;
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, onOpenWhatsAppShare, currentUser, onOpenSync }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, totalViewed, onOpenWhatsAppShare, currentUser, onOpenSync }: NavbarProps) {
   const mediaCount = totalMedia !== undefined ? totalMedia : (totalVideos + totalPodcasts);
   const isGoogleUser = currentUser && !currentUser.isAnonymous;
   return (
@@ -124,6 +125,23 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
             </>
           )}
 
+          {/* Personal Total Viewed Indicator */}
+          {totalViewed !== undefined && (
+            <button
+              type="button"
+              onClick={() => {
+                onTabChange('library');
+                onHome();
+              }}
+              className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl font-bold transition-all text-xs border border-emerald-500/30 hover:border-emerald-500/50 shadow-sm active:scale-95 group"
+              title={`You have viewed ${totalViewed} total videos and podcasts on this device. Click to view in My Library.`}
+            >
+              <Eye className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
+              <span className="text-white font-black bg-emerald-500/25 px-1.5 py-0.5 rounded-md text-[11px]">{totalViewed}</span>
+              <span className="hidden lg:inline text-emerald-300 font-bold uppercase tracking-wider text-[10px]">Total Viewed</span>
+            </button>
+          )}
+
           {/* Optional Device Sync & Account Button */}
           {onOpenSync && (
             isGoogleUser ? (
@@ -168,6 +186,21 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
         
         {/* Mobile quick actions */}
         <div className="md:hidden absolute top-3 right-4 flex items-center gap-1.5">
+          {totalViewed !== undefined && (
+            <button
+              type="button"
+              onClick={() => {
+                onTabChange('library');
+                onHome();
+              }}
+              className="flex items-center gap-1 px-2.5 py-1 bg-emerald-500/15 text-emerald-400 hover:bg-emerald-500/25 rounded-full border border-emerald-500/30 text-[10px] font-black active:scale-95 shadow-sm"
+              title={`You have viewed ${totalViewed} total videos and podcasts`}
+            >
+              <Eye className="w-3 h-3 text-emerald-400" />
+              <span className="text-white font-black">{totalViewed}</span>
+            </button>
+          )}
+
           {onOpenSync && (
             <button
               type="button"
