@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment, setDoc, writeBatch } from 'firebase/firestore';
 import { ref, deleteObject, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { signInAnonymously, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
-import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download, Video as VideoIcon, Cloud, Clock, Folder, Sparkles, Smartphone, Eye } from 'lucide-react';
+import { ShoppingCart, CheckCircle, AlertCircle, Search, PlayCircle, MessageCircle, Play, X, BookOpen, Star, Bookmark, Share2, Headphones, Download, Video as VideoIcon, Cloud, Clock, Folder, Sparkles, Smartphone, Eye, Trophy } from 'lucide-react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
@@ -30,7 +30,7 @@ import { SyncModal } from './components/SyncModal';
 import { RecentlyUploadedSection } from './components/RecentlyUploadedSection';
 import { NewReleasesSection } from './components/NewReleasesSection';
 import { LearningGamificationBanner } from './components/LearningGamificationBanner';
-import { recordDeviceWatch, getDeviceWatchStats, getGamificationStats } from './lib/deviceTracker';
+import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats } from './lib/deviceTracker';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -70,18 +70,15 @@ export default function App() {
   const [deviceStats, setDeviceStats] = useState(() => getDeviceWatchStats());
 
   useEffect(() => {
-    const handleDeviceWatchUpdated = (e: any) => {
-      if (e?.detail) {
-        setDeviceStats({
-          totalWatchedCount: e.detail.totalWatchedCount,
-          watchedIds: e.detail.watchedIds || []
-        });
-      } else {
-        setDeviceStats(getDeviceWatchStats());
-      }
+    const handleDeviceWatchUpdated = () => {
+      setDeviceStats(getDeviceWatchStats());
     };
     window.addEventListener('device-watch-updated', handleDeviceWatchUpdated);
-    return () => window.removeEventListener('device-watch-updated', handleDeviceWatchUpdated);
+    window.addEventListener('ai-sefarim-stats-updated', handleDeviceWatchUpdated);
+    return () => {
+      window.removeEventListener('device-watch-updated', handleDeviceWatchUpdated);
+      window.removeEventListener('ai-sefarim-stats-updated', handleDeviceWatchUpdated);
+    };
   }, []);
 
   useEffect(() => {
@@ -479,12 +476,15 @@ export default function App() {
 
   const handleDownload = async (url: string, title: string, bookId: string) => {
     try {
+      // Record download for XP and session progress (+80 XP, +8 sessions)
+      recordDeviceBookDownload(bookId);
+
       // Increment download count
       updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', bookId), {
         downloadCount: increment(1)
       }).catch(err => console.error("Failed to increment download count", err));
 
-      showStatus('Preparing file...', 'success');
+      showStatus('Preparing download (+80 XP)...', 'success');
       const response = await fetch(url);
       const blob = await response.blob();
       const file = new File([blob], `${title}.epub`, { type: 'application/epub+zip' });
@@ -587,6 +587,8 @@ export default function App() {
     if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().catch(() => {});
     }
+    // Record book reading for XP and session progress (+30 XP, +3 sessions)
+    recordDeviceBookRead(book.id);
     setReadingBook(book);
     updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', book.id), {
       readCount: increment(1)
@@ -878,6 +880,8 @@ export default function App() {
   const featuredBooks = books.filter(b => b.isFeatured);
 
   const bannerUrl = siteSettings.bannerUrl || "https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr";
+  const hasGamificationCard = activeTab === 'library' || Boolean(selectedVideo);
+  const userStats = getGamificationStats(deviceStats.totalWatchedCount, deviceStats.totalXp);
   
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans">
@@ -897,6 +901,8 @@ export default function App() {
         onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
         currentUser={currentUser}
         onOpenSync={() => setShowSyncModal(true)}
+        showLevelBadge={!hasGamificationCard}
+        userStats={userStats}
       />
 
       {/* Welcome Video Section (Only on main dashboard) */}
@@ -1341,20 +1347,20 @@ export default function App() {
                   <div className="flex items-center justify-between sm:justify-end gap-3">
                     {/* Total Viewed Counter - Desktop only to keep mobile header clean and spacious */}
                     {(() => {
-                      const gStats = getGamificationStats(deviceStats.totalWatchedCount);
+                      const gStats = getGamificationStats(deviceStats.totalWatchedCount, deviceStats.totalXp);
                       return (
                         <div 
                           className="hidden md:flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-emerald-500/15 border-2 border-emerald-500/35 text-emerald-300 text-xs sm:text-sm font-bold shadow-sm"
-                          title={`Level ${gStats.level}: ${gStats.rankTitle} (${gStats.rankHebrew}) - Total combined videos and podcasts you have viewed on this device`}
+                          title={`Level ${gStats.level} of 22: ${gStats.rankTitle} (${gStats.rankHebrew}) · Score: ${gStats.totalScore ?? gStats.totalXp}`}
                         >
-                          <Eye className="w-4 h-4 text-emerald-400 shrink-0" />
-                          <span>You've Viewed:</span>
+                          <Trophy className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span>Score:</span>
                           <span className="font-black text-white bg-emerald-500/30 px-2 py-0.5 rounded-lg border border-emerald-400/40 text-xs sm:text-sm">
-                            {deviceStats.totalWatchedCount} Total
+                            {deviceStats.totalScore ?? deviceStats.totalXp}
                           </span>
-                          <span className="text-[10px] text-emerald-300 font-black px-1.5 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1">
+                          <span className="text-xs sm:text-sm text-emerald-300 font-black px-2 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1.5 font-serif">
                             <span>{gStats.rankIcon}</span>
-                            <span className="hidden xl:inline">{gStats.rankTitle}</span>
+                            <span>{gStats.rankHebrew}</span>
                           </span>
                         </div>
                       );

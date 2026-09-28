@@ -55,20 +55,15 @@ export function VideoDetails({
     const updated = recordDeviceWatch(video.id);
     setDeviceStats(updated);
 
-    const handleDeviceWatchUpdated = (e: any) => {
-      if (e?.detail) {
-        setDeviceStats({
-          totalWatchedCount: e.detail.totalWatchedCount,
-          watchedIds: e.detail.watchedIds || []
-        });
-      } else {
-        setDeviceStats(getDeviceWatchStats());
-      }
+    const handleDeviceWatchUpdated = () => {
+      setDeviceStats(getDeviceWatchStats());
     };
 
     window.addEventListener('device-watch-updated', handleDeviceWatchUpdated);
+    window.addEventListener('ai-sefarim-stats-updated', handleDeviceWatchUpdated);
     return () => {
       window.removeEventListener('device-watch-updated', handleDeviceWatchUpdated);
+      window.removeEventListener('ai-sefarim-stats-updated', handleDeviceWatchUpdated);
     };
   }, [video.id]);
 

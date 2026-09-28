@@ -1,5 +1,6 @@
 import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye } from 'lucide-react';
 import { User } from 'firebase/auth';
+import { GamificationStats } from '../lib/deviceTracker';
 
 interface NavbarProps {
   isAdmin: boolean;
@@ -17,9 +18,11 @@ interface NavbarProps {
   onOpenWhatsAppShare?: () => void;
   currentUser?: User | null;
   onOpenSync?: () => void;
+  showLevelBadge?: boolean;
+  userStats?: GamificationStats;
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, totalViewed, onOpenWhatsAppShare, currentUser, onOpenSync }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, totalViewed, onOpenWhatsAppShare, currentUser, onOpenSync, showLevelBadge = false, userStats }: NavbarProps) {
   const mediaCount = totalMedia !== undefined ? totalMedia : (totalVideos + totalPodcasts);
   const isGoogleUser = currentUser && !currentUser.isAnonymous;
   return (
@@ -60,38 +63,64 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
         </div>
 
         {/* Global Navigation - Center */}
-        <div className="bg-slate-800/90 backdrop-blur p-1 rounded-full flex self-stretch md:self-auto shadow-inner border border-slate-700 overflow-x-auto custom-scrollbar shrink-0">
-          <button
-            onClick={() => {
-              onTabChange('sefarim');
-              onHome();
-            }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
-              activeTab === 'sefarim' 
-                ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40' 
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-            }`}
-          >
-            <Library className="w-4 h-4 shrink-0" />
-            <span>Sefarim</span>
-          </button>
-          <button
-            onClick={() => {
-              onTabChange('media');
-              onHome();
-            }}
-            className={`flex-1 md:flex-none flex items-center justify-center gap-2.5 px-4 sm:px-5 md:px-6 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
-              activeTab === 'media' || activeTab === 'videos' || activeTab === 'podcasts' || activeTab === 'audio'
-                ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40' 
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-            }`}
-          >
-            <div className="flex items-center gap-1.5 shrink-0">
-              <Video className="w-4 h-4 shrink-0" />
-              <Headphones className="w-3.5 h-3.5 shrink-0 opacity-90" />
-            </div>
-            <span>Videos & Podcasts</span>
-          </button>
+        <div className="flex flex-col items-center gap-1.5 self-stretch md:self-auto shrink-0">
+          <div className="bg-slate-800/90 backdrop-blur p-1 rounded-full flex w-full md:w-auto shadow-inner border border-slate-700 overflow-x-auto custom-scrollbar shrink-0">
+            <button
+              onClick={() => {
+                onTabChange('sefarim');
+                onHome();
+              }}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                activeTab === 'sefarim' 
+                  ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40' 
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+              }`}
+            >
+              <Library className="w-4 h-4 shrink-0" />
+              <span>Sefarim</span>
+            </button>
+            <button
+              onClick={() => {
+                onTabChange('media');
+                onHome();
+              }}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2.5 px-4 sm:px-5 md:px-6 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                activeTab === 'media' || activeTab === 'videos' || activeTab === 'podcasts' || activeTab === 'audio'
+                  ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40' 
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+              }`}
+            >
+              <div className="flex items-center gap-1.5 shrink-0">
+                <Video className="w-4 h-4 shrink-0" />
+                <Headphones className="w-3.5 h-3.5 shrink-0 opacity-90" />
+              </div>
+              <span>Videos & Podcasts</span>
+            </button>
+          </div>
+
+          {/* Level display below Sefarim and Videos & Podcasts on pages that don't have the gamification card */}
+          {showLevelBadge && userStats && (
+            <button
+              type="button"
+              onClick={() => {
+                onTabChange('library');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="flex items-center gap-1.5 sm:gap-2 px-3 py-0.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-emerald-500/40 hover:border-emerald-400/60 text-[11px] font-bold text-slate-200 transition-all shadow-sm active:scale-95 group animate-in fade-in duration-300"
+              title={`Level ${userStats.level} of 22: ${userStats.rankTitle} (${userStats.rankHebrew}) · Click to view in My Library`}
+            >
+              <span className="text-sm select-none shrink-0" role="img" aria-label={userStats.rankTitle}>
+                {userStats.rankIcon}
+              </span>
+              <span className="text-white font-black tracking-tight">
+                Level {userStats.level}
+              </span>
+              <span className="text-slate-500 text-[10px] select-none">•</span>
+              <span className="text-emerald-300 font-serif font-black text-xs sm:text-[13px]">
+                {userStats.rankHebrew}
+              </span>
+            </button>
+          )}
         </div>
 
         {/* Action Buttons Section */}
@@ -125,8 +154,8 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
             </>
           )}
 
-          {/* Personal Total Viewed Indicator */}
-          {totalViewed !== undefined && (
+          {/* Personal Total Viewed Indicator (hidden if central level badge is active to prevent duplicate clutter) */}
+          {totalViewed !== undefined && !showLevelBadge && (
             <button
               type="button"
               onClick={() => {
@@ -134,11 +163,11 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 onHome();
               }}
               className="flex items-center gap-2 px-3.5 py-1.5 bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 rounded-xl font-bold transition-all text-xs border border-emerald-500/30 hover:border-emerald-500/50 shadow-sm active:scale-95 group"
-              title={`You have viewed ${totalViewed} total videos and podcasts on this device. Click to view in My Library.`}
+              title={`Your Viewing Total: ${totalViewed} sessions. Click to view in My Library.`}
             >
               <Eye className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
               <span className="text-white font-black bg-emerald-500/25 px-1.5 py-0.5 rounded-md text-[11px]">{totalViewed}</span>
-              <span className="hidden lg:inline text-emerald-300 font-bold uppercase tracking-wider text-[10px]">Total Viewed</span>
+              <span className="hidden lg:inline text-emerald-300 font-bold uppercase tracking-wider text-[10px]">Viewing Total</span>
             </button>
           )}
 

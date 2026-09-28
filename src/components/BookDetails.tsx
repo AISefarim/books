@@ -104,15 +104,19 @@ export function BookDetails({
             <div className="flex flex-wrap gap-4 justify-center md:justify-start pt-4">
               <button
                 onClick={() => onRead(book.epub)}
-                className="bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2.5 transition-all shadow-xl shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 cursor-pointer"
+                className="bg-indigo-600 hover:bg-indigo-500 text-white px-7 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2.5 transition-all shadow-xl shadow-indigo-600/30 hover:shadow-indigo-500/50 hover:-translate-y-0.5 active:translate-y-0 active:scale-95 cursor-pointer"
               >
-                <BookOpen className="w-5 h-5" /> Read Online
+                <BookOpen className="w-5 h-5" />
+                <span>Read Online</span>
+                <span className="text-[10px] bg-white/20 text-indigo-100 px-2 py-0.5 rounded-full font-bold tracking-normal">+30 XP</span>
               </button>
               <button
                 onClick={() => onDownload(book.epub, `${book.title}_eBook`)}
-                className="bg-slate-900/80 hover:bg-slate-800 text-white border border-slate-700/80 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2.5 transition-all shadow-sm active:scale-95 cursor-pointer"
+                className="bg-slate-900/80 hover:bg-slate-800 text-white border border-slate-700/80 px-7 py-4 rounded-2xl text-sm font-black uppercase tracking-widest flex items-center gap-2.5 transition-all shadow-sm active:scale-95 cursor-pointer"
               >
-                <Download className="w-5 h-5" /> Download eBook
+                <Download className="w-5 h-5" />
+                <span>Download eBook</span>
+                <span className="text-[10px] bg-amber-500/20 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold tracking-normal">+80 XP</span>
               </button>
               {book.buyLink && (
                 <a
