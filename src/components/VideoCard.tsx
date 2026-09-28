@@ -54,12 +54,13 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
     >
       <div className="aspect-square rounded-[1rem] bg-slate-950 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800/50">
         
-        {/* Watched on this device badge indicator */}
+        {/* Watched on this device badge indicator with subtle gamification */}
         {hasDeviceWatched(video.id) && (
           <div className="absolute top-3 left-3 z-30 pointer-events-none">
             <span className="bg-emerald-950/95 backdrop-blur-md text-emerald-300 text-[10px] font-black uppercase tracking-wider px-2.5 py-1 rounded-lg border border-emerald-500/40 shadow-lg flex items-center gap-1.5 ring-1 ring-emerald-400/20">
               <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />
-              Viewed by you
+              <span>Learned</span>
+              <span className="text-[9px] bg-emerald-500/30 text-emerald-200 px-1 py-0.2 rounded font-black">+1 XP</span>
             </span>
           </div>
         )}
@@ -159,7 +160,20 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
             {video.views !== undefined && (
               <>
                 <span className="w-1 h-1 rounded-full bg-slate-700 hidden sm:block"></span>
-                <span className="flex items-center gap-1.5 text-indigo-400"><Eye className="w-3.5 h-3.5" />{video.views}</span>
+                <span className="flex items-center gap-1.5 text-indigo-400 font-bold" title={`${video.views} views`}>
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>{video.views}</span>
+                  {video.views >= 50 && (
+                    <span className="text-[10px] text-amber-400 font-black ml-0.5" title="Trending Shiur">
+                      🔥
+                    </span>
+                  )}
+                  {video.views >= 20 && video.views < 50 && (
+                    <span className="text-[10px] text-indigo-300 font-black ml-0.5" title="Popular Shiur">
+                      ⭐
+                    </span>
+                  )}
+                </span>
               </>
             )}
             {video.ratingsCount ? (

@@ -29,7 +29,8 @@ import { CommunityGrowthBanner } from './components/CommunityGrowthBanner';
 import { SyncModal } from './components/SyncModal';
 import { RecentlyUploadedSection } from './components/RecentlyUploadedSection';
 import { NewReleasesSection } from './components/NewReleasesSection';
-import { recordDeviceWatch, getDeviceWatchStats } from './lib/deviceTracker';
+import { LearningGamificationBanner } from './components/LearningGamificationBanner';
+import { recordDeviceWatch, getDeviceWatchStats, getGamificationStats } from './lib/deviceTracker';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -1339,17 +1340,25 @@ export default function App() {
 
                   <div className="flex items-center justify-between sm:justify-end gap-3">
                     {/* Total Viewed Counter - Desktop only to keep mobile header clean and spacious */}
-                    <div 
-                      className="hidden md:flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-emerald-500/15 border-2 border-emerald-500/35 text-emerald-300 text-xs sm:text-sm font-bold shadow-sm"
-                      title="Total combined videos and podcasts you have viewed on this device"
-                    >
-                      <Eye className="w-4 h-4 text-emerald-400 shrink-0" />
-                      <span>You've Viewed:</span>
-                      <span className="font-black text-white bg-emerald-500/30 px-2 py-0.5 rounded-lg border border-emerald-400/40 text-xs sm:text-sm">
-                        {deviceStats.totalWatchedCount} Total
-                      </span>
-                      <span className="text-[10px] text-emerald-400 font-semibold hidden lg:inline">(videos & podcasts)</span>
-                    </div>
+                    {(() => {
+                      const gStats = getGamificationStats(deviceStats.totalWatchedCount);
+                      return (
+                        <div 
+                          className="hidden md:flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-emerald-500/15 border-2 border-emerald-500/35 text-emerald-300 text-xs sm:text-sm font-bold shadow-sm"
+                          title={`Level ${gStats.level}: ${gStats.rankTitle} (${gStats.rankHebrew}) - Total combined videos and podcasts you have viewed on this device`}
+                        >
+                          <Eye className="w-4 h-4 text-emerald-400 shrink-0" />
+                          <span>You've Viewed:</span>
+                          <span className="font-black text-white bg-emerald-500/30 px-2 py-0.5 rounded-lg border border-emerald-400/40 text-xs sm:text-sm">
+                            {deviceStats.totalWatchedCount} Total
+                          </span>
+                          <span className="text-[10px] text-emerald-300 font-black px-1.5 py-0.5 rounded-md bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1">
+                            <span>{gStats.rankIcon}</span>
+                            <span className="hidden xl:inline">{gStats.rankTitle}</span>
+                          </span>
+                        </div>
+                      );
+                    })()}
 
                     <button
                       onClick={() => {
@@ -1586,29 +1595,8 @@ export default function App() {
             </div>
 
             <div className="space-y-16">
-              {/* Personal Viewing Activity & Total Watched Banner */}
-              <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-emerald-950/60 via-slate-900 to-indigo-950/40 border-2 border-emerald-500/35 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-2xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 shrink-0 shadow-md">
-                    <Eye className="w-6 h-6" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-black text-white text-base sm:text-lg">Your Personal Viewing Total</h3>
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        Videos + Podcasts Combined
-                      </span>
-                    </div>
-                    <p className="text-xs sm:text-sm text-slate-300 mt-1">
-                      You have viewed a total of <strong className="text-emerald-400 font-black text-base">{deviceStats.totalWatchedCount}</strong> {deviceStats.totalWatchedCount === 1 ? 'video or podcast' : 'videos and podcasts'} on this device.
-                    </p>
-                  </div>
-                </div>
-                <div className="px-5 py-2.5 rounded-2xl bg-slate-950/80 border border-emerald-500/30 self-stretch sm:self-auto text-center shrink-0 shadow-inner">
-                  <span className="block text-2xl sm:text-3xl font-black text-emerald-400">{deviceStats.totalWatchedCount}</span>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Total Viewed</span>
-                </div>
-              </div>
+              {/* Personal Viewing Activity & Total Watched Banner with subtle gamification */}
+              <LearningGamificationBanner totalWatchedCount={deviceStats.totalWatchedCount} />
 
               {/* Optional Cross-Device Sync Banner (Non-intrusive) */}
               {!currentUser || currentUser.isAnonymous ? (
