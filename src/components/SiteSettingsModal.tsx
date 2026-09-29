@@ -4,6 +4,7 @@ import { doc, setDoc } from 'firebase/firestore';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../lib/firebase';
 import { compressImage } from '../lib/imageUtils';
+import { getWebsiteVisitCount, resetWebsiteVisits } from '../lib/deviceTracker';
 
 interface SiteSettingsModalProps {
   currentSettings: { 
@@ -198,6 +199,25 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
                   {welcomeVideoPreview ? 'Change Video' : 'Upload Video'}
                 </button>
               </div>
+            </div>
+
+            <div className="bg-slate-950/70 p-3.5 rounded-xl border border-slate-800 text-xs flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-3">
+              <div>
+                <span className="font-bold text-slate-200">Welcome Card Display Rule:</span>
+                <p className="text-slate-400 text-[11px] mt-0.5">
+                  Automatically disappears for visitors with over 25 visits. (Your device: <strong className="text-indigo-400 font-bold">{getWebsiteVisitCount()} visits</strong>)
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  resetWebsiteVisits();
+                  onStatusMessage('Device visit counter reset to 0.', 'success');
+                }}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white rounded-lg font-bold text-[10px] uppercase tracking-wider transition-colors self-start sm:self-auto shrink-0"
+              >
+                Reset My Visits
+              </button>
             </div>
           </div>
 

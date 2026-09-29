@@ -30,7 +30,7 @@ import { SyncModal } from './components/SyncModal';
 import { RecentlyUploadedSection } from './components/RecentlyUploadedSection';
 import { NewReleasesSection } from './components/NewReleasesSection';
 import { LearningGamificationBanner } from './components/LearningGamificationBanner';
-import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats, registerMediaList } from './lib/deviceTracker';
+import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats, registerMediaList, recordWebsiteVisit } from './lib/deviceTracker';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
@@ -81,6 +81,9 @@ export default function App() {
   const [deviceStats, setDeviceStats] = useState(() => getDeviceWatchStats());
 
   useEffect(() => {
+    recordWebsiteVisit();
+    setDeviceStats(getDeviceWatchStats());
+
     const handleDeviceWatchUpdated = () => {
       setDeviceStats(getDeviceWatchStats());
     };
@@ -938,8 +941,8 @@ export default function App() {
         userStats={userStats}
       />
 
-      {/* Welcome Video Section (Only on main dashboard) */}
-      {!selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
+      {/* Welcome Video Section (Disappears for people who have been on our website over 25 times) */}
+      {!deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-2">
           <div className="bg-slate-900 rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-800 shadow-indigo-950/40 relative">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/20 via-slate-900 to-slate-900 pointer-events-none" />

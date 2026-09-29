@@ -9,6 +9,8 @@ const DOWNLOADED_BOOK_IDS_KEY = 'ai_sefarim_downloaded_book_ids';
 const DOWNLOADED_BOOK_COUNT_KEY = 'ai_sefarim_downloaded_book_count';
 const WATCH_EVENTS_KEY = 'ai_sefarim_watch_events';
 const MEDIA_REGISTRY_KEY = 'ai_sefarim_media_registry';
+const WEBSITE_VISIT_COUNT_KEY = 'ai_sefarim_website_visit_count';
+const WEBSITE_SESSION_KEY = 'ai_sefarim_website_session_active';
 
 // XP and Session multipliers:
 // - Video / podcast: +1 session, +10 XP (base)
@@ -60,6 +62,8 @@ export interface DeviceWatchStats {
   totalBooksRead: number;
   todayWatchCount: number;
   isDailyMultiplierActive: boolean;
+  visitCount?: number;
+  hasOver25Visits?: boolean;
 }
 
 export interface MilestoneBadge {
@@ -686,6 +690,10 @@ export function getDeviceWatchStats(): DeviceWatchStats {
       new Set([...readBookIds, ...downloadedBookIds]).size
     );
 
+    const rawVisits = Number(localStorage.getItem(WEBSITE_VISIT_COUNT_KEY)) || 0;
+    const visitCount = Math.max(rawVisits, totalSessions);
+    const hasOver25Visits = visitCount > 25;
+
     return {
       totalWatchedCount: totalSessions,
       totalSessions,
@@ -699,7 +707,9 @@ export function getDeviceWatchStats(): DeviceWatchStats {
       downloadedBooksCount,
       totalBooksRead,
       todayWatchCount,
-      isDailyMultiplierActive
+      isDailyMultiplierActive,
+      visitCount,
+      hasOver25Visits
     };
   } catch (err) {
     console.error('Failed to read device stats from localStorage', err);
@@ -716,7 +726,9 @@ export function getDeviceWatchStats(): DeviceWatchStats {
       downloadedBooksCount: 0,
       totalBooksRead: 0,
       todayWatchCount: 0,
-      isDailyMultiplierActive: false
+      isDailyMultiplierActive: false,
+      visitCount: 0,
+      hasOver25Visits: false
     };
   }
 }
@@ -935,3 +947,66 @@ export function hasDeviceDownloadedBook(bookId: string): boolean {
     return false;
   }
 }
+
+/**
+ * Records a website visit on this device.
+ * Increments the visit count if this is a new browser visit/session.
+ */
+export function recordWebsiteVisit(): number {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const rawCount = Number(localStorage.getItem(WEBSITE_VISIT_COUNT_KEY)) || 0;
+    const sessionActive = sessionStorage.getItem(WEBSITE_SESSION_KEY);
+
+    if (!sessionActive) {
+      sessionStorage.setItem(WEBSITE_SESSION_KEY, 'true');
+      const currentStats = getDeviceWatchStats();
+      const baseline = Math.max(rawCount, currentStats.totalWatchedCount, currentStats.totalSessions);
+      const newCount = baseline + 1;
+      localStorage.setItem(WEBSITE_VISIT_COUNT_KEY, String(newCount));
+      notifyStatsUpdated();
+      return newCount;
+    }
+
+    const currentStats = getDeviceWatchStats();
+    return Math.max(rawCount, currentStats.totalWatchedCount, currentStats.totalSessions);
+  } catch {
+    return 1;
+  }
+}
+
+/**
+ * Returns total number of times the user has visited the website on this device.
+ */
+export function getWebsiteVisitCount(): number {
+  if (typeof window === 'undefined') return 0;
+  try {
+    const rawCount = Number(localStorage.getItem(WEBSITE_VISIT_COUNT_KEY)) || 0;
+    const currentStats = getDeviceWatchStats();
+    return Math.max(rawCount, currentStats.totalWatchedCount, currentStats.totalSessions);
+  } catch {
+    return 0;
+  }
+}
+
+/**
+ * Checks if the user has been on our website over 25 times (> 25 visits/sessions).
+ */
+export function hasOver25Visits(): boolean {
+  return getWebsiteVisitCount() > 25;
+}
+
+/**
+ * Helper for testing / administration to reset visit counter on this device.
+ */
+export function resetWebsiteVisits(): void {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.removeItem(WEBSITE_VISIT_COUNT_KEY);
+    sessionStorage.removeItem(WEBSITE_SESSION_KEY);
+    notifyStatsUpdated();
+  } catch {
+    // ignore
+  }
+}
+
