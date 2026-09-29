@@ -16,16 +16,16 @@ const WEBSITE_SESSION_KEY = 'ai_sefarim_website_session_active';
 // - Video / podcast: +1 session, +10 XP (base)
 // - Longer podcasts: scale up to 50 XP
 // - 2nd+ video/podcast of the day: 1.2x multiplier
-// - EPUB reading: +3 sessions, +30 XP (substantially more than video/podcast)
-// - Book download: +8 sessions, +80 XP (especially high XP rewards)
+// - EPUB reading: +2 sessions, +25 XP
+// - Book download: +2 sessions, +35 XP
 export const SESSIONS_PER_MEDIA = 1;
 export const XP_PER_MEDIA = 10;
 
-export const SESSIONS_PER_EPUB = 3;
-export const XP_PER_EPUB = 30;
+export const SESSIONS_PER_EPUB = 2;
+export const XP_PER_EPUB = 25;
 
-export const SESSIONS_PER_DOWNLOAD = 8;
-export const XP_PER_DOWNLOAD = 80;
+export const SESSIONS_PER_DOWNLOAD = 2;
+export const XP_PER_DOWNLOAD = 35;
 
 export interface WatchEvent {
   mediaId: string;
@@ -90,6 +90,7 @@ export interface LevelDefinition {
 
 export interface GamificationStats {
   level: number;
+  maxLevel: number;
   rankTitle: string;
   rankHebrew: string;
   rankIcon: string;
@@ -109,12 +110,13 @@ export interface GamificationStats {
   totalBadgesCount: number;
 }
 
-// 22 Distinct Levels capping out at 250 sessions
-export const LEVELS_22: LevelDefinition[] = [
+// 50 Gates of Torah Wisdom (50 Distinct Levels with steepening progression)
+export const LEVELS_50: LevelDefinition[] = [
+  // --- Tier 1: The First Steps (Levels 1-5) ---
   {
     level: 1,
     minViews: 0,
-    nextThreshold: 3,
+    nextThreshold: 5,
     rankTitle: 'Torah Explorer',
     rankHebrew: 'צעד ראשון',
     rankIcon: '🌱',
@@ -124,8 +126,8 @@ export const LEVELS_22: LevelDefinition[] = [
   },
   {
     level: 2,
-    minViews: 3,
-    nextThreshold: 6,
+    minViews: 5,
+    nextThreshold: 12,
     rankTitle: 'Consistent Seeker',
     rankHebrew: 'קובע עתים',
     rankIcon: '⚡',
@@ -135,8 +137,8 @@ export const LEVELS_22: LevelDefinition[] = [
   },
   {
     level: 3,
-    minViews: 6,
-    nextThreshold: 10,
+    minViews: 12,
+    nextThreshold: 20,
     rankTitle: 'Diligent Student',
     rankHebrew: 'שוקד בלימוד',
     rankIcon: '📚',
@@ -146,31 +148,44 @@ export const LEVELS_22: LevelDefinition[] = [
   },
   {
     level: 4,
-    minViews: 10,
-    nextThreshold: 15,
-    rankTitle: 'Minyan Scholar',
-    rankHebrew: 'מנין שיעורים',
-    rankIcon: '📜',
+    minViews: 20,
+    nextThreshold: 30,
+    rankTitle: 'Attentive Ear',
+    rankHebrew: 'אוזן קשבת',
+    rankIcon: '🎧',
     colorClass: 'text-teal-300',
     borderClass: 'border-teal-500/30',
     bgClass: 'bg-teal-500/10'
   },
   {
     level: 5,
-    minViews: 15,
-    nextThreshold: 22,
-    rankTitle: 'Book Devotee',
-    rankHebrew: 'אוהב ספר',
-    rankIcon: '📖',
+    minViews: 30,
+    nextThreshold: 42,
+    rankTitle: 'Minyan Scholar',
+    rankHebrew: 'מנין שיעורים',
+    rankIcon: '📜',
     colorClass: 'text-cyan-400',
     borderClass: 'border-cyan-500/30',
     bgClass: 'bg-cyan-500/10'
   },
+
+  // --- Tier 2: Building Foundations (Levels 6-10) ---
   {
     level: 6,
-    minViews: 22,
-    nextThreshold: 30,
-    rankTitle: 'Living Wisdom',
+    minViews: 42,
+    nextThreshold: 56,
+    rankTitle: 'Book Devotee',
+    rankHebrew: 'אוהב ספר',
+    rankIcon: '📖',
+    colorClass: 'text-cyan-300',
+    borderClass: 'border-cyan-500/30',
+    bgClass: 'bg-cyan-500/10'
+  },
+  {
+    level: 7,
+    minViews: 56,
+    nextThreshold: 72,
+    rankTitle: 'Living in Torah',
     rankHebrew: 'חי בתורה',
     rankIcon: '✨',
     colorClass: 'text-sky-400',
@@ -178,188 +193,505 @@ export const LEVELS_22: LevelDefinition[] = [
     bgClass: 'bg-sky-500/10'
   },
   {
-    level: 7,
-    minViews: 30,
-    nextThreshold: 40,
+    level: 8,
+    minViews: 72,
+    nextThreshold: 90,
     rankTitle: 'Toiler in Torah',
     rankHebrew: 'עמל בתורה',
     rankIcon: '🎯',
+    colorClass: 'text-sky-300',
+    borderClass: 'border-sky-500/30',
+    bgClass: 'bg-sky-500/10'
+  },
+  {
+    level: 9,
+    minViews: 90,
+    nextThreshold: 110,
+    rankTitle: 'Deep Thinker',
+    rankHebrew: 'מעמיק בחכמה',
+    rankIcon: '💡',
     colorClass: 'text-blue-400',
     borderClass: 'border-blue-500/30',
     bgClass: 'bg-blue-500/10'
   },
   {
-    level: 8,
-    minViews: 40,
-    nextThreshold: 50,
-    rankTitle: 'Deep Thinker',
-    rankHebrew: 'מעמיק בחכמה',
-    rankIcon: '💡',
+    level: 10,
+    minViews: 110,
+    nextThreshold: 132,
+    rankTitle: 'Pillar of Study',
+    rankHebrew: 'עמוד הלימוד',
+    rankIcon: '🏛️',
+    colorClass: 'text-blue-300',
+    borderClass: 'border-blue-500/30',
+    bgClass: 'bg-blue-500/10'
+  },
+
+  // --- Tier 3: Immersion & Depth (Levels 11-15) ---
+  {
+    level: 11,
+    minViews: 132,
+    nextThreshold: 156,
+    rankTitle: 'Thirst for Wisdom',
+    rankHebrew: 'צמא לדבריהם',
+    rankIcon: '💧',
     colorClass: 'text-indigo-400',
     borderClass: 'border-indigo-500/30',
     bgClass: 'bg-indigo-500/10'
   },
   {
-    level: 9,
-    minViews: 50,
-    nextThreshold: 65,
-    rankTitle: 'Jubilee Scholar',
-    rankHebrew: 'שער היובל',
-    rankIcon: '🏆',
+    level: 12,
+    minViews: 156,
+    nextThreshold: 182,
+    rankTitle: 'Firm Foundation',
+    rankHebrew: 'תופס יסוד',
+    rankIcon: '🧱',
     colorClass: 'text-indigo-300',
-    borderClass: 'border-indigo-500/40',
-    bgClass: 'bg-indigo-500/15'
+    borderClass: 'border-indigo-500/30',
+    bgClass: 'bg-indigo-500/10'
   },
   {
-    level: 10,
-    minViews: 65,
-    nextThreshold: 80,
-    rankTitle: 'Pillar of Study',
-    rankHebrew: 'עמוד הלימוד',
-    rankIcon: '🏛️',
+    level: 13,
+    minViews: 182,
+    nextThreshold: 210,
+    rankTitle: 'Dweller in Tents',
+    rankHebrew: 'יושב אוהלים',
+    rankIcon: '⛺',
     colorClass: 'text-violet-400',
     borderClass: 'border-violet-500/30',
     bgClass: 'bg-violet-500/10'
   },
   {
-    level: 11,
-    minViews: 80,
-    nextThreshold: 100,
-    rankTitle: 'Master of Texts',
-    rankHebrew: 'בקי בספרים',
-    rankIcon: '💎',
+    level: 14,
+    minViews: 210,
+    nextThreshold: 240,
+    rankTitle: 'Living Wellspring',
+    rankHebrew: 'באר מים חיים',
+    rankIcon: '🌊',
     colorClass: 'text-violet-300',
     borderClass: 'border-violet-500/30',
     bgClass: 'bg-violet-500/10'
   },
   {
-    level: 12,
-    minViews: 100,
-    nextThreshold: 120,
-    rankTitle: 'Century Scholar',
-    rankHebrew: 'מאה שערים',
-    rankIcon: '🌟',
+    level: 15,
+    minViews: 240,
+    nextThreshold: 272,
+    rankTitle: 'Jubilee Scholar',
+    rankHebrew: 'שער היובל',
+    rankIcon: '🏆',
     colorClass: 'text-purple-400',
-    borderClass: 'border-purple-500/40',
-    bgClass: 'bg-purple-500/15'
+    borderClass: 'border-purple-500/30',
+    bgClass: 'bg-purple-500/10'
   },
+
+  // --- Tier 4: Illumination & Refinement (Levels 16-20) ---
   {
-    level: 13,
-    minViews: 120,
-    nextThreshold: 140,
-    rankTitle: 'Ever-Flowing Spring',
-    rankHebrew: 'מעיין המתגבר',
-    rankIcon: '🌊',
+    level: 16,
+    minViews: 272,
+    nextThreshold: 306,
+    rankTitle: 'Light of Wisdom',
+    rankHebrew: 'אור התבונה',
+    rankIcon: '🕯️',
     colorClass: 'text-purple-300',
     borderClass: 'border-purple-500/30',
     bgClass: 'bg-purple-500/10'
   },
   {
-    level: 14,
-    minViews: 140,
-    nextThreshold: 160,
-    rankTitle: 'Mountain of Torah',
-    rankHebrew: 'הררי תורה',
-    rankIcon: '⛰️',
+    level: 17,
+    minViews: 306,
+    nextThreshold: 342,
+    rankTitle: 'Faithful Disciple',
+    rankHebrew: 'תלמיד נאמן',
+    rankIcon: '🕊️',
     colorClass: 'text-fuchsia-400',
     borderClass: 'border-fuchsia-500/30',
     bgClass: 'bg-fuchsia-500/10'
   },
   {
-    level: 15,
-    minViews: 160,
-    nextThreshold: 180,
-    rankTitle: 'Light of Wisdom',
-    rankHebrew: 'אור החכמה',
-    rankIcon: '🕯️',
+    level: 18,
+    minViews: 342,
+    nextThreshold: 380,
+    rankTitle: 'Pure Heart of Torah',
+    rankHebrew: 'לב טהור',
+    rankIcon: '💎',
+    colorClass: 'text-fuchsia-300',
+    borderClass: 'border-fuchsia-500/30',
+    bgClass: 'bg-fuchsia-500/10'
+  },
+  {
+    level: 19,
+    minViews: 380,
+    nextThreshold: 420,
+    rankTitle: 'Chai of Deep Study',
+    rankHebrew: 'חי עיונים',
+    rankIcon: '🔮',
     colorClass: 'text-pink-400',
     borderClass: 'border-pink-500/30',
     bgClass: 'bg-pink-500/10'
   },
   {
-    level: 16,
-    minViews: 180,
-    nextThreshold: 200,
-    rankTitle: 'Crown of Study',
-    rankHebrew: 'כתר תורה',
-    rankIcon: '👑',
+    level: 20,
+    minViews: 420,
+    nextThreshold: 465,
+    rankTitle: 'Shield of Heritage',
+    rankHebrew: 'מגן מורשת',
+    rankIcon: '🛡️',
+    colorClass: 'text-pink-300',
+    borderClass: 'border-pink-500/30',
+    bgClass: 'bg-pink-500/10'
+  },
+
+  // --- Tier 5: Mastery & Insight (Levels 21-25) ---
+  {
+    level: 21,
+    minViews: 465,
+    nextThreshold: 515,
+    rankTitle: 'Century of Insight',
+    rankHebrew: 'מאה שערים',
+    rankIcon: '🌟',
     colorClass: 'text-rose-400',
     borderClass: 'border-rose-500/30',
     bgClass: 'bg-rose-500/10'
   },
   {
-    level: 17,
-    minViews: 200,
-    nextThreshold: 215,
-    rankTitle: 'Eminent Scholar',
-    rankHebrew: 'תלמיד חכם מופלג',
-    rankIcon: '🔮',
+    level: 22,
+    minViews: 515,
+    nextThreshold: 570,
+    rankTitle: 'Master of Review',
+    rankHebrew: 'שונה פרקו',
+    rankIcon: '🔄',
+    colorClass: 'text-rose-300',
+    borderClass: 'border-rose-500/30',
+    bgClass: 'bg-rose-500/10'
+  },
+  {
+    level: 23,
+    minViews: 570,
+    nextThreshold: 630,
+    rankTitle: 'Ever-Flowing Spring',
+    rankHebrew: 'מעיין המתגבר',
+    rankIcon: '⛲',
     colorClass: 'text-amber-400',
     borderClass: 'border-amber-500/30',
     bgClass: 'bg-amber-500/10'
   },
   {
-    level: 18,
-    minViews: 215,
-    nextThreshold: 230,
-    rankTitle: 'Sage of the Book',
-    rankHebrew: 'חכם הספר',
-    rankIcon: '🔥',
+    level: 24,
+    minViews: 630,
+    nextThreshold: 695,
+    rankTitle: 'Climbing the Heights',
+    rankHebrew: 'עולה בהר',
+    rankIcon: '⛰️',
     colorClass: 'text-amber-300',
     borderClass: 'border-amber-500/30',
     bgClass: 'bg-amber-500/10'
   },
   {
-    level: 19,
-    minViews: 230,
-    nextThreshold: 240,
-    rankTitle: 'Guardian of Heritage',
-    rankHebrew: 'נוצר מורשת',
-    rankIcon: '🛡️',
+    level: 25,
+    minViews: 695,
+    nextThreshold: 765,
+    rankTitle: 'Half-Century of Gates',
+    rankHebrew: 'מחצית השערים',
+    rankIcon: '🚪',
+    colorClass: 'text-amber-200',
+    borderClass: 'border-amber-500/40',
+    bgClass: 'bg-amber-500/15'
+  },
+
+  // --- Tier 6: High Scholarship (Levels 26-30) ---
+  {
+    level: 26,
+    minViews: 765,
+    nextThreshold: 840,
+    rankTitle: 'Keeper of the Word',
+    rankHebrew: 'נוצר אמרי שפר',
+    rankIcon: '📜',
     colorClass: 'text-yellow-400',
-    borderClass: 'border-yellow-500/40',
+    borderClass: 'border-yellow-500/30',
     bgClass: 'bg-yellow-500/10'
   },
   {
-    level: 20,
-    minViews: 240,
-    nextThreshold: 245,
-    rankTitle: 'Luminary of Sefarim',
-    rankHebrew: 'מאור הספרים',
-    rankIcon: '☀️',
+    level: 27,
+    minViews: 840,
+    nextThreshold: 920,
+    rankTitle: 'Seeker of Truth',
+    rankHebrew: 'דורש אמת',
+    rankIcon: '🔍',
     colorClass: 'text-yellow-300',
-    borderClass: 'border-yellow-500/40',
+    borderClass: 'border-yellow-500/30',
+    bgClass: 'bg-yellow-500/10'
+  },
+  {
+    level: 28,
+    minViews: 920,
+    nextThreshold: 1005,
+    rankTitle: 'Crown of Good Name',
+    rankHebrew: 'כתר שם טוב',
+    rankIcon: '👑',
+    colorClass: 'text-orange-400',
+    borderClass: 'border-orange-500/30',
+    bgClass: 'bg-orange-500/10'
+  },
+  {
+    level: 29,
+    minViews: 1005,
+    nextThreshold: 1095,
+    rankTitle: 'Foundation Stone',
+    rankHebrew: 'אבן שתיה',
+    rankIcon: '🏛️',
+    colorClass: 'text-orange-300',
+    borderClass: 'border-orange-500/30',
+    bgClass: 'bg-orange-500/10'
+  },
+  {
+    level: 30,
+    minViews: 1095,
+    nextThreshold: 1190,
+    rankTitle: 'Thirty Virtues',
+    rankHebrew: 'שלושים מעלות',
+    rankIcon: '💎',
+    colorClass: 'text-emerald-400',
+    borderClass: 'border-emerald-400/40',
+    bgClass: 'bg-emerald-500/15'
+  },
+
+  // --- Tier 7: Sacred Wisdom (Levels 31-35) ---
+  {
+    level: 31,
+    minViews: 1190,
+    nextThreshold: 1290,
+    rankTitle: 'Illuminated Soul',
+    rankHebrew: 'נפש מאירה',
+    rankIcon: '☀️',
+    colorClass: 'text-teal-300',
+    borderClass: 'border-teal-400/40',
+    bgClass: 'bg-teal-500/15'
+  },
+  {
+    level: 32,
+    minViews: 1290,
+    nextThreshold: 1395,
+    rankTitle: '32 Paths of Wisdom',
+    rankHebrew: 'ל״ב נתיבות חכמה',
+    rankIcon: '🧭',
+    colorClass: 'text-cyan-300',
+    borderClass: 'border-cyan-400/40',
+    bgClass: 'bg-cyan-500/15'
+  },
+  {
+    level: 33,
+    minViews: 1395,
+    nextThreshold: 1505,
+    rankTitle: 'Tree of Life',
+    rankHebrew: 'עץ חיים',
+    rankIcon: '🌳',
+    colorClass: 'text-sky-300',
+    borderClass: 'border-sky-400/40',
+    bgClass: 'bg-sky-500/15'
+  },
+  {
+    level: 34,
+    minViews: 1505,
+    nextThreshold: 1620,
+    rankTitle: 'Builder of Worlds',
+    rankHebrew: 'בונה עולמות',
+    rankIcon: '🏗️',
+    colorClass: 'text-blue-300',
+    borderClass: 'border-blue-400/40',
+    bgClass: 'bg-blue-500/15'
+  },
+  {
+    level: 35,
+    minViews: 1620,
+    nextThreshold: 1740,
+    rankTitle: 'Splendor of Torah',
+    rankHebrew: 'הדר התורה',
+    rankIcon: '🌅',
+    colorClass: 'text-indigo-300',
+    borderClass: 'border-indigo-400/40',
+    bgClass: 'bg-indigo-500/15'
+  },
+
+  // --- Tier 8: Deep Hidden Lights (Levels 36-40) ---
+  {
+    level: 36,
+    minViews: 1740,
+    nextThreshold: 1865,
+    rankTitle: '36 Hidden Lights',
+    rankHebrew: 'ל״ו אורות',
+    rankIcon: '🕯️',
+    colorClass: 'text-violet-300',
+    borderClass: 'border-violet-400/40',
+    bgClass: 'bg-violet-500/15'
+  },
+  {
+    level: 37,
+    minViews: 1865,
+    nextThreshold: 1995,
+    rankTitle: 'Vessel of Blessing',
+    rankHebrew: 'כלי מחזיק ברכה',
+    rankIcon: '🏺',
+    colorClass: 'text-purple-300',
+    borderClass: 'border-purple-400/40',
+    bgClass: 'bg-purple-500/15'
+  },
+  {
+    level: 38,
+    minViews: 1995,
+    nextThreshold: 2130,
+    rankTitle: 'Golden Menorah',
+    rankHebrew: 'מנורת זהב',
+    rankIcon: '🕎',
+    colorClass: 'text-fuchsia-300',
+    borderClass: 'border-fuchsia-400/40',
+    bgClass: 'bg-fuchsia-500/15'
+  },
+  {
+    level: 39,
+    minViews: 2130,
+    nextThreshold: 2270,
+    rankTitle: 'Spiritual Ascent',
+    rankHebrew: 'עליה ברוח',
+    rankIcon: '🦅',
+    colorClass: 'text-pink-300',
+    borderClass: 'border-pink-400/40',
+    bgClass: 'bg-pink-500/15'
+  },
+  {
+    level: 40,
+    minViews: 2270,
+    nextThreshold: 2415,
+    rankTitle: '40 Days of Sinai',
+    rankHebrew: 'ארבעים יום',
+    rankIcon: '⚡',
+    colorClass: 'text-rose-300',
+    borderClass: 'border-rose-400/40',
+    bgClass: 'bg-rose-500/15'
+  },
+
+  // --- Tier 9: Luminary of the Sanctuary (Levels 41-45) ---
+  {
+    level: 41,
+    minViews: 2415,
+    nextThreshold: 2565,
+    rankTitle: 'Pillar of Fire',
+    rankHebrew: 'עמוד אש',
+    rankIcon: '🔥',
+    colorClass: 'text-amber-400',
+    borderClass: 'border-amber-400/40',
+    bgClass: 'bg-amber-500/15'
+  },
+  {
+    level: 42,
+    minViews: 2565,
+    nextThreshold: 2720,
+    rankTitle: 'Sanctuary of Light',
+    rankHebrew: 'מקדש מעט',
+    rankIcon: '🏰',
+    colorClass: 'text-amber-300',
+    borderClass: 'border-amber-400/40',
+    bgClass: 'bg-amber-500/15'
+  },
+  {
+    level: 43,
+    minViews: 2720,
+    nextThreshold: 2880,
+    rankTitle: 'Radiance of Zohar',
+    rankHebrew: 'זהר החכמה',
+    rankIcon: '🌌',
+    colorClass: 'text-yellow-300',
+    borderClass: 'border-yellow-400/40',
     bgClass: 'bg-yellow-500/15'
   },
   {
-    level: 21,
-    minViews: 245,
-    nextThreshold: 250,
-    rankTitle: 'Master of Masters',
-    rankHebrew: 'גאון בלימוד',
-    rankIcon: '⚡',
+    level: 44,
+    minViews: 2880,
+    nextThreshold: 3045,
+    rankTitle: 'Master of Mysteries',
+    rankHebrew: 'יודע תעלומות',
+    rankIcon: '🗝️',
+    colorClass: 'text-violet-200',
+    borderClass: 'border-violet-400/50',
+    bgClass: 'bg-violet-500/20'
+  },
+  {
+    level: 45,
+    minViews: 3045,
+    nextThreshold: 3215,
+    rankTitle: 'Voice of Understanding',
+    rankHebrew: 'קול התבונה',
+    rankIcon: '📢',
+    colorClass: 'text-indigo-200',
+    borderClass: 'border-indigo-400/50',
+    bgClass: 'bg-indigo-500/20'
+  },
+
+  // --- Tier 10: The Summit • 50th Gate (Levels 46-50) ---
+  {
+    level: 46,
+    minViews: 3215,
+    nextThreshold: 3390,
+    rankTitle: 'Royal Diadem',
+    rankHebrew: 'נזר ועטרה',
+    rankIcon: '👑',
+    colorClass: 'text-purple-200',
+    borderClass: 'border-purple-400/50',
+    bgClass: 'bg-purple-500/20'
+  },
+  {
+    level: 47,
+    minViews: 3390,
+    nextThreshold: 3570,
+    rankTitle: 'Chariot of Wisdom',
+    rankHebrew: 'מרכבת קודש',
+    rankIcon: '🛸',
+    colorClass: 'text-fuchsia-200',
+    borderClass: 'border-fuchsia-400/50',
+    bgClass: 'bg-fuchsia-500/20'
+  },
+  {
+    level: 48,
+    minViews: 3570,
+    nextThreshold: 3755,
+    rankTitle: 'Great Luminary',
+    rankHebrew: 'המאור הגדול',
+    rankIcon: '🌞',
     colorClass: 'text-amber-200',
     borderClass: 'border-amber-400/50',
     bgClass: 'bg-amber-500/20'
   },
   {
-    level: 22,
-    minViews: 250,
-    nextThreshold: null, // Capped at 250 sessions!
-    rankTitle: 'Prince of Torah',
-    rankHebrew: 'שר התורה',
+    level: 49,
+    minViews: 3755,
+    nextThreshold: 4000,
+    rankTitle: '49th Gate of Binah',
+    rankHebrew: 'שער המ״ט',
+    rankIcon: '🌠',
+    colorClass: 'text-yellow-200',
+    borderClass: 'border-yellow-300/60',
+    bgClass: 'bg-yellow-500/25'
+  },
+  {
+    level: 50,
+    minViews: 4000,
+    nextThreshold: null, // Pinnacle 50th Gate achieved!
+    rankTitle: 'The 50th Gate • Prince of Torah',
+    rankHebrew: 'שער הנ׳ • שר התורה',
     rankIcon: '👑',
     colorClass: 'text-amber-300 font-black',
-    borderClass: 'border-amber-400/60 shadow-lg shadow-amber-500/20',
-    bgClass: 'bg-gradient-to-r from-amber-500/20 via-yellow-500/20 to-amber-500/20'
+    borderClass: 'border-amber-300/70 shadow-lg shadow-amber-500/30',
+    bgClass: 'bg-gradient-to-r from-amber-500/25 via-yellow-400/25 to-amber-500/25'
   }
 ];
+
+export const LEVELS = LEVELS_50;
+export const LEVELS_22 = LEVELS_50; // Alias for backwards compatibility
+export const MAX_LEVEL = LEVELS_50.length;
 
 export const MILESTONES: Omit<MilestoneBadge, 'unlocked'>[] = [
   {
     id: 'first_step',
     title: 'First Step',
-    subtitle: 'Completed 1st learning session',
+    subtitle: '1st learning session completed',
     hebrewTitle: 'צעד ראשון',
     requiredViews: 1,
     icon: '🌱'
@@ -367,15 +699,15 @@ export const MILESTONES: Omit<MilestoneBadge, 'unlocked'>[] = [
   {
     id: 'chazakah',
     title: 'Chazakah',
-    subtitle: 'Completed 3 learning sessions',
+    subtitle: '5 learning sessions mastered',
     hebrewTitle: 'חזקה בלימוד',
-    requiredViews: 3,
+    requiredViews: 5,
     icon: '⚡'
   },
   {
     id: 'minyan_ten',
     title: 'Minyan Milestone',
-    subtitle: 'Completed 10 learning sessions',
+    subtitle: '10 learning sessions mastered',
     hebrewTitle: 'מנין שיעורים',
     requiredViews: 10,
     icon: '📜'
@@ -383,57 +715,73 @@ export const MILESTONES: Omit<MilestoneBadge, 'unlocked'>[] = [
   {
     id: 'chai_eighteen',
     title: 'Chai of Wisdom',
-    subtitle: 'Completed 18 learning sessions',
+    subtitle: '18 sessions completed',
     hebrewTitle: 'חי שיעורים',
     requiredViews: 18,
     icon: '✨'
   },
   {
     id: 'sefer_devotee',
-    title: 'Sefer Devotee',
-    subtitle: 'Completed 30 learning sessions',
+    title: 'Book Devotee',
+    subtitle: '35 sessions completed',
     hebrewTitle: 'אוהב ספרים',
-    requiredViews: 30,
+    requiredViews: 35,
     icon: '📖'
   },
   {
     id: 'jubilee_fifty',
     title: 'Jubilee Scholar',
-    subtitle: 'Completed 50 sessions',
+    subtitle: '50 sessions mastered',
     hebrewTitle: 'שער היובל',
     requiredViews: 50,
     icon: '🏆'
   },
   {
-    id: 'pillar_seventyfive',
+    id: 'pillar_hundred',
     title: 'Pillar of Study',
-    subtitle: 'Completed 75 sessions',
+    subtitle: '100 sessions completed',
     hebrewTitle: 'עמוד הלימוד',
-    requiredViews: 75,
+    requiredViews: 100,
     icon: '🏛️'
   },
   {
-    id: 'century_hundred',
+    id: 'two_hundred_fifty',
     title: 'Century of Torah',
-    subtitle: '100 sessions mastered',
-    hebrewTitle: 'מאה שערים',
-    requiredViews: 100,
+    subtitle: '250 sessions completed',
+    hebrewTitle: 'רב פעלים',
+    requiredViews: 250,
+    icon: '💎'
+  },
+  {
+    id: 'five_hundred',
+    title: 'Crown of Perseverance',
+    subtitle: '500 sessions completed',
+    hebrewTitle: 'עמל בתורה',
+    requiredViews: 500,
     icon: '🌟'
   },
   {
-    id: 'eminent_sage',
-    title: 'Eminent Sage',
-    subtitle: '180 sessions mastered',
-    hebrewTitle: 'עטרת חכמים',
-    requiredViews: 180,
+    id: 'one_thousand',
+    title: 'Master of Texts',
+    subtitle: '1,000 sessions mastered',
+    hebrewTitle: 'בקי בספרים',
+    requiredViews: 1000,
     icon: '👑'
   },
   {
+    id: 'two_thousand_five_hundred',
+    title: 'Illuminator of Sefarim',
+    subtitle: '2,500 sessions achieved',
+    hebrewTitle: 'מאור הגולה',
+    requiredViews: 2500,
+    icon: '🔥'
+  },
+  {
     id: 'sar_hatorah',
-    title: 'Prince of Torah',
-    subtitle: '250 sessions pinnacle achieved',
-    hebrewTitle: 'שר התורה',
-    requiredViews: 250,
+    title: 'The 50th Gate • Prince of Torah',
+    subtitle: '4,000+ sessions pinnacle achieved',
+    hebrewTitle: 'שער הנ׳ • שר התורה',
+    requiredViews: 4000,
     icon: '☀️'
   }
 ];
@@ -737,13 +1085,13 @@ export function getGamificationStats(totalCount: number, optionalXp?: number): G
   const count = Math.max(0, totalCount);
 
   // Find the highest level achieved
-  let activeLevelDef = LEVELS_22[0];
-  let nextLevelDef: LevelDefinition | null = LEVELS_22[1] || null;
+  let activeLevelDef = LEVELS_50[0];
+  let nextLevelDef: LevelDefinition | null = LEVELS_50[1] || null;
 
-  for (let i = LEVELS_22.length - 1; i >= 0; i--) {
-    if (count >= LEVELS_22[i].minViews) {
-      activeLevelDef = LEVELS_22[i];
-      nextLevelDef = LEVELS_22[i + 1] || null;
+  for (let i = LEVELS_50.length - 1; i >= 0; i--) {
+    if (count >= LEVELS_50[i].minViews) {
+      activeLevelDef = LEVELS_50[i];
+      nextLevelDef = LEVELS_50[i + 1] || null;
       break;
     }
   }
@@ -770,6 +1118,7 @@ export function getGamificationStats(totalCount: number, optionalXp?: number): G
 
   return {
     level,
+    maxLevel: LEVELS_50.length,
     rankTitle,
     rankHebrew,
     rankIcon,

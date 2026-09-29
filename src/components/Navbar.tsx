@@ -107,7 +107,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 window.scrollTo({ top: 0, behavior: 'smooth' });
               }}
               className="flex items-center gap-1.5 sm:gap-2 px-3 py-0.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-emerald-500/40 hover:border-emerald-400/60 text-[11px] font-bold text-slate-200 transition-all shadow-sm active:scale-95 group animate-in fade-in duration-300"
-              title={`Your learning level: Level ${userStats.level} of 22 - ${userStats.rankTitle} (${userStats.rankHebrew}) · Click to view in My Library`}
+              title={`Your learning level: Level ${userStats.level} of ${userStats.maxLevel || 50} - ${userStats.rankTitle} (${userStats.rankHebrew}) · Click to view in My Library`}
             >
               <span className="text-slate-400 font-semibold">Your learning level:</span>
               <span className="text-sm select-none shrink-0" role="img" aria-label={userStats.rankTitle}>

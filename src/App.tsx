@@ -1387,7 +1387,7 @@ export default function App() {
                       return (
                         <div 
                           className="hidden md:flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-emerald-500/15 border-2 border-emerald-500/35 text-emerald-300 text-xs sm:text-sm font-bold shadow-sm"
-                          title={`Level ${gStats.level} of 22: ${gStats.rankTitle} (${gStats.rankHebrew}) · Score: ${gStats.totalScore ?? gStats.totalXp}`}
+                          title={`Level ${gStats.level} of ${gStats.maxLevel || 50}: ${gStats.rankTitle} (${gStats.rankHebrew}) · Score: ${gStats.totalScore ?? gStats.totalXp}`}
                         >
                           <Trophy className="w-4 h-4 text-emerald-400 shrink-0" />
                           <span>Score:</span>

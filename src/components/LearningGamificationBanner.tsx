@@ -91,7 +91,7 @@ export function LearningGamificationBanner({
                 {stats.rankHebrew}
               </span>
               <span className={`text-[11px] font-bold ${stats.colorClass}`}>
-                Level {stats.level} of 22 · {stats.rankTitle}
+                Level {stats.level} of {stats.maxLevel} · {stats.rankTitle}
               </span>
             </div>
           </div>
@@ -141,7 +141,7 @@ export function LearningGamificationBanner({
           ) : (
             <span className="text-amber-300 font-black flex items-center gap-1.5">
               <Sparkles className="w-4 h-4" />
-              <span className="text-sm font-serif">כתר שר התורה — 250+ Sessions Mastered!</span>
+              <span className="text-sm font-serif">כתר שר התורה — 50th Gate Mastered!</span>
             </span>
           )}
         </div>
@@ -154,7 +154,7 @@ export function LearningGamificationBanner({
             <div className="flex items-center gap-2">
               <Award className="w-4 h-4 text-emerald-400" />
               <h4 className="text-xs font-black uppercase tracking-wider text-slate-200">
-                Milestones &amp; Badges (Goal: 250 Sessions)
+                Milestones &amp; Badges (Goal: 50 Gates of Torah)
               </h4>
             </div>
             <span className="text-xs text-slate-400 font-medium">
