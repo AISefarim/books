@@ -45,7 +45,7 @@ const LOADING_MESSAGES = [
 
 const LOADING_EXPLANATION_HEADLINE = "This takes longer than a typical search engine.";
 const LOADING_EXPLANATION_DETAIL =
-  "Super Agent is sifting through nearly 1,000 dense primary texts of our Mesorah, not just matching keywords.";
+  "Super Agent is sifting through hundreds of thousands of pages of Torah literature, spanning 3,339 years back to Sinai — not just matching keywords.";
 
 function Markdown({ text, onCiteClick }: { text: string; onCiteClick: (n: number) => void }) {
   return (
