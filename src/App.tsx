@@ -1832,13 +1832,6 @@ export default function App() {
         ) : null}
       </main>
 
-      {/* Mobile-only footer nav for /chat - see the top instance's comment */}
-      {activeTab === 'chat' && (
-        <div className="sm:hidden">
-          <Navbar {...navbarProps} variant="footer" />
-        </div>
-      )}
-
       {/* Community Growth Banner to prompt visitors - hidden on /chat, where it breaks the immersive feel */}
       {activeTab !== 'chat' && (
         <CommunityGrowthBanner
@@ -1848,9 +1841,11 @@ export default function App() {
       )}
 
       <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-700/60 mt-8 relative">
-        <p className="text-slate-400 text-sm font-medium max-w-2xl mx-auto leading-relaxed">
-          <span className="font-bold text-slate-400">Please note:</span> These sefarim are generated using AI and have not been vetted by rabbinic authorities. We do not make any profit from the sale of physical books; they are printed and sold strictly at cost.
-        </p>
+        {activeTab !== 'chat' && (
+          <p className="text-slate-400 text-sm font-medium max-w-2xl mx-auto leading-relaxed">
+            <span className="font-bold text-slate-400">Please note:</span> These sefarim are generated using AI and have not been vetted by rabbinic authorities. We do not make any profit from the sale of physical books; they are printed and sold strictly at cost.
+          </p>
+        )}
 
         <div className="mt-8 flex flex-col items-center justify-center">
           <a
@@ -1877,6 +1872,13 @@ export default function App() {
           </button>
         )}
       </footer>
+
+      {/* Mobile-only footer nav for /chat - kept as the absolute last element on the page */}
+      {activeTab === 'chat' && (
+        <div className="sm:hidden">
+          <Navbar {...navbarProps} variant="footer" />
+        </div>
+      )}
 
       {itemToDelete && (
         <ConfirmModal
