@@ -349,6 +349,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isExportingDoc, setIsExportingDoc] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
@@ -379,6 +380,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
     const nextMessages: ChatMessage[] = [...messages, { role: 'user', content: trimmed }];
     setMessages(nextMessages);
     setInput('');
+    if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setIsLoading(true);
 
     try {
@@ -572,21 +574,33 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
           e.preventDefault();
           sendQuestion(input);
         }}
-        className="sticky bottom-2 sm:bottom-4 flex items-center gap-2 bg-slate-800/90 backdrop-blur-xl border border-slate-700 focus-within:border-indigo-500/60 rounded-full p-1.5 shadow-2xl focus-within:shadow-indigo-500/20 mx-1 sm:mx-0 transition-all"
+        className="sticky bottom-2 sm:bottom-4 flex items-end gap-2 bg-slate-800/90 backdrop-blur-xl border border-slate-700 focus-within:border-indigo-500/60 rounded-3xl p-1.5 shadow-2xl focus-within:shadow-indigo-500/20 mx-1 sm:mx-0 transition-all"
       >
-        <input
-          type="text"
+        <textarea
+          ref={textareaRef}
           value={input}
-          onChange={(e) => setInput(e.target.value)}
+          onChange={(e) => {
+            setInput(e.target.value);
+            const el = e.target;
+            el.style.height = 'auto';
+            el.style.height = Math.min(el.scrollHeight, 192) + 'px';
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              if (input.trim() && !isLoading) sendQuestion(input);
+            }
+          }}
           placeholder="Ask anything from the library..."
-          maxLength={800}
+          maxLength={8000}
+          rows={1}
           disabled={isLoading}
-          className="flex-1 bg-transparent px-4 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none text-sm"
+          className="flex-1 resize-none bg-transparent px-4 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none text-sm max-h-48 overflow-y-auto"
         />
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-          className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white p-2.5 rounded-full transition-all active:scale-95 shrink-0 shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40"
+          className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white p-2.5 rounded-full transition-all active:scale-95 shrink-0 shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40 mb-0.5"
           aria-label="Send question"
         >
           <Send className="w-4 h-4" />
