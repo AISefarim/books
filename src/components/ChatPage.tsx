@@ -404,7 +404,9 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   }
 
   return (
-    <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto flex flex-col min-h-[75vh]">
+    <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto flex flex-col min-h-[75vh]">
+      <div className="absolute top-24 -left-24 w-72 h-72 bg-purple-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
+      <div className="absolute top-1/2 -right-24 w-72 h-72 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
       {openSource && <SourceModal source={openSource} onClose={() => setOpenSource(null)} />}
 
       <button
@@ -452,12 +454,17 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
         )}
 
         {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+          <div key={i} className={`flex items-start gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
+            {m.role === 'assistant' && (
+              <div className="hidden sm:flex shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 items-center justify-center mt-1 shadow-md shadow-indigo-500/30">
+                <Sparkles className="w-3.5 h-3.5 text-white" />
+              </div>
+            )}
             <div
               className={`max-w-[96%] sm:max-w-[85%] rounded-2xl px-3.5 sm:px-5 py-3 sm:py-3.5 ${
                 m.role === 'user'
                   ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)]'
-                  : 'bg-slate-800/80 border border-slate-700/60 text-slate-200'
+                  : 'bg-slate-800/80 border border-slate-700/60 text-slate-200 shadow-sm'
               }`}
             >
               {m.role === 'assistant' ? (
@@ -480,7 +487,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                     <button
                       key={s.n}
                       onClick={() => setOpenSource(s)}
-                      className="w-full flex items-center gap-2 text-xs text-slate-400 hover:text-slate-200 text-left rounded-lg px-2 py-1.5 -mx-2 transition-colors hover:bg-slate-700/30"
+                      className="w-full flex items-center gap-2 text-xs text-slate-300 hover:text-slate-100 text-left rounded-lg px-2 py-1.5 -mx-2 transition-all bg-slate-900/40 hover:bg-slate-700/40 border border-transparent hover:border-slate-600/50"
                     >
                       <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-black shrink-0">
                         {s.n}
@@ -533,7 +540,10 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
         ))}
 
         {isLoading && (
-          <div className="flex justify-start">
+          <div className="flex items-start gap-2 justify-start">
+            <div className="hidden sm:flex shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 items-center justify-center mt-1 shadow-md shadow-indigo-500/30">
+              <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
+            </div>
             <div className="bg-slate-800/80 border border-slate-700/60 rounded-2xl px-4 sm:px-5 py-3 sm:py-3.5 max-w-[96%] sm:max-w-[85%] text-slate-400 text-sm">
               <div className="flex items-center gap-2">
                 <Loader2 className="w-4 h-4 animate-spin shrink-0" />
