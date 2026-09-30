@@ -25,6 +25,7 @@ import { SiteSettingsModal } from './components/SiteSettingsModal';
 import { AddExistingBookModal } from './components/AddExistingBookModal';
 import { WhatsAppShareModal } from './components/WhatsAppShareModal';
 import { WhatsAppGrowthPrompt } from './components/WhatsAppGrowthPrompt';
+import { SuperAgentAnnouncement } from './components/SuperAgentAnnouncement';
 import { CommunityGrowthBanner } from './components/CommunityGrowthBanner';
 import { SyncModal } from './components/SyncModal';
 import { RecentlyUploadedSection } from './components/RecentlyUploadedSection';
@@ -1030,7 +1031,7 @@ export default function App() {
         </div>
       )}
 
-      <main className="max-w-7xl mx-auto p-6 lg:p-12 pt-4">
+      <main className={activeTab === 'chat' ? 'max-w-7xl mx-auto px-2 sm:px-6 lg:p-12 pt-4' : 'max-w-7xl mx-auto p-6 lg:p-12 pt-4'}>
         {status && (
           <div
             className={`mb-6 p-5 rounded-3xl font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4 ${
@@ -1923,6 +1924,17 @@ export default function App() {
           currentSettings={siteSettings}
           onClose={() => setShowSettingsModal(false)}
           onStatusMessage={showStatus}
+        />
+      )}
+
+      {/* Launch announcement for Super Agent - shown site-wide, max 2x/device, 2-day window */}
+      {activeTab !== 'chat' && (
+        <SuperAgentAnnouncement
+          onTryNow={() => {
+            setActiveTab('chat');
+            window.history.pushState({}, '', '/chat');
+            window.scrollTo(0, 0);
+          }}
         />
       )}
 
