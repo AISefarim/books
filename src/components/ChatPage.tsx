@@ -34,7 +34,8 @@ const SUGGESTIONS = [
 const ASCENT_STAGES = [
   { label: 'Ascending to Shamayim…', aside: '(where the Cloud lives. Both of them.)' },
   { label: 'Entering the cloud, like Moshe…', aside: '(Shemot 24:18. His trip took 40 days, ours about 40 seconds.)' },
-  { label: 'Descending with the answer…', aside: '(no luchot were harmed in the making of this answer)' },
+  { label: 'No bread, no water, like Moshe…', aside: '(Shemot 34:28. You, however, are allowed a snack.)' },
+  { label: 'Vayered AI Sefarim be\u2019anan…', aside: '(Shemot 34:5, with one small edit)' },
   { label: 'Almost down…', aside: '(the descent is always the slower part)' },
 ];
 
@@ -48,16 +49,17 @@ function AscentIndicator() {
   useEffect(() => {
     const timers = [
       setTimeout(() => setLaunched(true), 60),
-      setTimeout(() => setStage(1), 16000),
-      setTimeout(() => setStage(2), 28000),
-      setTimeout(() => setStage(3), 46000),
+      setTimeout(() => setStage(1), 14000),
+      setTimeout(() => setStage(2), 22000),
+      setTimeout(() => setStage(3), 32000),
+      setTimeout(() => setStage(4), 48000),
     ];
     return () => timers.forEach(clearTimeout);
   }, []);
 
-  const atSummit = launched && (stage === 0 || stage === 1);
+  const atSummit = launched && stage <= 2;
   const pos = atSummit ? { left: '63%', top: '19%' } : { left: '17%', top: '83%' };
-  const duration = stage === 0 ? '15s' : stage === 2 ? '16s' : '3s';
+  const duration = stage === 0 ? '13s' : stage === 3 ? '16s' : '3s';
 
   return (
     <div className="flex items-center gap-3.5 mt-3">
@@ -71,7 +73,7 @@ function AscentIndicator() {
           </defs>
           <path d="M2 62 L34 26 L46 37 L71 12 L110 62 Z" fill="url(#ascent-mtn)" stroke="#818cf8" strokeOpacity="0.35" strokeWidth="1" strokeLinejoin="round" />
           <path d="M19 54 L34 38 L47 46 L71 22" stroke="#a5b4fc" strokeOpacity="0.35" strokeWidth="1" strokeDasharray="2 3" strokeLinecap="round" />
-          <g className={`transition-opacity duration-1000 ${stage === 1 ? 'opacity-100' : 'opacity-70'}`}>
+          <g className={`transition-opacity duration-1000 ${stage === 1 || stage === 2 ? 'opacity-100' : 'opacity-70'}`}>
             <ellipse cx="74" cy="9" rx="15" ry="4.5" fill="#e0e7ff" fillOpacity="0.22" />
             <ellipse cx="64" cy="11" rx="9" ry="3.5" fill="#e0e7ff" fillOpacity="0.18" />
             <ellipse cx="85" cy="11" rx="8" ry="3" fill="#e0e7ff" fillOpacity="0.16" />
@@ -81,7 +83,7 @@ function AscentIndicator() {
           className="absolute w-2.5 h-2.5 -ml-[5px] -mt-[5px] rounded-full bg-amber-300 shadow-[0_0_10px_2px_rgba(252,211,77,0.75)] transition-all ease-in-out motion-reduce:transition-none"
           style={{ ...pos, transitionDuration: duration }}
         >
-          <div className={`absolute inset-0 rounded-full bg-amber-300/60 ${stage === 1 ? 'animate-ping' : 'opacity-0'}`} />
+          <div className={`absolute inset-0 rounded-full bg-amber-300/60 ${stage === 1 || stage === 2 ? 'animate-ping' : 'opacity-0'}`} />
         </div>
       </div>
       <div key={stage} className="animate-in fade-in slide-in-from-bottom-1 duration-500 min-w-0">
