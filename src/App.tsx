@@ -1031,7 +1031,7 @@ export default function App() {
         </div>
       )}
 
-      <main className={activeTab === 'chat' ? 'max-w-7xl mx-auto px-2 sm:px-6 lg:p-12 pt-4' : 'max-w-7xl mx-auto p-6 lg:p-12 pt-4'}>
+      <main className={activeTab === 'chat' ? 'max-w-7xl mx-auto px-1 sm:px-6 lg:p-12 pt-2 sm:pt-4' : 'max-w-7xl mx-auto p-6 lg:p-12 pt-4'}>
         {status && (
           <div
             className={`mb-6 p-5 rounded-3xl font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4 ${
