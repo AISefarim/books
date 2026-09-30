@@ -572,16 +572,22 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
 
         {isLoading && (
           <div className="flex items-start gap-2 justify-start">
-            <div className="hidden sm:flex shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 items-center justify-center mt-1 shadow-md shadow-indigo-500/30 animate-pulse">
-              <Sparkles className="w-3.5 h-3.5 text-white" />
+            <div className="hidden sm:flex relative shrink-0 w-7 h-7 items-center justify-center mt-1">
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 animate-ping opacity-40" />
+              <div className="relative w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-md shadow-indigo-500/30">
+                <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
+              </div>
             </div>
             <div className="relative max-w-[96%] sm:max-w-[85%] rounded-2xl p-[1.5px] bg-gradient-to-br from-indigo-500/70 via-purple-500/50 to-indigo-500/70 shadow-[0_0_35px_-8px_rgba(99,102,241,0.55)]">
-              <div className="bg-slate-900 rounded-[calc(1rem-1.5px)] px-4 sm:px-5 py-3.5 sm:py-4 text-slate-400 text-sm">
+              <div className="absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none animate-drift" />
+              <div className="absolute -bottom-10 -right-6 w-28 h-28 bg-purple-500/20 rounded-full blur-3xl pointer-events-none animate-drift" style={{ animationDelay: '2s' }} />
+              <div className="relative bg-slate-900 rounded-[calc(1rem-1.5px)] px-4 sm:px-5 py-3.5 sm:py-4 text-slate-400 text-sm overflow-hidden">
                 <p className="text-base sm:text-lg font-black text-indigo-300 leading-snug">
                   {LOADING_EXPLANATION_HEADLINE}
                 </p>
 
                 <div className="mt-2.5 flex items-baseline gap-2">
+                  <BookOpen className="w-4 h-4 text-indigo-400 mb-0.5" />
                   <span className="text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tight">
                     {docCounter.toLocaleString()}
                   </span>
@@ -590,9 +596,13 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   </span>
                 </div>
 
-                <div className="flex items-center gap-2 mt-2.5">
+                <div className="mt-2 h-1 w-full rounded-full bg-slate-800 overflow-hidden relative">
+                  <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-indigo-400 to-transparent animate-shimmer-sweep" />
+                </div>
+
+                <div className="flex items-center gap-2 mt-3 min-h-[1.25rem]">
                   <Loader2 className="w-4 h-4 animate-spin shrink-0 text-indigo-400" />
-                  <span key={loadingMsgIndex} className="animate-in fade-in duration-300 text-slate-300">
+                  <span key={loadingMsgIndex} className="animate-in fade-in slide-in-from-bottom-1 duration-500 text-slate-300">
                     {LOADING_MESSAGES[loadingMsgIndex]}
                   </span>
                 </div>
