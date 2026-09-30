@@ -1,4 +1,4 @@
-import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye, Sparkles } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { GamificationStats } from '../lib/deviceTracker';
 
@@ -7,8 +7,8 @@ interface NavbarProps {
   onToggleAdmin: () => void;
   onHome: () => void;
   logoUrl?: string;
-  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media';
-  onTabChange: (tab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media') => void;
+  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat';
+  onTabChange: (tab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat') => void;
   whatsappUrl?: string;
   totalBooks?: number;
   totalVideos?: number;
@@ -95,6 +95,20 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 <Headphones className="w-3.5 h-3.5 shrink-0 opacity-90" />
               </div>
               <span>Videos & Podcasts</span>
+            </button>
+            <button
+              onClick={() => {
+                onTabChange('chat');
+                onHome();
+              }}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                activeTab === 'chat'
+                  ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+              }`}
+            >
+              <Sparkles className="w-4 h-4 shrink-0" />
+              <span>Ask AI</span>
             </button>
           </div>
 

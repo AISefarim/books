@@ -30,13 +30,14 @@ import { SyncModal } from './components/SyncModal';
 import { RecentlyUploadedSection } from './components/RecentlyUploadedSection';
 import { NewReleasesSection } from './components/NewReleasesSection';
 import { LearningGamificationBanner } from './components/LearningGamificationBanner';
+import { ChatPage } from './components/ChatPage';
 import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats, registerMediaList, recordWebsiteVisit } from './lib/deviceTracker';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [audios, setAudios] = useState<Audio[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media'>('sefarim');
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat'>('sefarim');
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -93,6 +94,14 @@ export default function App() {
       window.removeEventListener('device-watch-updated', handleDeviceWatchUpdated);
       window.removeEventListener('ai-sefarim-stats-updated', handleDeviceWatchUpdated);
     };
+  }, []);
+
+  // /chat is a standalone page - no book/video data needed, so it doesn't
+  // wait on the shared-link data-loaded gate below.
+  useEffect(() => {
+    if (window.location.pathname === '/chat') {
+      setActiveTab('chat');
+    }
   }, []);
 
   useEffect(() => {
@@ -1810,6 +1819,8 @@ export default function App() {
               </div>
             </div>
           </div>
+        ) : activeTab === 'chat' ? (
+          <ChatPage />
         ) : null}
       </main>
 
