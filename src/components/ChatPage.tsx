@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText } from 'lucide-react';
+import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText, UserPlus } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -593,35 +593,33 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
         </button>
       </form>
 
-      {messages.length > 0 && (
-        <div className="mt-4 px-1 sm:px-0">
-          <p className="text-center text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2.5">
-            Share This Conversation
-          </p>
-          <div className="flex items-center justify-center gap-2 flex-wrap">
+      <div className="mt-4 pt-4 border-t border-slate-800/60 flex items-center justify-center gap-1.5">
+        {messages.length > 0 && (
+          <>
             <button
               onClick={() => shareToWhatsApp(buildShareMessage(messages))}
-              className="flex items-center gap-2 text-sm font-bold text-white bg-[#25D366] hover:bg-[#1fa14b] rounded-xl px-4 py-2.5 shadow-lg shadow-[#25D366]/20 transition-all active:scale-95"
+              title="Share on WhatsApp"
+              className="p-2.5 rounded-full text-slate-400 hover:text-[#25D366] hover:bg-[#25D366]/10 transition-all active:scale-90"
             >
-              <MessageCircle className="w-4 h-4 fill-current" />
-              WhatsApp
+              <MessageCircle className="w-4 h-4" />
             </button>
             <button
               onClick={() => shareToSms(buildShareMessage(messages))}
-              className="flex items-center gap-2 text-sm font-bold text-white bg-sky-500 hover:bg-sky-400 rounded-xl px-4 py-2.5 shadow-lg shadow-sky-500/20 transition-all active:scale-95"
+              title="Share via SMS"
+              className="p-2.5 rounded-full text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition-all active:scale-90"
             >
               <MessageSquare className="w-4 h-4" />
-              SMS
             </button>
             <button
               onClick={() => exportTranscript(messages)}
-              className="flex items-center gap-2 text-sm font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl px-4 py-2.5 transition-all active:scale-95"
+              title="Save transcript"
+              className="p-2.5 rounded-full text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all active:scale-90"
             >
               <Download className="w-4 h-4" />
-              Save Transcript
             </button>
             <button
               disabled={isExportingDoc}
+              title="Export to Google Docs"
               onClick={async () => {
                 setIsExportingDoc(true);
                 setError(null);
@@ -634,10 +632,9 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   setIsExportingDoc(false);
                 }
               }}
-              className="flex items-center gap-2 text-sm font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl px-4 py-2.5 transition-all active:scale-95 disabled:opacity-50"
+              className="p-2.5 rounded-full text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all active:scale-90 disabled:opacity-50"
             >
               {isExportingDoc ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
-              Google Docs
             </button>
             <button
               onClick={() => {
@@ -645,22 +642,20 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   setMessages([]);
                 }
               }}
-              className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-rose-300 bg-slate-800/60 hover:bg-rose-500/10 border border-slate-700/60 hover:border-rose-500/30 rounded-xl px-4 py-2.5 transition-all active:scale-95"
+              title="Clear conversation"
+              className="p-2.5 rounded-full text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all active:scale-90"
             >
               <Trash2 className="w-4 h-4" />
-              Clear
             </button>
-          </div>
-        </div>
-      )}
-
-      <div className="mt-6 pt-5 border-t border-slate-800 text-center px-2">
+            <div className="w-px h-4 bg-slate-700 mx-1" />
+          </>
+        )}
         <button
           onClick={() => shareToWhatsApp(buildInviteMessage())}
-          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm px-5 py-3 rounded-full shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/40 transition-all active:scale-95"
+          title="Invite a friend to try Super Agent"
+          className="p-2.5 rounded-full text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all active:scale-90"
         >
-          <MessageCircle className="w-4 h-4 fill-current" />
-          Invite a friend to try Super Agent
+          <UserPlus className="w-4 h-4" />
         </button>
       </div>
     </div>
