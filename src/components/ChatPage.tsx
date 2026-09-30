@@ -66,18 +66,19 @@ const LIBRARY_FACTS: { icon: typeof BookOpen; text: string }[] = [
 
 const WAIT_CARDS = [
   {
-    title: 'Why you can wait 45 seconds',
-    body: 'Rav Kahana fled Bavel for Eretz Yisrael and arrived at the study hall of Rabbi Yochanan. Before he left, his teacher Rav made him promise not to raise difficulties against Rabbi Yochanan for seven years. So he sat silent as Rabbi Yochanan, taking him for an ordinary student, moved him back row by row until he sat in the seventh. Only then did he speak, and he resolved the doubts that Rabbi Yochanan had never been able to settle.',
-    punch: 'Seven rows of silence. You can wait 45 seconds.',
-    source: 'Source: Talmud Bavli, Bava Kamma 117a',
+    title: 'Perspective',
+    body: 'Rav Kahana sat silent while Rabbi Yochanan demoted him to the seventh row, because Rav had made him promise seven years of not arguing.',
+    punch: 'So you can wait 45 seconds while we scan all of Jewish thought.',
+    source: 'Bava Kamma 117a',
   },
   {
-    title: 'Why you can wait 45 seconds',
-    body: 'In the days of the Mishnah, Rabban Gamliel ruled that the request for rain waits until the 7th of Marcheshvan, fifteen days after Sukkot, so the last pilgrims could reach the Euphrates, the edge of Bavel, on their way home from Jerusalem. Roughly fifteen days on the road, just to reach the border.',
-    punch: 'Your answer takes about 45 seconds.',
-    source: 'Source: Mishnah Ta\u2019anit 10a',
+    title: 'Perspective',
+    body: 'The Mishnah holds up the entire request for rain 15 days so the last pilgrim can walk home from Jerusalem to the Euphrates.',
+    punch: 'So you can wait 45 seconds while we scan all of Jewish thought.',
+    source: 'Mishnah Ta\u2019anit 10a',
   },
 ];
+
 
 
 const LOADING_EXPLANATION_HEADLINE = "This takes longer than a typical search engine.";
