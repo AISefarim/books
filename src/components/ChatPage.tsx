@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText, UserPlus } from 'lucide-react';
+import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText, UserPlus, Video, Headphones, ShieldAlert, Gift } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -41,6 +41,15 @@ const LOADING_MESSAGES = [
   'Following a halachah from the Mishnah through the Poskim…',
   'Combing through Midrash Rabbah and the Baalei Mussar…',
   'Assembling an answer from hundreds of primary sources…',
+];
+
+// Shown while the reader waits anyway - the dead time is a chance to explain
+// what AI Sefarim actually is, not just to say "still searching."
+const LIBRARY_FACTS: { icon: typeof BookOpen; text: string }[] = [
+  { icon: BookOpen, text: 'Nearly 100 sefarim in the library — most translated into English for the very first time' },
+  { icon: Gift, text: 'Every book, video, and podcast on AI Sefarim is completely free' },
+  { icon: Video, text: 'Hundreds of videos and podcasts, with new ones added regularly' },
+  { icon: Headphones, text: 'Daily podcasts covering Daf Yomi, Tanach, Rambam, the Zohar, and more' },
 ];
 
 const LOADING_EXPLANATION_HEADLINE = "This takes longer than a typical search engine.";
@@ -345,6 +354,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+  const [factIndex, setFactIndex] = useState(0);
   const [docCounter, setDocCounter] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [openSource, setOpenSource] = useState<Source | null>(null);
@@ -371,6 +381,15 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
     const id = setInterval(() => {
       setLoadingMsgIndex((i) => (i + 1) % LOADING_MESSAGES.length);
     }, 2800);
+    return () => clearInterval(id);
+  }, [isLoading]);
+
+  useEffect(() => {
+    if (!isLoading) return;
+    setFactIndex(Math.floor(Math.random() * LIBRARY_FACTS.length));
+    const id = setInterval(() => {
+      setFactIndex((i) => (i + 1) % LIBRARY_FACTS.length);
+    }, 4200);
     return () => clearInterval(id);
   }, [isLoading]);
 
@@ -578,7 +597,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                 <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
               </div>
             </div>
-            <div className="relative max-w-[96%] sm:max-w-[85%] rounded-2xl p-[1.5px] bg-gradient-to-br from-indigo-500/70 via-purple-500/50 to-indigo-500/70 shadow-[0_0_35px_-8px_rgba(99,102,241,0.55)]">
+            <div className="relative max-w-[96%] sm:max-w-[85%] rounded-2xl p-[1.5px] bg-gradient-to-br from-indigo-500/70 via-purple-500/50 to-indigo-500/70 animate-glow-pulse">
               <div className="absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none animate-drift" />
               <div className="absolute -bottom-10 -right-6 w-28 h-28 bg-purple-500/20 rounded-full blur-3xl pointer-events-none animate-drift" style={{ animationDelay: '2s' }} />
               <div className="relative bg-slate-900 rounded-[calc(1rem-1.5px)] px-4 sm:px-5 py-3.5 sm:py-4 text-slate-400 text-sm overflow-hidden">
@@ -607,9 +626,35 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-500 mt-2.5 pt-2.5 border-t border-slate-700/40 leading-relaxed">
+                <p className="text-xs text-slate-500 mt-2.5 leading-relaxed">
                   {LOADING_EXPLANATION_DETAIL}
                 </p>
+
+                <div className="mt-3 pt-3 border-t border-slate-700/40 flex items-start gap-2 min-h-[2.25rem]">
+                  {(() => {
+                    const FactIcon = LIBRARY_FACTS[factIndex].icon;
+                    return <FactIcon className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />;
+                  })()}
+                  <span key={factIndex} className="animate-in fade-in slide-in-from-bottom-1 duration-500 text-slate-300 text-xs leading-relaxed">
+                    {LIBRARY_FACTS[factIndex].text}
+                  </span>
+                </div>
+
+                <div className="mt-3 pt-3 border-t border-slate-700/40 flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => window.open(WHATSAPP_GROUP_URL, '_blank')}
+                    className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-[#25D366] hover:bg-[#1fa14b] rounded-full px-3 py-1.5 shadow-sm transition-all active:scale-95"
+                  >
+                    <MessageCircle className="w-3.5 h-3.5 fill-current" />
+                    Join our WhatsApp community
+                  </button>
+                </div>
+
+                <div className="mt-2.5 flex items-start gap-1.5 text-[11px] text-slate-500 leading-relaxed">
+                  <ShieldAlert className="w-3.5 h-3.5 text-amber-500/80 shrink-0 mt-0.5" />
+                  <span>Super Agent is AI, not a rabbi - always confirm practical halachah with a qualified rav.</span>
+                </div>
               </div>
             </div>
           </div>
