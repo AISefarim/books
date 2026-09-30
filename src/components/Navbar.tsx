@@ -94,7 +94,8 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 <Video className="w-4 h-4 shrink-0" />
                 <Headphones className="w-3.5 h-3.5 shrink-0 opacity-90" />
               </div>
-              <span>Videos & Podcasts</span>
+              <span className="hidden sm:inline">Videos & Podcasts</span>
+              <span className="sm:hidden">Media</span>
             </button>
             <button
               onClick={() => {
@@ -108,7 +109,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
               }`}
             >
               <Sparkles className="w-4 h-4 shrink-0" />
-              <span>Ask AI</span>
+              <span>Super Agent</span>
             </button>
           </div>
 

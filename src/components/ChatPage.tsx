@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Sparkles, Send, BookOpen, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // Deployed Cloudflare Worker URL. Set VITE_CHAT_WORKER_URL in the AI Studio
 // Secrets panel (or .env) to override without a code change.
@@ -25,16 +27,87 @@ const SUGGESTIONS = [
   'Summarize the Rambam\'s laws of Teshuvah',
 ];
 
+const LOADING_MESSAGES = [
+  'Searching 3,300+ years of expansive, infinitely deep Torah material…',
+  'Cross-referencing Mishnah, Gemara, Rambam, and the Zohar…',
+  'Digging through Bavli, Yerushalmi, and the Poskim…',
+  'Consulting the Arizal, the Baalei Mussar, and the Acharonim…',
+];
+
+function highlightSource(n: number) {
+  const el = document.getElementById(`source-${n}`);
+  if (!el) return;
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  el.classList.add('source-flash');
+  setTimeout(() => el.classList.remove('source-flash'), 1400);
+}
+
+function Markdown({ text }: { text: string }) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        p: ({ children }) => <p className="mb-3 last:mb-0 leading-relaxed">{children}</p>,
+        h1: ({ children }) => <h3 className="text-base font-black text-slate-100 mt-4 mb-2">{children}</h3>,
+        h2: ({ children }) => <h3 className="text-base font-black text-slate-100 mt-4 mb-2">{children}</h3>,
+        h3: ({ children }) => <h4 className="text-sm font-black text-slate-200 mt-3 mb-1.5">{children}</h4>,
+        strong: ({ children }) => <strong className="font-bold text-slate-100">{children}</strong>,
+        em: ({ children }) => <em className="italic text-slate-300">{children}</em>,
+        ul: ({ children }) => <ul className="list-disc pl-5 mb-3 space-y-1">{children}</ul>,
+        ol: ({ children }) => <ol className="list-decimal pl-5 mb-3 space-y-1">{children}</ol>,
+        li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+        hr: () => <hr className="border-slate-700/60 my-3" />,
+        a: ({ href, children }) => {
+          const citeMatch = href?.match(/^#cite-(\d+)$/);
+          if (citeMatch) {
+            const n = Number(citeMatch[1]);
+            return (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  highlightSource(n);
+                }}
+                className="inline-flex items-center justify-center w-4 h-4 mx-0.5 -translate-y-0.5 rounded-full bg-indigo-500/20 hover:bg-indigo-500/40 text-indigo-300 text-[10px] font-black align-super transition-colors"
+                aria-label={`Jump to source ${n}`}
+              >
+                {n}
+              </button>
+            );
+          }
+          return (
+            <a href={href} target="_blank" rel="noopener noreferrer" className="text-indigo-400 hover:underline">
+              {children}
+            </a>
+          );
+        },
+      }}
+    >
+      {text}
+    </ReactMarkdown>
+  );
+}
+
 export function ChatPage() {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    if (!isLoading) return;
+    setLoadingMsgIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
+    const id = setInterval(() => {
+      setLoadingMsgIndex((i) => (i + 1) % LOADING_MESSAGES.length);
+    }, 2800);
+    return () => clearInterval(id);
+  }, [isLoading]);
 
   async function sendQuestion(question: string) {
     const trimmed = question.trim();
@@ -70,17 +143,23 @@ export function ChatPage() {
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto flex flex-col min-h-[70vh]">
+      <style>{`
+        @keyframes sourceFlash { 0%, 100% { background-color: rgba(99,102,241,0.08); } 50% { background-color: rgba(99,102,241,0.35); } }
+        .source-flash { animation: sourceFlash 0.7s ease-in-out 2; }
+      `}</style>
+
       <div className="text-center mb-8">
         <div className="inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border border-indigo-500/30 mb-4">
           <Sparkles className="w-3.5 h-3.5" />
           Powered by the AI Sefarim library
         </div>
         <h1 className="text-4xl md:text-5xl font-black text-slate-50 tracking-tighter leading-tight mb-3">
-          Ask the Library
+          Meet Your Super Agent
         </h1>
-        <p className="text-slate-400 font-medium max-w-xl mx-auto">
-          Grounded answers pulled directly from Mishneh Torah, Shulchan Aruch, the Talmud, the Zohar, Kitvei Ari,
-          and every AI Sefarim book &mdash; with sources you can check.
+        <p className="text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
+          Hundreds of sources, fully indexed and instantly searchable &mdash; from the <span className="text-indigo-400 font-bold">Mishnah</span> to the present day.
+          Every tractate of <span className="text-indigo-400 font-bold">Gemara</span>, all of the <span className="text-indigo-400 font-bold">Rambam</span>, the complete <span className="text-indigo-400 font-bold">Beit Yosef</span> and <span className="text-indigo-400 font-bold">Shulchan Aruch</span>,
+          the full <span className="text-indigo-400 font-bold">Arizal</span>, the Zohar, and every AI Sefarim book &mdash; 3,300 years of Torah, one question away.
         </p>
       </div>
 
@@ -108,16 +187,32 @@ export function ChatPage() {
                   : 'bg-slate-800/80 border border-slate-700/60 text-slate-200'
               }`}
             >
-              <p className="whitespace-pre-wrap leading-relaxed text-[15px]">{m.content}</p>
+              {m.role === 'assistant' ? (
+                <div className="text-[15px]">
+                  <Markdown text={m.content} />
+                </div>
+              ) : (
+                <p className="whitespace-pre-wrap leading-relaxed text-[15px]">{m.content}</p>
+              )}
 
               {m.sources && m.sources.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-slate-700/50 space-y-1.5">
                   <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">Sources</p>
                   {m.sources.map((s) => (
-                    <div key={s.n} className="flex items-start gap-1.5 text-xs text-slate-400">
-                      <BookOpen className="w-3 h-3 mt-0.5 text-indigo-400 shrink-0" />
-                      <span className="font-semibold text-slate-300">{s.book}</span>
-                    </div>
+                    <button
+                      key={s.n}
+                      id={`source-${s.n}`}
+                      onClick={() => highlightSource(s.n)}
+                      className="w-full flex items-start gap-2 text-xs text-slate-400 hover:text-slate-200 text-left rounded-lg px-2 py-1.5 -mx-2 transition-colors"
+                    >
+                      <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-indigo-500/20 text-indigo-300 text-[10px] font-black shrink-0 mt-0.5">
+                        {s.n}
+                      </span>
+                      <span className="flex items-start gap-1.5">
+                        <BookOpen className="w-3 h-3 mt-0.5 text-indigo-400 shrink-0" />
+                        <span className="font-semibold text-slate-300">{s.book}</span>
+                      </span>
+                    </button>
                   ))}
                 </div>
               )}
@@ -128,8 +223,10 @@ export function ChatPage() {
         {isLoading && (
           <div className="flex justify-start">
             <div className="bg-slate-800/80 border border-slate-700/60 rounded-2xl px-5 py-3.5 flex items-center gap-2 text-slate-400 text-sm">
-              <Loader2 className="w-4 h-4 animate-spin" />
-              Searching the library&hellip;
+              <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+              <span key={loadingMsgIndex} className="animate-in fade-in duration-300">
+                {LOADING_MESSAGES[loadingMsgIndex]}
+              </span>
             </div>
           </div>
         )}

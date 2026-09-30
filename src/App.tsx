@@ -951,7 +951,7 @@ export default function App() {
       />
 
       {/* Welcome Video Section (Disappears for people who have been on our website over 25 times) */}
-      {!deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
+      {activeTab !== 'chat' && !deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-2">
           <div className="bg-slate-900 rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-800 shadow-indigo-950/40 relative">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/20 via-slate-900 to-slate-900 pointer-events-none" />
@@ -1824,11 +1824,13 @@ export default function App() {
         ) : null}
       </main>
 
-      {/* Community Growth Banner to prompt visitors */}
-      <CommunityGrowthBanner 
-        whatsappUrl={bannerUrl} 
-        onOpenShareModal={() => setShowWhatsAppShareModal(true)} 
-      />
+      {/* Community Growth Banner to prompt visitors - hidden on /chat, where it breaks the immersive feel */}
+      {activeTab !== 'chat' && (
+        <CommunityGrowthBanner
+          whatsappUrl={bannerUrl}
+          onOpenShareModal={() => setShowWhatsAppShareModal(true)}
+        />
+      )}
 
       <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-700/60 mt-8 relative">
         <p className="text-slate-400 text-sm font-medium max-w-2xl mx-auto leading-relaxed">
