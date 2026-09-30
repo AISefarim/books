@@ -1,9 +1,10 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText, UserPlus, Video, Headphones, ShieldAlert, Gift, Compass } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../lib/firebase';
+import type { Book, Video as MediaItem } from '../types';
 
 // Deployed Cloudflare Worker URL. Set VITE_CHAT_WORKER_URL in the AI Studio
 // Secrets panel (or .env) to override without a code change.
@@ -426,7 +427,84 @@ async function copyText(text: string): Promise<boolean> {
   }
 }
 
-export function ChatPage({ onExit }: { onExit: () => void }) {
+const NO_BOOKS: Book[] = [];
+const NO_MEDIA: MediaItem[] = [];
+const NO_THUMBS: Record<string, string> = {};
+
+type ShowcaseItem = { key: string; href: string; title: string; kind: 'Book' | 'Video' | 'Podcast'; img?: string };
+
+function shuffled<T>(arr: T[]): T[] {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// Dead time is a captive audience: surface real books and media from the
+// library. Tiles are only ever appended (never rotated out) so nothing
+// disappears before it can be read.
+function LibraryShowcase({ books, media, thumbs }: { books: Book[]; media: MediaItem[]; thumbs: Record<string, string> }) {
+  const items = useMemo<ShowcaseItem[]>(() => {
+    const bookItems: ShowcaseItem[] = shuffled(books.filter((b) => b.cover && b.title)).slice(0, 5).map((b) => ({
+      key: 'b' + b.id, href: `/b/${b.id}`, title: b.title, kind: 'Book', img: b.cover,
+    }));
+    const mediaItems: ShowcaseItem[] = shuffled(media.filter((m) => m.title)).slice(0, 5).map((m) => ({
+      key: 'm' + m.id, href: `/v/${m.id}`, title: m.title, kind: m.type === 'audio' ? 'Podcast' : 'Video', img: thumbs[m.category],
+    }));
+    const out: ShowcaseItem[] = [];
+    for (let i = 0; i < Math.max(bookItems.length, mediaItems.length); i++) {
+      if (bookItems[i]) out.push(bookItems[i]);
+      if (mediaItems[i]) out.push(mediaItems[i]);
+    }
+    return out;
+  // Deliberately keyed on availability only: re-picking on every parent render (the page counter ticks every 110ms) would reshuffle the tiles.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [books.length > 0, media.length > 0]);
+
+  const [count, setCount] = useState(3);
+  useEffect(() => {
+    const id = setInterval(() => setCount((c) => Math.min(c + 1, items.length)), 8000);
+    return () => clearInterval(id);
+  }, [items.length]);
+
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-3 pt-3 border-t border-slate-700/40">
+      <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Meanwhile, from the library <span className="text-emerald-400">· all free</span></p>
+      <div className="mt-2 flex gap-2.5 overflow-x-auto pb-1.5 -mx-1 px-1">
+        {items.slice(0, count).map((it) => (
+          <a
+            key={it.key}
+            href={it.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="animate-in fade-in slide-in-from-right-2 duration-700 group shrink-0 w-[88px] sm:w-[96px]"
+          >
+            <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-slate-800 border border-slate-700/60 group-hover:border-indigo-400/60 transition-colors flex items-center justify-center">
+              {it.img ? (
+                <img src={it.img} alt="" loading="lazy" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />
+              ) : it.kind === 'Podcast' ? (
+                <Headphones className="w-6 h-6 text-indigo-400" />
+              ) : (
+                <Video className="w-6 h-6 text-indigo-400" />
+              )}
+              {it.kind !== 'Book' && (
+                <span className="absolute bottom-1 left-1 bg-slate-900/90 text-indigo-300 text-[9px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded">
+                  {it.kind}
+                </span>
+              )}
+            </div>
+            <p className="mt-1 text-[11px] leading-tight text-slate-300 line-clamp-2 group-hover:text-indigo-300 transition-colors">{it.title}</p>
+          </a>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryThumbnails = NO_THUMBS }: { onExit: () => void; books?: Book[]; media?: MediaItem[]; categoryThumbnails?: Record<string, string> }) {
   const [messages, setMessages] = useState<ChatMessage[]>(loadHistory);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -729,6 +807,8 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                     );
                   })}
                 </div>
+
+                <LibraryShowcase books={books} media={media} thumbs={categoryThumbnails} />
 
                 <div className="mt-3 pt-3 border-t border-slate-700/40 flex flex-wrap items-center gap-2">
                   <button
