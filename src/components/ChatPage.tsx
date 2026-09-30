@@ -30,18 +30,66 @@ const SUGGESTIONS = [
   'Summarize the Rambam\'s laws of Teshuvah',
 ];
 
-const LOADING_MESSAGES = [
-  'Searching 3,300+ years of expansive, infinitely deep Torah material…',
-  'Cross-referencing Mishnah, Gemara, Rambam, and the Zohar…',
-  'Digging through Bavli, Yerushalmi, and the Poskim…',
-  'Consulting the Arizal, the Baalei Mussar, and the Acharonim…',
-  'Tracing a single sugya across the Rishonim and Acharonim…',
-  'Weighing the Shulchan Aruch against the Beit Yosef, Rambam, and the Zohar…',
-  'Opening the Zohar and the writings of the Kitvei Ari…',
-  'Following a halachah from the Mishnah through the Poskim…',
-  'Combing through Midrash Rabbah and the Baalei Mussar…',
-  'Assembling an answer from hundreds of primary sources…',
+const ASCENT_STAGES = [
+  { label: 'Ascending to the Cloud…', aside: '(the one with the servers)' },
+  { label: 'Receiving the sources…', aside: '(40 days, condensed)' },
+  { label: 'Descending with the answer…', aside: '(carrying it carefully)' },
+  { label: 'Almost down…', aside: '(the last stretch is the slowest)' },
 ];
+
+// Starts on mount (the loading card mounts when a question is sent): climbs to
+// the cloud, pauses there, then comes back down. Real duration is unknowable,
+// so the last stage just holds near the base until the answer replaces it.
+function AscentIndicator() {
+  const [stage, setStage] = useState(0);
+  const [launched, setLaunched] = useState(false);
+
+  useEffect(() => {
+    const timers = [
+      setTimeout(() => setLaunched(true), 60),
+      setTimeout(() => setStage(1), 16000),
+      setTimeout(() => setStage(2), 28000),
+      setTimeout(() => setStage(3), 46000),
+    ];
+    return () => timers.forEach(clearTimeout);
+  }, []);
+
+  const atSummit = launched && (stage === 0 || stage === 1);
+  const pos = atSummit ? { left: '63%', top: '19%' } : { left: '17%', top: '83%' };
+  const duration = stage === 0 ? '15s' : stage === 2 ? '16s' : '3s';
+
+  return (
+    <div className="flex items-center gap-3.5 mt-3">
+      <div className="relative shrink-0 w-[112px] h-[64px]">
+        <svg viewBox="0 0 112 64" className="absolute inset-0 w-full h-full" fill="none" aria-hidden="true">
+          <defs>
+            <linearGradient id="ascent-mtn" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0" stopColor="#818cf8" stopOpacity="0.28" />
+              <stop offset="1" stopColor="#1e293b" stopOpacity="0.1" />
+            </linearGradient>
+          </defs>
+          <path d="M2 62 L34 26 L46 37 L71 12 L110 62 Z" fill="url(#ascent-mtn)" stroke="#818cf8" strokeOpacity="0.35" strokeWidth="1" strokeLinejoin="round" />
+          <path d="M19 54 L34 38 L47 46 L71 22" stroke="#a5b4fc" strokeOpacity="0.35" strokeWidth="1" strokeDasharray="2 3" strokeLinecap="round" />
+          <g className={`transition-opacity duration-1000 ${stage === 1 ? 'opacity-100' : 'opacity-70'}`}>
+            <ellipse cx="74" cy="9" rx="15" ry="4.5" fill="#e0e7ff" fillOpacity="0.22" />
+            <ellipse cx="64" cy="11" rx="9" ry="3.5" fill="#e0e7ff" fillOpacity="0.18" />
+            <ellipse cx="85" cy="11" rx="8" ry="3" fill="#e0e7ff" fillOpacity="0.16" />
+          </g>
+        </svg>
+        <div
+          className="absolute w-2.5 h-2.5 -ml-[5px] -mt-[5px] rounded-full bg-amber-300 shadow-[0_0_10px_2px_rgba(252,211,77,0.75)] transition-all ease-in-out motion-reduce:transition-none"
+          style={{ ...pos, transitionDuration: duration }}
+        >
+          <div className={`absolute inset-0 rounded-full bg-amber-300/60 ${stage === 1 ? 'animate-ping' : 'opacity-0'}`} />
+        </div>
+      </div>
+      <div key={stage} className="animate-in fade-in slide-in-from-bottom-1 duration-500 min-w-0">
+        <p className="text-sm font-bold text-slate-200 leading-snug">{ASCENT_STAGES[stage].label}</p>
+        <p className="text-xs text-slate-500 italic leading-snug">{ASCENT_STAGES[stage].aside}</p>
+      </div>
+    </div>
+  );
+}
 
 // Shown while the reader waits anyway - the dead time is a chance to explain
 // what AI Sefarim actually is (and put the wait in perspective), not just to
@@ -382,7 +430,6 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>(loadHistory);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [factStart, setFactStart] = useState(0);
   const [factCount, setFactCount] = useState(1);
   const [waitCount, setWaitCount] = useState(1);
@@ -405,15 +452,6 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
       // Ignore storage write errors (e.g. private browsing, quota)
     }
   }, [messages]);
-
-  useEffect(() => {
-    if (!isLoading) return;
-    setLoadingMsgIndex(Math.floor(Math.random() * LOADING_MESSAGES.length));
-    const id = setInterval(() => {
-      setLoadingMsgIndex((i) => (i + 1) % LOADING_MESSAGES.length);
-    }, 2800);
-    return () => clearInterval(id);
-  }, [isLoading]);
 
   useEffect(() => {
     if (!isLoading) return;
@@ -662,12 +700,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-indigo-400 to-transparent animate-shimmer-sweep" />
                 </div>
 
-                <div className="flex items-center gap-2 mt-3 min-h-[1.25rem]">
-                  <Loader2 className="w-4 h-4 animate-spin shrink-0 text-indigo-400" />
-                  <span key={loadingMsgIndex} className="animate-in fade-in slide-in-from-bottom-1 duration-500 text-slate-300">
-                    {LOADING_MESSAGES[loadingMsgIndex]}
-                  </span>
-                </div>
+                <AscentIndicator />
 
                 <p className="text-xs text-slate-500 mt-2.5 leading-relaxed">
                   {LOADING_EXPLANATION_DETAIL}
