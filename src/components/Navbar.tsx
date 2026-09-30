@@ -20,13 +20,18 @@ interface NavbarProps {
   onOpenSync?: () => void;
   showLevelBadge?: boolean;
   userStats?: GamificationStats;
+  variant?: 'header' | 'footer';
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, totalViewed, onOpenWhatsAppShare, currentUser, onOpenSync, showLevelBadge = false, userStats }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, totalViewed, onOpenWhatsAppShare, currentUser, onOpenSync, showLevelBadge = false, userStats, variant = 'header' }: NavbarProps) {
   const mediaCount = totalMedia !== undefined ? totalMedia : (totalVideos + totalPodcasts);
   const isGoogleUser = currentUser && !currentUser.isAnonymous;
   return (
-    <nav className="bg-slate-900/85 backdrop-blur-xl border-b border-slate-700/50 sticky top-0 z-40 shadow-sm">
+    <nav
+      className={`bg-slate-900/85 backdrop-blur-xl shadow-sm ${
+        variant === 'footer' ? 'border-t border-slate-700/50' : 'border-b border-slate-700/50 sticky top-0 z-40'
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
         {/* Logo Section */}
         <div 
