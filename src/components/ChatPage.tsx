@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft } from 'lucide-react';
+import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -164,6 +164,8 @@ function exportTranscript(messages: ChatMessage[]) {
     lines.push('---');
     lines.push('');
   }
+  lines.push(`Ask Super Agent yourself: ${SITE_URL}`);
+  lines.push(`Join our WhatsApp community: ${WHATSAPP_GROUP_URL}`);
   const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -182,33 +184,60 @@ const SITE_URL = 'https://aisefarim.com/chat';
 const WHATSAPP_GROUP_URL = 'https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr';
 const MAX_SHARE_BODY = 800; // keep the Q&A itself short; the links always survive intact
 
+// Every copy/share action, whole-conversation or single-message, ends
+// with both of these - no exceptions.
+function appendLinks(body: string): string {
+  return `${body}\n\n🔗 Ask Super Agent yourself: ${SITE_URL}\n💬 Join our WhatsApp community: ${WHATSAPP_GROUP_URL}`;
+}
+
+function truncate(text: string, max: number): string {
+  return text.length > max ? text.slice(0, max).trim() + '…' : text;
+}
+
 function buildShareMessage(messages: ChatMessage[]): string {
   const lastUser = [...messages].reverse().find((m) => m.role === 'user');
   const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
 
   let body = '🎙️ *AI Sefarim Super Agent*\n\n';
   if (lastUser) body += `*Q:* ${lastUser.content}\n\n`;
-  if (lastAssistant) {
-    const answer =
-      lastAssistant.content.length > MAX_SHARE_BODY
-        ? lastAssistant.content.slice(0, MAX_SHARE_BODY).trim() + '…'
-        : lastAssistant.content;
-    body += `*A:* ${answer}\n\n`;
-  }
-
-  body += `🔗 Ask Super Agent yourself: ${SITE_URL}\n`;
-  body += `💬 Join our WhatsApp community: ${WHATSAPP_GROUP_URL}`;
-  return body;
+  if (lastAssistant) body += `*A:* ${truncate(lastAssistant.content, MAX_SHARE_BODY)}`;
+  return appendLinks(body);
 }
 
-function shareToWhatsApp(messages: ChatMessage[]) {
-  const text = buildShareMessage(messages);
+function buildSingleMessageText(m: ChatMessage, forSharing: boolean): string {
+  const body = forSharing
+    ? `🎙️ *AI Sefarim Super Agent*\n\n${truncate(m.content, MAX_SHARE_BODY)}`
+    : m.content;
+  return appendLinks(body);
+}
+
+function shareToWhatsApp(text: string) {
   window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
 }
 
-function shareToSms(messages: ChatMessage[]) {
-  const text = buildShareMessage(messages);
+function shareToSms(text: string) {
   window.open(`sms:?body=${encodeURIComponent(text)}`, '_blank');
+}
+
+async function copyText(text: string): Promise<boolean> {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      document.execCommand('copy');
+      document.body.removeChild(ta);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 export function ChatPage({ onExit }: { onExit: () => void }) {
@@ -218,6 +247,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [openSource, setOpenSource] = useState<Source | null>(null);
+  const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -303,43 +333,6 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
         </p>
       </div>
 
-      {messages.length > 0 && (
-        <div className="flex items-center justify-end gap-2 mb-2 px-1 flex-wrap">
-          <button
-            onClick={() => shareToWhatsApp(messages)}
-            className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-300 hover:text-white bg-[#25D366]/10 hover:bg-[#25D366] border border-[#25D366]/30 rounded-lg px-2.5 py-1.5 transition-colors"
-          >
-            <MessageCircle className="w-3 h-3 fill-current" />
-            WhatsApp
-          </button>
-          <button
-            onClick={() => shareToSms(messages)}
-            className="flex items-center gap-1.5 text-[11px] font-bold text-sky-300 hover:text-white bg-sky-500/10 hover:bg-sky-500 border border-sky-500/30 rounded-lg px-2.5 py-1.5 transition-colors"
-          >
-            <MessageSquare className="w-3 h-3" />
-            SMS
-          </button>
-          <button
-            onClick={() => exportTranscript(messages)}
-            className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-slate-200 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-lg px-2.5 py-1.5 transition-colors"
-          >
-            <Download className="w-3 h-3" />
-            Export
-          </button>
-          <button
-            onClick={() => {
-              if (confirm('Clear this conversation? This cannot be undone.')) {
-                setMessages([]);
-              }
-            }}
-            className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-rose-300 bg-slate-800/60 hover:bg-rose-500/10 border border-slate-700/60 hover:border-rose-500/30 rounded-lg px-2.5 py-1.5 transition-colors"
-          >
-            <Trash2 className="w-3 h-3" />
-            Clear
-          </button>
-        </div>
-      )}
-
       <div className="flex-1 flex flex-col gap-3 sm:gap-4 mb-4 px-1 sm:px-0">
         {messages.length === 0 && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 mb-4 sm:mb-6">
@@ -400,6 +393,38 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   ))}
                 </div>
               )}
+
+              {m.role === 'assistant' && (
+                <div className="mt-3 pt-3 border-t border-slate-700/50 flex items-center gap-1.5">
+                  <button
+                    onClick={async () => {
+                      const ok = await copyText(buildSingleMessageText(m, false));
+                      if (ok) {
+                        setCopiedIndex(i);
+                        setTimeout(() => setCopiedIndex(null), 1800);
+                      }
+                    }}
+                    className="flex items-center gap-1 text-[10px] font-bold text-slate-400 hover:text-slate-200 bg-slate-700/40 hover:bg-slate-700 rounded-md px-2 py-1 transition-colors"
+                  >
+                    {copiedIndex === i ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                    {copiedIndex === i ? 'Copied' : 'Copy'}
+                  </button>
+                  <button
+                    onClick={() => shareToWhatsApp(buildSingleMessageText(m, true))}
+                    className="flex items-center gap-1 text-[10px] font-bold text-emerald-300 hover:text-white bg-[#25D366]/10 hover:bg-[#25D366] rounded-md px-2 py-1 transition-colors"
+                  >
+                    <MessageCircle className="w-3 h-3 fill-current" />
+                    WhatsApp
+                  </button>
+                  <button
+                    onClick={() => shareToSms(buildSingleMessageText(m, true))}
+                    className="flex items-center gap-1 text-[10px] font-bold text-sky-300 hover:text-white bg-sky-500/10 hover:bg-sky-500 rounded-md px-2 py-1 transition-colors"
+                  >
+                    <MessageSquare className="w-3 h-3" />
+                    SMS
+                  </button>
+                </div>
+              )}
             </div>
           </div>
         ))}
@@ -454,6 +479,56 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
           <Send className="w-4 h-4" />
         </button>
       </form>
+
+      {messages.length > 0 && (
+        <div className="mt-4 px-1 sm:px-0">
+          <p className="text-center text-[11px] font-black uppercase tracking-widest text-slate-500 mb-2.5">
+            Share This Conversation
+          </p>
+          <div className="flex items-center justify-center gap-2 flex-wrap">
+            <button
+              onClick={() => shareToWhatsApp(buildShareMessage(messages))}
+              className="flex items-center gap-2 text-sm font-bold text-white bg-[#25D366] hover:bg-[#1fa14b] rounded-xl px-4 py-2.5 shadow-lg shadow-[#25D366]/20 transition-all active:scale-95"
+            >
+              <MessageCircle className="w-4 h-4 fill-current" />
+              WhatsApp
+            </button>
+            <button
+              onClick={() => shareToSms(buildShareMessage(messages))}
+              className="flex items-center gap-2 text-sm font-bold text-white bg-sky-500 hover:bg-sky-400 rounded-xl px-4 py-2.5 shadow-lg shadow-sky-500/20 transition-all active:scale-95"
+            >
+              <MessageSquare className="w-4 h-4" />
+              SMS
+            </button>
+            <button
+              onClick={() => exportTranscript(messages)}
+              className="flex items-center gap-2 text-sm font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl px-4 py-2.5 transition-all active:scale-95"
+            >
+              <Download className="w-4 h-4" />
+              Save Transcript
+            </button>
+            <button
+              onClick={() => {
+                if (confirm('Clear this conversation? This cannot be undone.')) {
+                  setMessages([]);
+                }
+              }}
+              className="flex items-center gap-2 text-sm font-bold text-slate-400 hover:text-rose-300 bg-slate-800/60 hover:bg-rose-500/10 border border-slate-700/60 hover:border-rose-500/30 rounded-xl px-4 py-2.5 transition-all active:scale-95"
+            >
+              <Trash2 className="w-4 h-4" />
+              Clear
+            </button>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-6 pt-5 border-t border-slate-800 text-center px-2">
+        <p className="text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
+          <span className="font-black text-slate-400">AI Sefarim</span> is a free digital library of Torah
+          sefarim, videos, and podcasts &mdash; ancient wisdom, illuminated by AI. Super Agent searches this
+          entire library to answer your questions, grounded in the actual texts.
+        </p>
+      </div>
     </div>
   );
 }
