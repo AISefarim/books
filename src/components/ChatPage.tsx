@@ -415,13 +415,15 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
         Back to AI Sefarim
       </button>
 
-      <div className="text-center mb-5 sm:mb-8 px-2">
+      <div className="relative text-center mb-5 sm:mb-8 px-2">
+        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
         <div className="hidden sm:inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border border-indigo-500/30 mb-4">
           <Sparkles className="w-3.5 h-3.5" />
           Powered by the AI Sefarim library
         </div>
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black text-slate-50 tracking-tighter leading-tight mb-2 sm:mb-3">
-          Meet Your Super Agent
+        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tighter leading-tight mb-2 sm:mb-3">
+          <span className="text-slate-50">AI Sefarim </span>
+          <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">Super Agent</span>
         </h1>
         <p className="hidden sm:block text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
           Hundreds of sources, fully indexed and instantly searchable &mdash; from the <span className="text-indigo-400 font-bold">Mishnah</span> to the present day.
@@ -440,7 +442,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
               <button
                 key={s}
                 onClick={() => sendQuestion(s)}
-                className="text-left p-3.5 sm:p-4 rounded-2xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/40 text-sm text-slate-300 hover:text-slate-100 transition-all"
+                className="text-left p-3.5 sm:p-4 rounded-2xl bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 hover:border-indigo-500/40 text-sm text-slate-300 hover:text-slate-100 transition-all hover:shadow-lg hover:shadow-indigo-500/10 hover:-translate-y-0.5"
               >
                 {s}
               </button>
@@ -559,7 +561,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
           e.preventDefault();
           sendQuestion(input);
         }}
-        className="sticky bottom-2 sm:bottom-4 flex items-center gap-2 bg-slate-800/90 backdrop-blur-xl border border-slate-700 rounded-full p-1.5 shadow-2xl mx-1 sm:mx-0"
+        className="sticky bottom-2 sm:bottom-4 flex items-center gap-2 bg-slate-800/90 backdrop-blur-xl border border-slate-700 focus-within:border-indigo-500/60 rounded-full p-1.5 shadow-2xl focus-within:shadow-indigo-500/20 mx-1 sm:mx-0 transition-all"
       >
         <input
           type="text"
@@ -573,7 +575,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
-          className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white p-2.5 rounded-full transition-all active:scale-95 shrink-0"
+          className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 disabled:hover:bg-indigo-600 text-white p-2.5 rounded-full transition-all active:scale-95 shrink-0 shadow-lg shadow-indigo-600/30 hover:shadow-indigo-500/40"
           aria-label="Send question"
         >
           <Send className="w-4 h-4" />
