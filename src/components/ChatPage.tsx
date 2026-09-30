@@ -54,11 +54,22 @@ const LIBRARY_FACTS: { icon: typeof BookOpen; text: string }[] = [
   { icon: Gift, text: 'Every book, video, and podcast on AI Sefarim is completely free' },
   { icon: Video, text: 'Hundreds of videos and podcasts, with new ones added regularly' },
   { icon: Headphones, text: 'Daily podcasts covering Daf Yomi, Tanach, Rambam, the Zohar, and more' },
-  { icon: Compass, text: 'In Talmudic times, a sage traveling from Bavel to the yeshivot of Eretz Yisrael to ask a single question could spend 4–6 weeks on the road. You can wait under a minute.' },
-  { icon: Compass, text: "The Rambam's own journey from Córdoba to Fes to Cairo took years of wandering before he could settle and write. Super Agent reads centuries of his rulings in seconds." },
-  { icon: Compass, text: 'A she’eilah sent by letter across the sea, and the answer sent back, could take the better part of a year before the age of the telegraph. This takes under a minute.' },
-  { icon: Compass, text: 'Crossing from Bavel to Eretz Yisrael for one halachic ruling could take a caravan over a month in the era of the Geonim. You can wait 45 seconds.' },
+  { icon: BookOpen, text: 'Open the Zohar and Zohar Chadash and search them in plain English, right alongside the rest of the library' },
+  { icon: Sparkles, text: 'The Kitvei HaAri are here: Etz Chaim, Pri Etz Chaim, Sha\u2019ar HaKavanot, Sha\u2019ar HaGilgulim, Sha\u2019ar Ruach HaKodesh, and more' },
+  { icon: BookOpen, text: 'Ask how the Zohar and the Arizal explain the same verse, mitzvah, or tefillah, and see both side by side' },
+  { icon: Sparkles, text: 'Sha\u2019ar HaMitzvot and Sha\u2019ar HaPesukim of the Arizal, searchable by topic, verse, or mitzvah' },
+  { icon: BookOpen, text: 'The Rashash\u2019s commentary on the Arizal (Nahar Shalom) is in the library, so the Kitvei HaAri come with their key interpreter' },
+  { icon: Sparkles, text: 'Sha\u2019ar Ma\u2019amarei Rashbi: the Arizal\u2019s explanations of the words of Rabbi Shimon bar Yochai in the Zohar' },
+  { icon: BookOpen, text: 'Pardes Rimonim of the Ramak, Shenei Luchot HaBerit, and more: the classic Kabbalah sefarim in one searchable library' },
+  { icon: Sparkles, text: 'Ask about gilgulim, kavanot, the sefirot, or a passage of the Zohar, and Super Agent answers from the actual texts' },
 ];
+
+const WAIT_CARD = {
+  title: 'Why you can wait 45 seconds',
+  body: 'In the days of the Mishnah, Rabban Gamliel ruled that the request for rain waits until the 7th of Marcheshvan, fifteen days after Sukkot, so the last pilgrims could reach the Euphrates, the edge of Bavel, on their way home from Jerusalem. Roughly fifteen days on the road, just to reach the border.',
+  punch: 'Your answer takes about 45 seconds.',
+  source: 'Source: Mishnah Ta\u2019anit 10a',
+};
 
 const LOADING_EXPLANATION_HEADLINE = "This takes longer than a typical search engine.";
 const LOADING_EXPLANATION_DETAIL =
@@ -641,6 +652,16 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                 <p className="text-xs text-slate-500 mt-2.5 leading-relaxed">
                   {LOADING_EXPLANATION_DETAIL}
                 </p>
+
+                <div className="mt-3.5 rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent p-3.5 shadow-[0_0_24px_-10px_rgba(251,191,36,0.6)]">
+                  <div className="flex items-center gap-2">
+                    <Compass className="w-4 h-4 text-amber-300 shrink-0" />
+                    <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-amber-300">{WAIT_CARD.title}</span>
+                  </div>
+                  <p className="mt-2 text-[13px] sm:text-sm text-slate-200 leading-relaxed">{WAIT_CARD.body}</p>
+                  <p className="mt-2 text-sm sm:text-base font-black text-amber-200">{WAIT_CARD.punch}</p>
+                  <p className="mt-1.5 text-[11px] text-amber-300/70 italic">{WAIT_CARD.source}</p>
+                </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-700/40 flex items-start gap-2 min-h-[2.25rem]">
                   {(() => {
