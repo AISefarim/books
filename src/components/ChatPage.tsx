@@ -32,10 +32,10 @@ const SUGGESTIONS = [
 ];
 
 const ASCENT_STAGES = [
-  { label: 'Ascending to the Cloud…', aside: '(the one with the servers)' },
-  { label: 'Receiving the sources…', aside: '(40 days, condensed)' },
-  { label: 'Descending with the answer…', aside: '(carrying it carefully)' },
-  { label: 'Almost down…', aside: '(the last stretch is the slowest)' },
+  { label: 'Ascending to Shamayim…', aside: '(where the Cloud lives. Both of them.)' },
+  { label: 'Entering the cloud, like Moshe…', aside: '(Shemot 24:18. His trip took 40 days, ours about 40 seconds.)' },
+  { label: 'Descending with the answer…', aside: '(no luchot were harmed in the making of this answer)' },
+  { label: 'Almost down…', aside: '(the descent is always the slower part)' },
 ];
 
 // Starts on mount (the loading card mounts when a question is sent): climbs to
