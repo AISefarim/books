@@ -378,6 +378,13 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   // true progress mid-search, but a static "please wait" reads as frozen and
   // people bounce. Visible motion plus a concrete, growing number both signals
   // real work happening and gives a sense of the corpus's actual scale.
+  //
+  // Most answers take close to a minute, so this can't just race to a fixed
+  // number in a few seconds (it used to - hit its cap in ~12s). Instead each
+  // tick closes a small percentage of the remaining gap to the target, which
+  // decelerates naturally: fast at first, still visibly ticking a minute in,
+  // without ever looking frozen at a maxed-out number.
+  const DOC_COUNTER_TARGET = 340000;
   useEffect(() => {
     if (!isLoading) {
       setDocCounter(0);
@@ -385,8 +392,10 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
     }
     const id = setInterval(() => {
       setDocCounter((n) => {
-        const next = n + Math.floor(1200 + Math.random() * 3800);
-        return next > 340000 ? 340000 : next;
+        const remaining = DOC_COUNTER_TARGET - n;
+        if (remaining <= 0) return n;
+        const step = Math.max(40, Math.floor(remaining * 0.005));
+        return Math.min(DOC_COUNTER_TARGET, n + step);
       });
     }, 110);
     return () => clearInterval(id);
