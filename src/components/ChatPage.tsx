@@ -43,8 +43,9 @@ const LOADING_MESSAGES = [
   'Assembling an answer from hundreds of primary sources…',
 ];
 
-const LOADING_EXPLANATION =
-  "This can take a little longer than a typical search engine — Super Agent is sifting through nearly 1,000 dense primary texts of our Mesorah, not just matching keywords.";
+const LOADING_EXPLANATION_HEADLINE = "This takes longer than a typical search engine.";
+const LOADING_EXPLANATION_DETAIL =
+  "Super Agent is sifting through nearly 1,000 dense primary texts of our Mesorah, not just matching keywords.";
 
 function Markdown({ text, onCiteClick }: { text: string; onCiteClick: (n: number) => void }) {
   return (
@@ -553,9 +554,14 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   {LOADING_MESSAGES[loadingMsgIndex]}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-2 pt-2 border-t border-slate-700/40 leading-relaxed">
-                {LOADING_EXPLANATION}
-              </p>
+              <div className="mt-2 pt-2 border-t border-slate-700/40">
+                <p className="text-sm font-black text-indigo-400 leading-snug">
+                  {LOADING_EXPLANATION_HEADLINE}
+                </p>
+                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                  {LOADING_EXPLANATION_DETAIL}
+                </p>
+              </div>
             </div>
           </div>
         )}
