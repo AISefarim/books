@@ -444,25 +444,8 @@ function shuffled<T>(arr: T[]): T[] {
 
 // Dead time is a captive audience: surface real books and media from the
 // library. Tiles are only ever appended (never rotated out) so nothing
-// disappears before it can be read.
-function LibraryShowcase({ books, media, thumbs }: { books: Book[]; media: MediaItem[]; thumbs: Record<string, string> }) {
-  const items = useMemo<ShowcaseItem[]>(() => {
-    const bookItems: ShowcaseItem[] = shuffled(books.filter((b) => b.cover && b.title)).slice(0, 5).map((b) => ({
-      key: 'b' + b.id, href: `/b/${b.id}`, title: b.title, kind: 'Book', img: b.cover,
-    }));
-    const mediaItems: ShowcaseItem[] = shuffled(media.filter((m) => m.title)).slice(0, 5).map((m) => ({
-      key: 'm' + m.id, href: `/v/${m.id}`, title: m.title, kind: m.type === 'audio' ? 'Podcast' : 'Video', img: thumbs[m.category],
-    }));
-    const out: ShowcaseItem[] = [];
-    for (let i = 0; i < Math.max(bookItems.length, mediaItems.length); i++) {
-      if (bookItems[i]) out.push(bookItems[i]);
-      if (mediaItems[i]) out.push(mediaItems[i]);
-    }
-    return out;
-  // Deliberately keyed on availability only: re-picking on every parent render (the page counter ticks every 110ms) would reshuffle the tiles.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [books.length > 0, media.length > 0]);
-
+// disappears before it can be read. Books and media get separate rows.
+function ShowcaseRow({ label, items, tall }: { label: string; items: ShowcaseItem[]; tall: boolean }) {
   const [count, setCount] = useState(3);
   useEffect(() => {
     const id = setInterval(() => setCount((c) => Math.min(c + 1, items.length)), 8000);
@@ -471,9 +454,9 @@ function LibraryShowcase({ books, media, thumbs }: { books: Book[]; media: Media
 
   if (items.length === 0) return null;
   return (
-    <div className="mt-3 pt-3 border-t border-slate-700/40">
-      <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Meanwhile, from the library <span className="text-emerald-400">· all free</span></p>
-      <div className="mt-2 flex gap-2.5 overflow-x-auto pb-1.5 -mx-1 px-1">
+    <div className="mt-2.5">
+      <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">{label}</p>
+      <div className="mt-1.5 flex gap-2.5 overflow-x-auto pb-1.5 -mx-1 px-1">
         {items.slice(0, count).map((it) => (
           <a
             key={it.key}
@@ -482,7 +465,7 @@ function LibraryShowcase({ books, media, thumbs }: { books: Book[]; media: Media
             rel="noopener noreferrer"
             className="animate-in fade-in slide-in-from-right-2 duration-700 group shrink-0 w-[88px] sm:w-[96px]"
           >
-            <div className="relative aspect-[3/4] rounded-lg overflow-hidden bg-slate-800 border border-slate-700/60 group-hover:border-indigo-400/60 transition-colors flex items-center justify-center">
+            <div className={`relative ${tall ? 'aspect-[3/4]' : 'aspect-video'} rounded-lg overflow-hidden bg-slate-800 border border-slate-700/60 group-hover:border-indigo-400/60 transition-colors flex items-center justify-center`}>
               {it.img ? (
                 <img src={it.img} alt="" loading="lazy" referrerPolicy="no-referrer" className="absolute inset-0 w-full h-full object-cover" />
               ) : it.kind === 'Podcast' ? (
@@ -500,6 +483,29 @@ function LibraryShowcase({ books, media, thumbs }: { books: Book[]; media: Media
           </a>
         ))}
       </div>
+    </div>
+  );
+}
+
+function LibraryShowcase({ books, media, thumbs }: { books: Book[]; media: MediaItem[]; thumbs: Record<string, string> }) {
+  const { bookItems, mediaItems } = useMemo(() => {
+    const bookItems: ShowcaseItem[] = shuffled(books.filter((b) => b.cover && b.title)).slice(0, 6).map((b) => ({
+      key: 'b' + b.id, href: `/b/${b.id}`, title: b.title, kind: 'Book', img: b.cover,
+    }));
+    const mediaItems: ShowcaseItem[] = shuffled(media.filter((m) => m.title)).slice(0, 6).map((m) => ({
+      key: 'm' + m.id, href: `/v/${m.id}`, title: m.title, kind: m.type === 'audio' ? 'Podcast' : 'Video', img: thumbs[m.category],
+    }));
+    return { bookItems, mediaItems };
+  // Deliberately keyed on availability only: re-picking on every parent render (the page counter ticks every 110ms) would reshuffle the tiles.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [books.length > 0, media.length > 0]);
+
+  if (bookItems.length === 0 && mediaItems.length === 0) return null;
+  return (
+    <div className="mt-3 pt-3 border-t border-slate-700/40">
+      <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Meanwhile, from the library <span className="text-emerald-400">· all free</span></p>
+      <ShowcaseRow label="Books" items={bookItems} tall />
+      <ShowcaseRow label="Videos & podcasts" items={mediaItems} tall={false} />
     </div>
   );
 }
