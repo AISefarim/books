@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check } from 'lucide-react';
+import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
+import { auth } from '../lib/firebase';
 
 // Deployed Cloudflare Worker URL. Set VITE_CHAT_WORKER_URL in the AI Studio
 // Secrets panel (or .env) to override without a code change.
@@ -148,7 +150,9 @@ function loadHistory(): ChatMessage[] {
   }
 }
 
-function exportTranscript(messages: ChatMessage[]) {
+// Shared by the .txt export and the Google Docs export, so both always
+// carry identical content (including the links) - built once here.
+function buildTranscriptLines(messages: ChatMessage[]): string[] {
   const lines: string[] = ['AI Sefarim Super Agent - Conversation Export', new Date().toLocaleString(), ''];
   for (const m of messages) {
     lines.push(m.role === 'user' ? 'YOU:' : 'SUPER AGENT:');
@@ -166,7 +170,12 @@ function exportTranscript(messages: ChatMessage[]) {
   }
   lines.push(`Ask Super Agent yourself: ${SITE_URL}`);
   lines.push(`Join our WhatsApp community: ${WHATSAPP_GROUP_URL}`);
-  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  return lines;
+}
+
+function exportTranscript(messages: ChatMessage[]) {
+  const text = buildTranscriptLines(messages).join('\n');
+  const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -175,6 +184,50 @@ function exportTranscript(messages: ChatMessage[]) {
   a.click();
   document.body.removeChild(a);
   URL.revokeObjectURL(url);
+}
+
+// Creates a real Google Doc in the SIGNED-IN VISITOR'S OWN Drive (not the
+// site owner's) via the Docs API, using a fresh OAuth grant scoped to
+// https://www.googleapis.com/auth/documents - the site's existing basic
+// sign-in doesn't carry this scope, so this always prompts its own
+// consent screen (even for an already-signed-in user) the first time.
+async function exportToGoogleDocs(messages: ChatMessage[]): Promise<string> {
+  const provider = new GoogleAuthProvider();
+  provider.addScope('https://www.googleapis.com/auth/documents');
+  provider.setCustomParameters({ prompt: 'consent' });
+
+  const result = await signInWithPopup(auth, provider);
+  const credential = GoogleAuthProvider.credentialFromResult(result);
+  const accessToken = credential?.accessToken;
+  if (!accessToken) {
+    throw new Error('Google did not grant Docs permission - please try again and approve the request.');
+  }
+
+  const title = `AI Sefarim Super Agent - ${new Date().toLocaleDateString()}`;
+  const createRes = await fetch('https://docs.googleapis.com/v1/documents', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
+  });
+  if (!createRes.ok) {
+    throw new Error(`Could not create the Google Doc (${createRes.status}). Make sure the Docs API is enabled for this project.`);
+  }
+  const doc = await createRes.json();
+  const documentId = doc.documentId;
+
+  const text = buildTranscriptLines(messages).join('\n');
+  const updateRes = await fetch(`https://docs.googleapis.com/v1/documents/${documentId}:batchUpdate`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      requests: [{ insertText: { location: { index: 1 }, text } }],
+    }),
+  });
+  if (!updateRes.ok) {
+    throw new Error(`Doc was created but the content couldn't be inserted (${updateRes.status}).`);
+  }
+
+  return `https://docs.google.com/document/d/${documentId}/edit`;
 }
 
 // Every WhatsApp/SMS share always ends with both of these, no matter what
@@ -248,6 +301,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   const [error, setError] = useState<string | null>(null);
   const [openSource, setOpenSource] = useState<Source | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const [isExportingDoc, setIsExportingDoc] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -506,6 +560,25 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
             >
               <Download className="w-4 h-4" />
               Save Transcript
+            </button>
+            <button
+              disabled={isExportingDoc}
+              onClick={async () => {
+                setIsExportingDoc(true);
+                setError(null);
+                try {
+                  const url = await exportToGoogleDocs(messages);
+                  window.open(url, '_blank');
+                } catch (err: any) {
+                  setError(err?.message || 'Could not export to Google Docs.');
+                } finally {
+                  setIsExportingDoc(false);
+                }
+              }}
+              className="flex items-center gap-2 text-sm font-bold text-slate-200 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-xl px-4 py-2.5 transition-all active:scale-95 disabled:opacity-50"
+            >
+              {isExportingDoc ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              Google Docs
             </button>
             <button
               onClick={() => {
