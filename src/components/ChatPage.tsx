@@ -383,7 +383,8 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
-  const [factIndex, setFactIndex] = useState(0);
+  const [factStart, setFactStart] = useState(0);
+  const [factCount, setFactCount] = useState(1);
   const [waitCount, setWaitCount] = useState(1);
   const [docCounter, setDocCounter] = useState(0);
   const [error, setError] = useState<string | null>(null);
@@ -416,14 +417,15 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
 
   useEffect(() => {
     if (!isLoading) return;
-    setFactIndex(Math.floor(Math.random() * LIBRARY_FACTS.length));
+    setFactStart(Math.floor(Math.random() * LIBRARY_FACTS.length));
+    setFactCount(1);
     setWaitCount(1);
     const waitId = setInterval(() => {
       setWaitCount((c) => Math.min(c + 1, WAIT_CARDS.length));
     }, 20000);
     const id = setInterval(() => {
-      setFactIndex((i) => (i + 1) % LIBRARY_FACTS.length);
-    }, 4200);
+      setFactCount((c) => Math.min(c + 1, LIBRARY_FACTS.length));
+    }, 7000);
     return () => {
       clearInterval(id);
       clearInterval(waitId);
@@ -683,14 +685,16 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   </div>
                 ))}
 
-                <div className="mt-3 pt-3 border-t border-slate-700/40 flex items-start gap-2 min-h-[2.25rem]">
-                  {(() => {
-                    const FactIcon = LIBRARY_FACTS[factIndex].icon;
-                    return <FactIcon className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />;
-                  })()}
-                  <span key={factIndex} className="animate-in fade-in slide-in-from-bottom-1 duration-500 text-slate-300 text-xs leading-relaxed">
-                    {LIBRARY_FACTS[factIndex].text}
-                  </span>
+                <div className="mt-3 pt-3 border-t border-slate-700/40 space-y-2">
+                  {Array.from({ length: factCount }, (_, k) => LIBRARY_FACTS[(factStart + k) % LIBRARY_FACTS.length]).map((fact, k) => {
+                    const FactIcon = fact.icon;
+                    return (
+                      <div key={k} className="animate-in fade-in slide-in-from-bottom-1 duration-500 flex items-start gap-2">
+                        <FactIcon className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                        <span className="text-slate-300 text-xs leading-relaxed">{fact.text}</span>
+                      </div>
+                    );
+                  })}
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-700/40 flex flex-wrap items-center gap-2">
