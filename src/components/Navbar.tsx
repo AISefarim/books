@@ -26,11 +26,65 @@ interface NavbarProps {
 export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, totalViewed, onOpenWhatsAppShare, currentUser, onOpenSync, showLevelBadge = false, userStats, variant = 'header' }: NavbarProps) {
   const mediaCount = totalMedia !== undefined ? totalMedia : (totalVideos + totalPodcasts);
   const isGoogleUser = currentUser && !currentUser.isAnonymous;
+
+  if (variant === 'footer') {
+    return (
+      <nav className="bg-slate-900/85 backdrop-blur-xl shadow-sm border-t border-slate-700/50">
+        <div className="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+          <div
+            className="flex items-center gap-2 cursor-pointer group shrink-0"
+            onClick={onHome}
+          >
+            {logoUrl ? (
+              <img src={logoUrl} alt="Site Logo" className="w-8 h-8 rounded-lg object-cover shadow-sm group-hover:scale-105 transition-transform" />
+            ) : (
+              <div className="bg-indigo-600 p-1.5 rounded-lg text-white shadow-sm group-hover:scale-105 transition-transform">
+                <BookOpen className="w-4 h-4" />
+              </div>
+            )}
+            <span className="text-sm font-black text-slate-50 tracking-tighter group-hover:text-indigo-400 transition-colors">
+              AI SEFARIM
+            </span>
+          </div>
+
+          <div className="bg-slate-800/90 p-1 rounded-full flex shadow-inner border border-slate-700 shrink-0">
+            <button
+              onClick={() => {
+                onTabChange('sefarim');
+                onHome();
+              }}
+              className={`flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                activeTab === 'sefarim'
+                  ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+              }`}
+            >
+              <Library className="w-3.5 h-3.5 shrink-0" />
+              Sefarim
+            </button>
+            <button
+              onClick={() => {
+                onTabChange('media');
+                onHome();
+              }}
+              className={`flex items-center justify-center gap-1.5 px-3.5 py-1.5 rounded-full text-[11px] font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                activeTab === 'media' || activeTab === 'videos' || activeTab === 'podcasts' || activeTab === 'audio'
+                  ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)]'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+              }`}
+            >
+              <Video className="w-3.5 h-3.5 shrink-0" />
+              Media
+            </button>
+          </div>
+        </div>
+      </nav>
+    );
+  }
+
   return (
     <nav
-      className={`bg-slate-900/85 backdrop-blur-xl shadow-sm ${
-        variant === 'footer' ? 'border-t border-slate-700/50' : 'border-b border-slate-700/50 sticky top-0 z-40'
-      }`}
+      className="bg-slate-900/85 backdrop-blur-xl shadow-sm border-b border-slate-700/50 sticky top-0 z-40"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
         {/* Logo Section */}

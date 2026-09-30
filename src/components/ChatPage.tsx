@@ -404,7 +404,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   }
 
   return (
-    <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto flex flex-col min-h-[75vh]">
+    <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto flex flex-col">
       <div className="absolute top-24 -left-24 w-72 h-72 bg-purple-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
       <div className="absolute top-1/2 -right-24 w-72 h-72 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
       {openSource && <SourceModal source={openSource} onClose={() => setOpenSource(null)} />}
@@ -593,33 +593,32 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
         </button>
       </form>
 
-      <div className="mt-4 pt-4 border-t border-slate-800/60 flex items-center justify-center gap-1.5">
+      <div className="mt-4 pt-4 border-t border-slate-800/60 flex items-center justify-center gap-1.5 flex-wrap">
         {messages.length > 0 && (
           <>
             <button
               onClick={() => shareToWhatsApp(buildShareMessage(messages))}
-              title="Share on WhatsApp"
-              className="p-2.5 rounded-full text-slate-400 hover:text-[#25D366] hover:bg-[#25D366]/10 transition-all active:scale-90"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-[#25D366] hover:bg-[#1fa14b] rounded-full px-3 py-1.5 shadow-sm transition-all active:scale-95"
             >
-              <MessageCircle className="w-4 h-4" />
+              <MessageCircle className="w-3.5 h-3.5 fill-current" />
+              WhatsApp
             </button>
             <button
               onClick={() => shareToSms(buildShareMessage(messages))}
-              title="Share via SMS"
-              className="p-2.5 rounded-full text-slate-400 hover:text-sky-400 hover:bg-sky-500/10 transition-all active:scale-90"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-sky-500 hover:bg-sky-400 rounded-full px-3 py-1.5 shadow-sm transition-all active:scale-95"
             >
-              <MessageSquare className="w-4 h-4" />
+              <MessageSquare className="w-3.5 h-3.5" />
+              SMS
             </button>
             <button
               onClick={() => exportTranscript(messages)}
-              title="Save transcript"
-              className="p-2.5 rounded-full text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all active:scale-90"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-slate-100 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-full px-3 py-1.5 transition-all active:scale-95"
             >
-              <Download className="w-4 h-4" />
+              <Download className="w-3.5 h-3.5" />
+              Save
             </button>
             <button
               disabled={isExportingDoc}
-              title="Export to Google Docs"
               onClick={async () => {
                 setIsExportingDoc(true);
                 setError(null);
@@ -632,9 +631,10 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   setIsExportingDoc(false);
                 }
               }}
-              className="p-2.5 rounded-full text-slate-400 hover:text-slate-200 hover:bg-slate-800 transition-all active:scale-90 disabled:opacity-50"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-slate-300 hover:text-slate-100 bg-slate-800 hover:bg-slate-700 border border-slate-700 rounded-full px-3 py-1.5 transition-all active:scale-95 disabled:opacity-50"
             >
-              {isExportingDoc ? <Loader2 className="w-4 h-4 animate-spin" /> : <FileText className="w-4 h-4" />}
+              {isExportingDoc ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <FileText className="w-3.5 h-3.5" />}
+              Docs
             </button>
             <button
               onClick={() => {
@@ -642,20 +642,19 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   setMessages([]);
                 }
               }}
-              title="Clear conversation"
-              className="p-2.5 rounded-full text-slate-400 hover:text-rose-300 hover:bg-rose-500/10 transition-all active:scale-90"
+              className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-rose-300 bg-slate-800/60 hover:bg-rose-500/10 border border-slate-700/60 hover:border-rose-500/30 rounded-full px-3 py-1.5 transition-all active:scale-95"
             >
-              <Trash2 className="w-4 h-4" />
+              <Trash2 className="w-3.5 h-3.5" />
+              Clear
             </button>
-            <div className="w-px h-4 bg-slate-700 mx-1" />
           </>
         )}
         <button
           onClick={() => shareToWhatsApp(buildInviteMessage())}
-          title="Invite a friend to try Super Agent"
-          className="p-2.5 rounded-full text-slate-400 hover:text-emerald-400 hover:bg-emerald-500/10 transition-all active:scale-90"
+          className="flex items-center gap-1.5 text-[11px] font-black text-white bg-emerald-600 hover:bg-emerald-500 rounded-full px-3.5 py-1.5 shadow-sm shadow-emerald-600/30 transition-all active:scale-95"
         >
-          <UserPlus className="w-4 h-4" />
+          <UserPlus className="w-3.5 h-3.5" />
+          Invite a Friend
         </button>
       </div>
     </div>
