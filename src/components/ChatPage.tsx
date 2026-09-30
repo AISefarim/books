@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink } from 'lucide-react';
+import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -137,8 +137,46 @@ function SourceModal({ source, onClose }: { source: Source; onClose: () => void 
   );
 }
 
+const HISTORY_KEY = 'super_agent_chat_history';
+
+function loadHistory(): ChatMessage[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function exportTranscript(messages: ChatMessage[]) {
+  const lines: string[] = ['AI Sefarim Super Agent - Conversation Export', new Date().toLocaleString(), ''];
+  for (const m of messages) {
+    lines.push(m.role === 'user' ? 'YOU:' : 'SUPER AGENT:');
+    lines.push(m.content);
+    if (m.sources && m.sources.length > 0) {
+      lines.push('');
+      lines.push('Sources:');
+      for (const s of m.sources) {
+        lines.push(`  [${s.n}] ${s.book}${s.bookUrl ? ' - ' + s.bookUrl : ''}`);
+      }
+    }
+    lines.push('');
+    lines.push('---');
+    lines.push('');
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `super-agent-chat-${new Date().toISOString().slice(0, 10)}.txt`;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 export function ChatPage() {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<ChatMessage[]>(loadHistory);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
@@ -149,6 +187,14 @@ export function ChatPage() {
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, isLoading]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(messages));
+    } catch {
+      // Ignore storage write errors (e.g. private browsing, quota)
+    }
+  }, [messages]);
 
   useEffect(() => {
     if (!isLoading) return;
@@ -212,6 +258,29 @@ export function ChatPage() {
           Mishnah to modern day. All of Gemara, Rambam, Beit Yosef, Shulchan Aruch &amp; the Arizal &mdash; one question away.
         </p>
       </div>
+
+      {messages.length > 0 && (
+        <div className="flex items-center justify-end gap-2 mb-2 px-1">
+          <button
+            onClick={() => exportTranscript(messages)}
+            className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-slate-200 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-lg px-2.5 py-1.5 transition-colors"
+          >
+            <Download className="w-3 h-3" />
+            Export
+          </button>
+          <button
+            onClick={() => {
+              if (confirm('Clear this conversation? This cannot be undone.')) {
+                setMessages([]);
+              }
+            }}
+            className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-rose-300 bg-slate-800/60 hover:bg-rose-500/10 border border-slate-700/60 hover:border-rose-500/30 rounded-lg px-2.5 py-1.5 transition-colors"
+          >
+            <Trash2 className="w-3 h-3" />
+            Clear
+          </button>
+        </div>
+      )}
 
       <div className="flex-1 flex flex-col gap-3 sm:gap-4 mb-4 px-1 sm:px-0">
         {messages.length === 0 && (
