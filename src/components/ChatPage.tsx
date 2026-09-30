@@ -156,7 +156,7 @@ function buildTranscriptLines(messages: ChatMessage[]): string[] {
   const lines: string[] = ['AI Sefarim Super Agent - Conversation Export', new Date().toLocaleString(), ''];
   for (const m of messages) {
     lines.push(m.role === 'user' ? 'YOU:' : 'SUPER AGENT:');
-    lines.push(m.content);
+    lines.push(m.role === 'assistant' ? markdownToPlainText(m.content) : m.content);
     if (m.sources && m.sources.length > 0) {
       lines.push('');
       lines.push('Sources:');
@@ -247,21 +247,67 @@ function truncate(text: string, max: number): string {
   return text.length > max ? text.slice(0, max).trim() + '…' : text;
 }
 
+// The stored answer text has our inline "[1](#cite-1)" markdown link
+// syntax baked in - fine for the in-app markdown renderer, but a plain
+// WhatsApp/SMS/clipboard destination shows that literally. Reduce it to
+// a plain "[1]" there.
+// Converts the stored markdown answer (headers, **bold**, lists, ---
+// rules, our own [n](#cite-n) citation links) into clean plain text for
+// destinations with no markdown renderer at all - WhatsApp, SMS, the
+// clipboard, and the .txt export. WhatsApp's own *bold* convention isn't
+// used here on purpose: mixing it with SMS/file destinations that don't
+// support it at all would look inconsistent, so every destination just
+// gets clean, unmarked prose.
+function markdownToPlainText(text: string): string {
+  return text
+    .replace(/\[(\d+)\]\(#cite-\d+\)/g, '[$1]') // our citation links -> plain [n]
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g, '$1 ($2)') // any other markdown link
+    .replace(/^#{1,6}\s+/gm, '') // headers
+    .replace(/^[ \t]*[-*+][ \t]+/gm, '• ') // bullet lists
+    .replace(/^[ \t]*\d+\.[ \t]+/gm, (m) => m) // numbered lists: leave as-is, already plain
+    .replace(/^>\s?/gm, '') // blockquotes
+    .replace(/^[-*_]{3,}\s*$/gm, '') // horizontal rules
+    .replace(/\*\*([^*]+)\*\*/g, '$1') // **bold**
+    .replace(/__([^_]+)__/g, '$1') // __bold__
+    .replace(/(?<!\*)\*([^*\n]+)\*(?!\*)/g, '$1') // *italic*
+    .replace(/(?<!_)_([^_\n]+)_(?!_)/g, '$1') // _italic_
+    .replace(/\n{3,}/g, '\n\n') // collapse the blank lines all that stripping leaves behind
+    .trim();
+}
+
+function formatSourcesList(sources?: Source[]): string {
+  if (!sources || sources.length === 0) return '';
+  const lines = sources.map((s) => `[${s.n}] ${s.book}${s.bookUrl ? ' - ' + s.bookUrl : ''}`);
+  return `\n\n*Sources:*\n${lines.join('\n')}`;
+}
+
+// A generic pitch, not tied to any specific conversation - for the small
+// "invite a friend" link in the footer.
+function buildInviteMessage(): string {
+  return appendLinks(
+    "🎙️ *AI Sefarim Super Agent*\n\nAsk anything from the Mishnah to modern day and get a real, grounded answer - every tractate of Gemara, all of the Rambam, the complete Beit Yosef and Shulchan Aruch, the full Arizal, the Zohar, and every AI Sefarim book, with sources you can check."
+  );
+}
+
 function buildShareMessage(messages: ChatMessage[]): string {
   const lastUser = [...messages].reverse().find((m) => m.role === 'user');
   const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
 
   let body = '🎙️ *AI Sefarim Super Agent*\n\n';
   if (lastUser) body += `*Q:* ${lastUser.content}\n\n`;
-  if (lastAssistant) body += `*A:* ${truncate(lastAssistant.content, MAX_SHARE_BODY)}`;
+  if (lastAssistant) {
+    body += `*A:* ${truncate(markdownToPlainText(lastAssistant.content), MAX_SHARE_BODY)}`;
+    body += formatSourcesList(lastAssistant.sources);
+  }
   return appendLinks(body);
 }
 
 function buildSingleMessageText(m: ChatMessage, forSharing: boolean): string {
+  const cleanContent = markdownToPlainText(m.content);
   const body = forSharing
-    ? `🎙️ *AI Sefarim Super Agent*\n\n${truncate(m.content, MAX_SHARE_BODY)}`
-    : m.content;
-  return appendLinks(body);
+    ? `🎙️ *AI Sefarim Super Agent*\n\n${truncate(cleanContent, MAX_SHARE_BODY)}`
+    : cleanContent;
+  return appendLinks(body + formatSourcesList(m.sources));
 }
 
 function shareToWhatsApp(text: string) {
@@ -601,6 +647,13 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
           sefarim, videos, and podcasts &mdash; ancient wisdom, illuminated by AI. Super Agent searches this
           entire library to answer your questions, grounded in the actual texts.
         </p>
+        <button
+          onClick={() => shareToWhatsApp(buildInviteMessage())}
+          className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300"
+        >
+          <MessageCircle className="w-3 h-3 fill-current" />
+          Invite a friend to try Super Agent
+        </button>
       </div>
     </div>
   );

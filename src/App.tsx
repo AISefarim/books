@@ -928,33 +928,34 @@ export default function App() {
   const bannerUrl = siteSettings.bannerUrl || "https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr";
   const hasGamificationCard = activeTab === 'library' || Boolean(selectedVideo);
   const userStats = getGamificationStats(deviceStats.totalWatchedCount, deviceStats.totalXp);
-  
+
+  const navbarProps = {
+    isAdmin,
+    onToggleAdmin: handleToggleAdmin,
+    onHome: handleHome,
+    logoUrl: siteSettings.logoUrl,
+    activeTab,
+    onTabChange: setActiveTab,
+    whatsappUrl: bannerUrl,
+    totalBooks: books.length,
+    totalVideos: videos.filter(v => v.type !== 'audio').length,
+    totalPodcasts: videos.filter(v => v.type === 'audio').length,
+    totalMedia: videos.length,
+    totalViewed: deviceStats.totalWatchedCount,
+    onOpenWhatsAppShare: () => setShowWhatsAppShareModal(true),
+    currentUser,
+    onOpenSync: () => setShowSyncModal(true),
+    showLevelBadge: !hasGamificationCard,
+    userStats,
+  };
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans">
-      {/* On /chat, the full navbar is hidden on mobile (it's several rows
-          tall and eats the whole first screen) - ChatPage renders its own
-          compact back button there instead. Unchanged on desktop and on
-          every other tab. */}
+      {/* On /chat, the full navbar (several rows tall) is only shown at
+          the top on desktop - on mobile it moves to the bottom instead of
+          eating the whole first screen. Unchanged on every other tab. */}
       <div className={activeTab === 'chat' ? 'hidden sm:block' : ''}>
-        <Navbar
-          isAdmin={isAdmin}
-          onToggleAdmin={handleToggleAdmin}
-          onHome={handleHome}
-          logoUrl={siteSettings.logoUrl}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          whatsappUrl={bannerUrl}
-          totalBooks={books.length}
-          totalVideos={videos.filter(v => v.type !== 'audio').length}
-          totalPodcasts={videos.filter(v => v.type === 'audio').length}
-          totalMedia={videos.length}
-          totalViewed={deviceStats.totalWatchedCount}
-          onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
-          currentUser={currentUser}
-          onOpenSync={() => setShowSyncModal(true)}
-          showLevelBadge={!hasGamificationCard}
-          userStats={userStats}
-        />
+        <Navbar {...navbarProps} />
       </div>
 
       {/* Welcome Video Section (Disappears for people who have been on our website over 25 times) */}
@@ -1830,6 +1831,13 @@ export default function App() {
           <ChatPage onExit={() => { setActiveTab('sefarim'); handleHome(); }} />
         ) : null}
       </main>
+
+      {/* Mobile-only footer nav for /chat - see the top instance's comment */}
+      {activeTab === 'chat' && (
+        <div className="sm:hidden">
+          <Navbar {...navbarProps} variant="footer" />
+        </div>
+      )}
 
       {/* Community Growth Banner to prompt visitors - hidden on /chat, where it breaks the immersive feel */}
       {activeTab !== 'chat' && (
