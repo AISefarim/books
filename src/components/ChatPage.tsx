@@ -426,12 +426,13 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
           <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">Super Agent</span>
         </h1>
         <p className="hidden sm:block text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
-          Hundreds of sources, fully indexed and instantly searchable &mdash; from the <span className="text-indigo-400 font-bold">Mishnah</span> to the present day.
+          Ask anything and Super Agent searches the entire <span className="font-black text-slate-100">AI Sefarim</span> library &mdash; hundreds of sources, fully indexed and instantly searchable &mdash;
+          to ground its answer in the actual texts, from the <span className="text-indigo-400 font-bold">Mishnah</span> to the present day.
           Every tractate of <span className="text-indigo-400 font-bold">Gemara</span>, all of the <span className="text-indigo-400 font-bold">Rambam</span>, the complete <span className="text-indigo-400 font-bold">Beit Yosef</span> and <span className="text-indigo-400 font-bold">Shulchan Aruch</span>,
           the full <span className="text-indigo-400 font-bold">Arizal</span>, the Zohar, and every AI Sefarim book &mdash; 3,300 years of Torah, one question away.
         </p>
         <p className="sm:hidden text-xs text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
-          Mishnah to modern day. All of Gemara, Rambam, Beit Yosef, Shulchan Aruch &amp; the Arizal &mdash; one question away.
+          Super Agent searches the entire <span className="font-black text-slate-300">AI Sefarim</span> library to ground its answers in the actual texts &mdash; Mishnah to modern day, Gemara, Rambam, Beit Yosef, Shulchan Aruch &amp; the Arizal.
         </p>
       </div>
 
@@ -644,16 +645,11 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
       )}
 
       <div className="mt-6 pt-5 border-t border-slate-800 text-center px-2">
-        <p className="text-xs text-slate-500 leading-relaxed max-w-md mx-auto">
-          <span className="font-black text-slate-400">AI Sefarim</span> is a free digital library of Torah
-          sefarim, videos, and podcasts &mdash; ancient wisdom, illuminated by AI. Super Agent searches this
-          entire library to answer your questions, grounded in the actual texts.
-        </p>
         <button
           onClick={() => shareToWhatsApp(buildInviteMessage())}
-          className="mt-2 inline-flex items-center gap-1 text-[11px] font-bold text-emerald-400 hover:text-emerald-300"
+          className="inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-500 text-white font-black text-sm px-5 py-3 rounded-full shadow-lg shadow-emerald-600/30 hover:shadow-emerald-500/40 transition-all active:scale-95"
         >
-          <MessageCircle className="w-3 h-3 fill-current" />
+          <MessageCircle className="w-4 h-4 fill-current" />
           Invite a friend to try Super Agent
         </button>
       </div>

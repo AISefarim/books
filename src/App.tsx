@@ -1840,38 +1840,38 @@ export default function App() {
         />
       )}
 
-      <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-700/60 mt-8 relative">
-        {activeTab !== 'chat' && (
+      {activeTab !== 'chat' && (
+        <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-700/60 mt-8 relative">
           <p className="text-slate-400 text-sm font-medium max-w-2xl mx-auto leading-relaxed">
             <span className="font-bold text-slate-400">Please note:</span> These sefarim are generated using AI and have not been vetted by rabbinic authorities. We do not make any profit from the sale of physical books; they are printed and sold strictly at cost.
           </p>
-        )}
 
-        <div className="mt-8 flex flex-col items-center justify-center">
-          <a
-            href="https://www.sefaria.org"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center justify-center transition-all hover:opacity-100 opacity-90 hover:scale-105 active:scale-95"
-            title="Powered by Sefaria"
-          >
-            <img
-              src="/powered-by-sefaria-badge-light.png"
-              alt="Powered by Sefaria"
-              className="h-11 sm:h-12 w-auto object-contain drop-shadow-md"
-            />
-          </a>
-        </div>
+          <div className="mt-8 flex flex-col items-center justify-center">
+            <a
+              href="https://www.sefaria.org"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center transition-all hover:opacity-100 opacity-90 hover:scale-105 active:scale-95"
+              title="Powered by Sefaria"
+            >
+              <img
+                src="/powered-by-sefaria-badge-light.png"
+                alt="Powered by Sefaria"
+                className="h-11 sm:h-12 w-auto object-contain drop-shadow-md"
+              />
+            </a>
+          </div>
 
-        {!isAdmin && (
-          <button 
-            onClick={handleToggleAdmin}
-            className="mt-8 text-[10px] text-slate-300 hover:text-slate-400 pb-1 border-b border-transparent hover:border-slate-300 transition-colors uppercase tracking-[0.2em]"
-          >
-            Admin Login
-          </button>
-        )}
-      </footer>
+          {!isAdmin && (
+            <button
+              onClick={handleToggleAdmin}
+              className="mt-8 text-[10px] text-slate-300 hover:text-slate-400 pb-1 border-b border-transparent hover:border-slate-300 transition-colors uppercase tracking-[0.2em]"
+            >
+              Admin Login
+            </button>
+          )}
+        </footer>
+      )}
 
       {/* Mobile-only footer nav for /chat - kept as the absolute last element on the page */}
       {activeTab === 'chat' && (
