@@ -384,7 +384,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [factIndex, setFactIndex] = useState(0);
-  const [waitIndex, setWaitIndex] = useState(0);
+  const [waitCount, setWaitCount] = useState(1);
   const [docCounter, setDocCounter] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [openSource, setOpenSource] = useState<Source | null>(null);
@@ -417,10 +417,10 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   useEffect(() => {
     if (!isLoading) return;
     setFactIndex(Math.floor(Math.random() * LIBRARY_FACTS.length));
-    setWaitIndex(0);
+    setWaitCount(1);
     const waitId = setInterval(() => {
-      setWaitIndex((i) => (i + 1) % WAIT_CARDS.length);
-    }, 14000);
+      setWaitCount((c) => Math.min(c + 1, WAIT_CARDS.length));
+    }, 20000);
     const id = setInterval(() => {
       setFactIndex((i) => (i + 1) % LIBRARY_FACTS.length);
     }, 4200);
@@ -671,15 +671,17 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   {LOADING_EXPLANATION_DETAIL}
                 </p>
 
-                <div key={waitIndex} className="animate-in fade-in duration-700 mt-3.5 rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent p-3.5 shadow-[0_0_24px_-10px_rgba(251,191,36,0.6)]">
-                  <div className="flex items-center gap-2">
-                    <Compass className="w-4 h-4 text-amber-300 shrink-0" />
-                    <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-amber-300">{WAIT_CARDS[waitIndex].title}</span>
+                {WAIT_CARDS.slice(0, waitCount).map((card) => (
+                  <div key={card.source} className="animate-in fade-in slide-in-from-bottom-2 duration-700 mt-3.5 rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent p-3.5 shadow-[0_0_24px_-10px_rgba(251,191,36,0.6)]">
+                    <div className="flex items-center gap-2">
+                      <Compass className="w-4 h-4 text-amber-300 shrink-0" />
+                      <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-amber-300">{card.title}</span>
+                    </div>
+                    <p className="mt-2 text-[13px] sm:text-sm text-slate-200 leading-relaxed">{card.body}</p>
+                    <p className="mt-2 text-sm sm:text-base font-black text-amber-200">{card.punch}</p>
+                    <p className="mt-1.5 text-[11px] text-amber-300/70 italic">{card.source}</p>
                   </div>
-                  <p className="mt-2 text-[13px] sm:text-sm text-slate-200 leading-relaxed">{WAIT_CARDS[waitIndex].body}</p>
-                  <p className="mt-2 text-sm sm:text-base font-black text-amber-200">{WAIT_CARDS[waitIndex].punch}</p>
-                  <p className="mt-1.5 text-[11px] text-amber-300/70 italic">{WAIT_CARDS[waitIndex].source}</p>
-                </div>
+                ))}
 
                 <div className="mt-3 pt-3 border-t border-slate-700/40 flex items-start gap-2 min-h-[2.25rem]">
                   {(() => {
