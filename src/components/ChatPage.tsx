@@ -64,12 +64,21 @@ const LIBRARY_FACTS: { icon: typeof BookOpen; text: string }[] = [
   { icon: Sparkles, text: 'Ask about gilgulim, kavanot, the sefirot, or a passage of the Zohar, and Super Agent answers from the actual texts' },
 ];
 
-const WAIT_CARD = {
-  title: 'Why you can wait 45 seconds',
-  body: 'In the days of the Mishnah, Rabban Gamliel ruled that the request for rain waits until the 7th of Marcheshvan, fifteen days after Sukkot, so the last pilgrims could reach the Euphrates, the edge of Bavel, on their way home from Jerusalem. Roughly fifteen days on the road, just to reach the border.',
-  punch: 'Your answer takes about 45 seconds.',
-  source: 'Source: Mishnah Ta\u2019anit 10a',
-};
+const WAIT_CARDS = [
+  {
+    title: 'Why you can wait 45 seconds',
+    body: 'Rav Kahana fled Bavel for Eretz Yisrael and arrived at the study hall of Rabbi Yochanan. Before he left, his teacher Rav made him promise not to raise difficulties against Rabbi Yochanan for seven years. So he sat silent as Rabbi Yochanan, taking him for an ordinary student, moved him back row by row until he sat in the seventh. Only then did he speak, and he resolved the doubts that Rabbi Yochanan had never been able to settle.',
+    punch: 'Seven rows of silence. You can wait 45 seconds.',
+    source: 'Source: Talmud Bavli, Bava Kamma 117a',
+  },
+  {
+    title: 'Why you can wait 45 seconds',
+    body: 'In the days of the Mishnah, Rabban Gamliel ruled that the request for rain waits until the 7th of Marcheshvan, fifteen days after Sukkot, so the last pilgrims could reach the Euphrates, the edge of Bavel, on their way home from Jerusalem. Roughly fifteen days on the road, just to reach the border.',
+    punch: 'Your answer takes about 45 seconds.',
+    source: 'Source: Mishnah Ta\u2019anit 10a',
+  },
+];
+
 
 const LOADING_EXPLANATION_HEADLINE = "This takes longer than a typical search engine.";
 const LOADING_EXPLANATION_DETAIL =
@@ -374,6 +383,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
   const [factIndex, setFactIndex] = useState(0);
+  const [waitIndex, setWaitIndex] = useState(0);
   const [docCounter, setDocCounter] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [openSource, setOpenSource] = useState<Source | null>(null);
@@ -406,10 +416,17 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   useEffect(() => {
     if (!isLoading) return;
     setFactIndex(Math.floor(Math.random() * LIBRARY_FACTS.length));
+    setWaitIndex(0);
+    const waitId = setInterval(() => {
+      setWaitIndex((i) => (i + 1) % WAIT_CARDS.length);
+    }, 14000);
     const id = setInterval(() => {
       setFactIndex((i) => (i + 1) % LIBRARY_FACTS.length);
     }, 4200);
-    return () => clearInterval(id);
+    return () => {
+      clearInterval(id);
+      clearInterval(waitId);
+    };
   }, [isLoading]);
 
   // A live-ticking counter, not a real progress bar - there's no way to know
@@ -653,14 +670,14 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
                   {LOADING_EXPLANATION_DETAIL}
                 </p>
 
-                <div className="mt-3.5 rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent p-3.5 shadow-[0_0_24px_-10px_rgba(251,191,36,0.6)]">
+                <div key={waitIndex} className="animate-in fade-in duration-700 mt-3.5 rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent p-3.5 shadow-[0_0_24px_-10px_rgba(251,191,36,0.6)]">
                   <div className="flex items-center gap-2">
                     <Compass className="w-4 h-4 text-amber-300 shrink-0" />
-                    <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-amber-300">{WAIT_CARD.title}</span>
+                    <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-amber-300">{WAIT_CARDS[waitIndex].title}</span>
                   </div>
-                  <p className="mt-2 text-[13px] sm:text-sm text-slate-200 leading-relaxed">{WAIT_CARD.body}</p>
-                  <p className="mt-2 text-sm sm:text-base font-black text-amber-200">{WAIT_CARD.punch}</p>
-                  <p className="mt-1.5 text-[11px] text-amber-300/70 italic">{WAIT_CARD.source}</p>
+                  <p className="mt-2 text-[13px] sm:text-sm text-slate-200 leading-relaxed">{WAIT_CARDS[waitIndex].body}</p>
+                  <p className="mt-2 text-sm sm:text-base font-black text-amber-200">{WAIT_CARDS[waitIndex].punch}</p>
+                  <p className="mt-1.5 text-[11px] text-amber-300/70 italic">{WAIT_CARDS[waitIndex].source}</p>
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-700/40 flex items-start gap-2 min-h-[2.25rem]">
