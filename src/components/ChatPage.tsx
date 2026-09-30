@@ -35,7 +35,7 @@ const ASCENT_STAGES = [
   { label: 'Ascending to Shamayim…', aside: '(where the Cloud lives. Both of them.)' },
   { label: 'Entering the cloud, like Moshe…', aside: '(Shemot 24:18. His trip took 40 days, ours about 40 seconds.)' },
   { label: 'No bread, no water, like Moshe…', aside: '(Shemot 34:28. You, however, are allowed a snack.)' },
-  { label: 'Vayered AI Sefarim be\u2019anan…', aside: '(Shemot 34:5, with one small edit)' },
+  { label: 'וַיֵּרֶד AI Sefarim בֶּעָנָן…', aside: '(Shemot 34:5, with one small edit)' },
   { label: 'Almost down…', aside: '(the descent is always the slower part)' },
 ];
 
