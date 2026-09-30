@@ -19,3 +19,11 @@ html, body {
 .animate-drift {
   animation: drift 6s ease-in-out infinite;
 }
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 35px -8px rgba(99, 102, 241, 0.55); }
+  50% { box-shadow: 0 0 50px -6px rgba(168, 85, 247, 0.7); }
+}
+.animate-glow-pulse {
+  animation: glow-pulse 3s ease-in-out infinite;
+}
