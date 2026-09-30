@@ -428,13 +428,13 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
           <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">Super Agent</span>
         </h1>
         <p className="hidden sm:block text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
-          Ask anything and Super Agent searches the entire <span className="font-black text-slate-100">AI Sefarim</span> library &mdash; hundreds of sources, fully indexed and instantly searchable &mdash;
+          Ask anything and Super Agent searches an entire Torah library on <span className="font-black text-slate-100">AI Sefarim</span> &mdash; hundreds of sources, fully indexed and instantly searchable &mdash;
           to ground its answer in the actual texts, from the <span className="text-indigo-400 font-bold">Mishnah</span> to the present day.
           Every tractate of <span className="text-indigo-400 font-bold">Gemara</span>, all of the <span className="text-indigo-400 font-bold">Rambam</span>, the complete <span className="text-indigo-400 font-bold">Beit Yosef</span> and <span className="text-indigo-400 font-bold">Shulchan Aruch</span>,
           the full <span className="text-indigo-400 font-bold">Arizal</span>, the Zohar, and every AI Sefarim book &mdash; 3,300 years of Torah, one question away.
         </p>
         <p className="sm:hidden text-xs text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
-          Super Agent searches the entire <span className="font-black text-slate-300">AI Sefarim</span> library to ground its answers in the actual texts &mdash; Mishnah to modern day, Gemara, Rambam, Beit Yosef, Shulchan Aruch &amp; the Arizal.
+          Super Agent searches an entire Torah library on <span className="font-black text-slate-300">AI Sefarim</span> to ground its answers in the actual texts &mdash; Mishnah to modern day, Gemara, Rambam, Beit Yosef, Shulchan Aruch, the Arizal &amp; more.
         </p>
       </div>
 
