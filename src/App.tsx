@@ -1828,7 +1828,7 @@ export default function App() {
             </div>
           </div>
         ) : activeTab === 'chat' ? (
-          <ChatPage onExit={() => { setActiveTab('sefarim'); handleHome(); }} />
+          <ChatPage onExit={() => { setActiveTab('sefarim'); handleHome(); }} books={books} media={videos} categoryThumbnails={siteSettings.videoCategoryThumbnails} />
         ) : null}
       </main>
 
