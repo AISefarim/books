@@ -931,25 +931,31 @@ export default function App() {
   
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans">
-      <Navbar 
-        isAdmin={isAdmin} 
-        onToggleAdmin={handleToggleAdmin} 
-        onHome={handleHome} 
-        logoUrl={siteSettings.logoUrl}
-        activeTab={activeTab}
-        onTabChange={setActiveTab}
-        whatsappUrl={bannerUrl}
-        totalBooks={books.length}
-        totalVideos={videos.filter(v => v.type !== 'audio').length}
-        totalPodcasts={videos.filter(v => v.type === 'audio').length}
-        totalMedia={videos.length}
-        totalViewed={deviceStats.totalWatchedCount}
-        onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
-        currentUser={currentUser}
-        onOpenSync={() => setShowSyncModal(true)}
-        showLevelBadge={!hasGamificationCard}
-        userStats={userStats}
-      />
+      {/* On /chat, the full navbar is hidden on mobile (it's several rows
+          tall and eats the whole first screen) - ChatPage renders its own
+          compact back button there instead. Unchanged on desktop and on
+          every other tab. */}
+      <div className={activeTab === 'chat' ? 'hidden sm:block' : ''}>
+        <Navbar
+          isAdmin={isAdmin}
+          onToggleAdmin={handleToggleAdmin}
+          onHome={handleHome}
+          logoUrl={siteSettings.logoUrl}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          whatsappUrl={bannerUrl}
+          totalBooks={books.length}
+          totalVideos={videos.filter(v => v.type !== 'audio').length}
+          totalPodcasts={videos.filter(v => v.type === 'audio').length}
+          totalMedia={videos.length}
+          totalViewed={deviceStats.totalWatchedCount}
+          onOpenWhatsAppShare={() => setShowWhatsAppShareModal(true)}
+          currentUser={currentUser}
+          onOpenSync={() => setShowSyncModal(true)}
+          showLevelBadge={!hasGamificationCard}
+          userStats={userStats}
+        />
+      </div>
 
       {/* Welcome Video Section (Disappears for people who have been on our website over 25 times) */}
       {activeTab !== 'chat' && !deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
@@ -1821,7 +1827,7 @@ export default function App() {
             </div>
           </div>
         ) : activeTab === 'chat' ? (
-          <ChatPage />
+          <ChatPage onExit={() => { setActiveTab('sefarim'); handleHome(); }} />
         ) : null}
       </main>
 

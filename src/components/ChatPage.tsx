@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2 } from 'lucide-react';
+import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -175,7 +175,43 @@ function exportTranscript(messages: ChatMessage[]) {
   URL.revokeObjectURL(url);
 }
 
-export function ChatPage() {
+// Every WhatsApp/SMS share always ends with both of these, no matter what
+// else is in the message - the site link (so the recipient can ask their
+// own questions) and the community group join link.
+const SITE_URL = 'https://aisefarim.com/chat';
+const WHATSAPP_GROUP_URL = 'https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr';
+const MAX_SHARE_BODY = 800; // keep the Q&A itself short; the links always survive intact
+
+function buildShareMessage(messages: ChatMessage[]): string {
+  const lastUser = [...messages].reverse().find((m) => m.role === 'user');
+  const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+
+  let body = '🎙️ *AI Sefarim Super Agent*\n\n';
+  if (lastUser) body += `*Q:* ${lastUser.content}\n\n`;
+  if (lastAssistant) {
+    const answer =
+      lastAssistant.content.length > MAX_SHARE_BODY
+        ? lastAssistant.content.slice(0, MAX_SHARE_BODY).trim() + '…'
+        : lastAssistant.content;
+    body += `*A:* ${answer}\n\n`;
+  }
+
+  body += `🔗 Ask Super Agent yourself: ${SITE_URL}\n`;
+  body += `💬 Join our WhatsApp community: ${WHATSAPP_GROUP_URL}`;
+  return body;
+}
+
+function shareToWhatsApp(messages: ChatMessage[]) {
+  const text = buildShareMessage(messages);
+  window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+}
+
+function shareToSms(messages: ChatMessage[]) {
+  const text = buildShareMessage(messages);
+  window.open(`sms:?body=${encodeURIComponent(text)}`, '_blank');
+}
+
+export function ChatPage({ onExit }: { onExit: () => void }) {
   const [messages, setMessages] = useState<ChatMessage[]>(loadHistory);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -241,6 +277,14 @@ export function ChatPage() {
     <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto flex flex-col min-h-[75vh]">
       {openSource && <SourceModal source={openSource} onClose={() => setOpenSource(null)} />}
 
+      <button
+        onClick={onExit}
+        className="sm:hidden flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-200 mb-3 -mt-1"
+      >
+        <ArrowLeft className="w-3.5 h-3.5" />
+        Back to AI Sefarim
+      </button>
+
       <div className="text-center mb-5 sm:mb-8 px-2">
         <div className="hidden sm:inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border border-indigo-500/30 mb-4">
           <Sparkles className="w-3.5 h-3.5" />
@@ -260,7 +304,21 @@ export function ChatPage() {
       </div>
 
       {messages.length > 0 && (
-        <div className="flex items-center justify-end gap-2 mb-2 px-1">
+        <div className="flex items-center justify-end gap-2 mb-2 px-1 flex-wrap">
+          <button
+            onClick={() => shareToWhatsApp(messages)}
+            className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-300 hover:text-white bg-[#25D366]/10 hover:bg-[#25D366] border border-[#25D366]/30 rounded-lg px-2.5 py-1.5 transition-colors"
+          >
+            <MessageCircle className="w-3 h-3 fill-current" />
+            WhatsApp
+          </button>
+          <button
+            onClick={() => shareToSms(messages)}
+            className="flex items-center gap-1.5 text-[11px] font-bold text-sky-300 hover:text-white bg-sky-500/10 hover:bg-sky-500 border border-sky-500/30 rounded-lg px-2.5 py-1.5 transition-colors"
+          >
+            <MessageSquare className="w-3 h-3" />
+            SMS
+          </button>
           <button
             onClick={() => exportTranscript(messages)}
             className="flex items-center gap-1.5 text-[11px] font-bold text-slate-400 hover:text-slate-200 bg-slate-800/60 hover:bg-slate-800 border border-slate-700/60 rounded-lg px-2.5 py-1.5 transition-colors"
