@@ -4,7 +4,7 @@ import { Sparkles, Send, BookOpen, Loader2 } from 'lucide-react';
 // Deployed Cloudflare Worker URL. Set VITE_CHAT_WORKER_URL in the AI Studio
 // Secrets panel (or .env) to override without a code change.
 const CHAT_WORKER_URL =
-  (import.meta as any).env?.VITE_CHAT_WORKER_URL || 'https://aisefarim-chat.YOUR-SUBDOMAIN.workers.dev';
+  (import.meta as any).env?.VITE_CHAT_WORKER_URL || 'https://aisefarim-chat.abrahamserouya.workers.dev';
 
 interface Source {
   n: number;
