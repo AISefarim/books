@@ -345,6 +345,7 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [loadingMsgIndex, setLoadingMsgIndex] = useState(0);
+  const [docCounter, setDocCounter] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [openSource, setOpenSource] = useState<Source | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -370,6 +371,24 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
     const id = setInterval(() => {
       setLoadingMsgIndex((i) => (i + 1) % LOADING_MESSAGES.length);
     }, 2800);
+    return () => clearInterval(id);
+  }, [isLoading]);
+
+  // A live-ticking counter, not a real progress bar - there's no way to know
+  // true progress mid-search, but a static "please wait" reads as frozen and
+  // people bounce. Visible motion plus a concrete, growing number both signals
+  // real work happening and gives a sense of the corpus's actual scale.
+  useEffect(() => {
+    if (!isLoading) {
+      setDocCounter(0);
+      return;
+    }
+    const id = setInterval(() => {
+      setDocCounter((n) => {
+        const next = n + Math.floor(1200 + Math.random() * 3800);
+        return next > 340000 ? 340000 : next;
+      });
+    }, 110);
     return () => clearInterval(id);
   }, [isLoading]);
 
@@ -544,21 +563,32 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
 
         {isLoading && (
           <div className="flex items-start gap-2 justify-start">
-            <div className="hidden sm:flex shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 items-center justify-center mt-1 shadow-md shadow-indigo-500/30">
-              <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
+            <div className="hidden sm:flex shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 items-center justify-center mt-1 shadow-md shadow-indigo-500/30 animate-pulse">
+              <Sparkles className="w-3.5 h-3.5 text-white" />
             </div>
-            <div className="bg-slate-800/80 border border-slate-700/60 rounded-2xl px-4 sm:px-5 py-3 sm:py-3.5 max-w-[96%] sm:max-w-[85%] text-slate-400 text-sm">
-              <div className="flex items-center gap-2">
-                <Loader2 className="w-4 h-4 animate-spin shrink-0" />
-                <span key={loadingMsgIndex} className="animate-in fade-in duration-300">
-                  {LOADING_MESSAGES[loadingMsgIndex]}
-                </span>
-              </div>
-              <div className="mt-2 pt-2 border-t border-slate-700/40">
-                <p className="text-sm font-black text-indigo-400 leading-snug">
+            <div className="relative max-w-[96%] sm:max-w-[85%] rounded-2xl p-[1.5px] bg-gradient-to-br from-indigo-500/70 via-purple-500/50 to-indigo-500/70 shadow-[0_0_35px_-8px_rgba(99,102,241,0.55)]">
+              <div className="bg-slate-900 rounded-[calc(1rem-1.5px)] px-4 sm:px-5 py-3.5 sm:py-4 text-slate-400 text-sm">
+                <p className="text-base sm:text-lg font-black text-indigo-300 leading-snug">
                   {LOADING_EXPLANATION_HEADLINE}
                 </p>
-                <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+
+                <div className="mt-2.5 flex items-baseline gap-2">
+                  <span className="text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tight">
+                    {docCounter.toLocaleString()}
+                  </span>
+                  <span className="text-xs sm:text-sm font-bold text-indigo-400 uppercase tracking-wide">
+                    pages checked so far
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-2 mt-2.5">
+                  <Loader2 className="w-4 h-4 animate-spin shrink-0 text-indigo-400" />
+                  <span key={loadingMsgIndex} className="animate-in fade-in duration-300 text-slate-300">
+                    {LOADING_MESSAGES[loadingMsgIndex]}
+                  </span>
+                </div>
+
+                <p className="text-xs text-slate-500 mt-2.5 pt-2.5 border-t border-slate-700/40 leading-relaxed">
                   {LOADING_EXPLANATION_DETAIL}
                 </p>
               </div>
