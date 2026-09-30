@@ -525,9 +525,14 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
   const [isExportingDoc, setIsExportingDoc] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
+    if (isLoading && loadingRef.current) {
+      loadingRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      return;
+    }
     scrollRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }, [messages, isLoading]);
 
@@ -753,7 +758,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
         ))}
 
         {isLoading && (
-          <div className="flex items-start gap-2 justify-start">
+          <div ref={loadingRef} className="flex items-start gap-2 justify-start scroll-mt-16">
             <div className="hidden sm:flex relative shrink-0 w-7 h-7 items-center justify-center mt-1">
               <div className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 animate-ping opacity-40" />
               <div className="relative w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-md shadow-indigo-500/30">
