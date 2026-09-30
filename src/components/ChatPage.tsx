@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, BookOpen, Loader2, X } from 'lucide-react';
+import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -12,6 +12,7 @@ interface Source {
   n: number;
   book: string;
   excerpt?: string;
+  bookUrl?: string;
 }
 
 interface ChatMessage {
@@ -118,6 +119,19 @@ function SourceModal({ source, onClose }: { source: Source; onClose: () => void 
             {source.excerpt && source.excerpt.length >= 1200 && '…'}
           </p>
         </div>
+        {source.bookUrl && (
+          <div className="p-4 pt-3 border-t border-slate-800 shrink-0">
+            <a
+              href={source.bookUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white py-3 rounded-xl font-black text-xs uppercase tracking-wider transition-all active:scale-95"
+            >
+              Read the Full Book
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -250,6 +264,11 @@ export function ChatPage() {
                       </span>
                       <BookOpen className="w-3 h-3 text-indigo-400 shrink-0" />
                       <span className="font-semibold text-slate-300 truncate">{s.book}</span>
+                      {s.bookUrl && (
+                        <span className="ml-auto text-[9px] font-black uppercase tracking-wider text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                          Full Book
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
