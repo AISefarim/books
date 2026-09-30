@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText, UserPlus, Video, Headphones, ShieldAlert, Gift } from 'lucide-react';
+import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText, UserPlus, Video, Headphones, ShieldAlert, Gift, Compass } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -44,12 +44,20 @@ const LOADING_MESSAGES = [
 ];
 
 // Shown while the reader waits anyway - the dead time is a chance to explain
-// what AI Sefarim actually is, not just to say "still searching."
+// what AI Sefarim actually is (and put the wait in perspective), not just to
+// say "still searching." Historical travel-time facts are kept general
+// ("a sage," "a she'eilah") rather than naming specific unverified
+// rabbi-to-rabbi exchanges - the journeys themselves are well-documented,
+// the framing shouldn't invent history to make a point.
 const LIBRARY_FACTS: { icon: typeof BookOpen; text: string }[] = [
   { icon: BookOpen, text: 'Nearly 100 sefarim in the library — most translated into English for the very first time' },
   { icon: Gift, text: 'Every book, video, and podcast on AI Sefarim is completely free' },
   { icon: Video, text: 'Hundreds of videos and podcasts, with new ones added regularly' },
   { icon: Headphones, text: 'Daily podcasts covering Daf Yomi, Tanach, Rambam, the Zohar, and more' },
+  { icon: Compass, text: 'In Talmudic times, a sage traveling from Bavel to the yeshivot of Eretz Yisrael to ask a single question could spend 4–6 weeks on the road. You can wait under a minute.' },
+  { icon: Compass, text: "The Rambam's own journey from Córdoba to Fes to Cairo took years of wandering before he could settle and write. Super Agent reads centuries of his rulings in seconds." },
+  { icon: Compass, text: 'A she’eilah sent by letter across the sea, and the answer sent back, could take the better part of a year before the age of the telegraph. This takes under a minute.' },
+  { icon: Compass, text: 'Crossing from Bavel to Eretz Yisrael for one halachic ruling could take a caravan over a month in the era of the Geonim. You can wait 45 seconds.' },
 ];
 
 const LOADING_EXPLANATION_HEADLINE = "This takes longer than a typical search engine.";
@@ -601,6 +609,10 @@ export function ChatPage({ onExit }: { onExit: () => void }) {
               <div className="absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none animate-drift" />
               <div className="absolute -bottom-10 -right-6 w-28 h-28 bg-purple-500/20 rounded-full blur-3xl pointer-events-none animate-drift" style={{ animationDelay: '2s' }} />
               <div className="relative bg-slate-900 rounded-[calc(1rem-1.5px)] px-4 sm:px-5 py-3.5 sm:py-4 text-slate-400 text-sm overflow-hidden">
+                <Sparkles className="absolute top-3 right-6 w-3 h-3 text-indigo-400/70 animate-float-up pointer-events-none" style={{ animationDelay: '0s' }} />
+                <Sparkles className="absolute top-8 right-16 w-2.5 h-2.5 text-purple-400/70 animate-float-up pointer-events-none" style={{ animationDelay: '1.1s' }} />
+                <Sparkles className="absolute top-5 right-28 w-2 h-2 text-indigo-300/60 animate-float-up pointer-events-none" style={{ animationDelay: '2.2s' }} />
+
                 <p className="text-base sm:text-lg font-black text-indigo-300 leading-snug">
                   {LOADING_EXPLANATION_HEADLINE}
                 </p>
