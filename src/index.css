@@ -3,3 +3,19 @@
 html, body {
   background-color: #020617;
 }
+
+@keyframes shimmer-sweep {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(250%); }
+}
+.animate-shimmer-sweep {
+  animation: shimmer-sweep 1.8s ease-in-out infinite;
+}
+
+@keyframes drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(8px, -6px) scale(1.08); }
+}
+.animate-drift {
+  animation: drift 6s ease-in-out infinite;
+}
