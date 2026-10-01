@@ -319,7 +319,11 @@ const LOADING_EXPLANATION_HEADLINE = "This takes longer than a typical search en
 const LOADING_EXPLANATION_DETAIL =
   "Super Agent is sifting through hundreds of thousands of pages of Torah literature, spanning 3,339 years back to Sinai — not just matching keywords.";
 
-function Markdown({ text, onCiteClick }: { text: string; onCiteClick: (n: number) => void }) {
+const Markdown = memo(function Markdown({ text, sources, onOpenSource }: { text: string; sources?: Source[]; onOpenSource: (s: Source) => void }) {
+  const onCiteClick = (n: number) => {
+    const src = sources?.find((s) => s.n === n);
+    if (src) onOpenSource(src);
+  };
   return (
     <ReactMarkdown
       remarkPlugins={[remarkGfm]}
@@ -363,7 +367,7 @@ function Markdown({ text, onCiteClick }: { text: string; onCiteClick: (n: number
       {text}
     </ReactMarkdown>
   );
-}
+});
 
 function SourceModal({ source, onClose }: { source: Source; onClose: () => void }) {
   return (
@@ -906,6 +910,25 @@ function LearnNudge() {
   );
 }
 
+// Own component so its ~4 ticks/second re-render only this number, not the
+// whole chat page (every previous answer's markdown included).
+const DOC_COUNTER_TARGET = 340000;
+function PagesCounter() {
+  const [n, setN] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => {
+      setN((c) => {
+        const remaining = DOC_COUNTER_TARGET - c;
+        if (remaining <= 0) return c;
+        const step = Math.max(100, Math.floor(remaining * 0.012));
+        return Math.min(DOC_COUNTER_TARGET, c + step);
+      });
+    }, 280);
+    return () => clearInterval(id);
+  }, []);
+  return <>{n.toLocaleString()}</>;
+}
+
 export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryThumbnails = NO_THUMBS }: { onExit: () => void; books?: Book[]; media?: MediaItem[]; categoryThumbnails?: Record<string, string> }) {
   const [messages, setMessages] = useState<ChatMessage[]>(loadHistory);
   const [input, setInput] = useState('');
@@ -914,7 +937,6 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
   const [factCount, setFactCount] = useState(1);
   const [waitCount, setWaitCount] = useState(1);
   const [waitOrder, setWaitOrder] = useState<number[]>(() => shuffledOrder(WAIT_CARDS.length));
-  const [docCounter, setDocCounter] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [openSource, setOpenSource] = useState<Source | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -956,33 +978,6 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
       clearInterval(waitId);
       setWaitOrder(shuffledOrder(WAIT_CARDS.length));
     };
-  }, [isLoading]);
-
-  // A live-ticking counter, not a real progress bar - there's no way to know
-  // true progress mid-search, but a static "please wait" reads as frozen and
-  // people bounce. Visible motion plus a concrete, growing number both signals
-  // real work happening and gives a sense of the corpus's actual scale.
-  //
-  // Most answers take close to a minute, so this can't just race to a fixed
-  // number in a few seconds (it used to - hit its cap in ~12s). Instead each
-  // tick closes a small percentage of the remaining gap to the target, which
-  // decelerates naturally: fast at first, still visibly ticking a minute in,
-  // without ever looking frozen at a maxed-out number.
-  const DOC_COUNTER_TARGET = 340000;
-  useEffect(() => {
-    if (!isLoading) {
-      setDocCounter(0);
-      return;
-    }
-    const id = setInterval(() => {
-      setDocCounter((n) => {
-        const remaining = DOC_COUNTER_TARGET - n;
-        if (remaining <= 0) return n;
-        const step = Math.max(40, Math.floor(remaining * 0.005));
-        return Math.min(DOC_COUNTER_TARGET, n + step);
-      });
-    }, 110);
-    return () => clearInterval(id);
   }, [isLoading]);
 
   async function sendQuestion(question: string) {
@@ -1084,10 +1079,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
             >
               {m.role === 'assistant' ? (
                 <div className="text-[15px]">
-                  <Markdown text={m.content} onCiteClick={(n) => {
-                    const src = m.sources?.find((s) => s.n === n);
-                    if (src) setOpenSource(src);
-                  }} />
+                  <Markdown text={m.content} sources={m.sources} onOpenSource={setOpenSource} />
                 </div>
               ) : (
                 <p className="whitespace-pre-wrap leading-relaxed text-[15px]">{m.content}</p>
@@ -1157,18 +1149,14 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
         {isLoading && (
           <div ref={loadingRef} className="flex items-start gap-2 justify-start scroll-mt-16">
             <div className="hidden sm:flex relative shrink-0 w-7 h-7 items-center justify-center mt-1">
-              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 animate-ping opacity-40" />
-              <div className="relative w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-md shadow-indigo-500/30">
+                            <div className="relative w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-md shadow-indigo-500/30">
                 <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
               </div>
             </div>
-            <div className="relative max-w-[96%] sm:max-w-[85%] rounded-2xl p-[1.5px] bg-gradient-to-br from-indigo-500/70 via-purple-500/50 to-indigo-500/70 animate-glow-pulse">
-              <div className="absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/20 rounded-full blur-3xl pointer-events-none animate-drift" />
-              <div className="absolute -bottom-10 -right-6 w-28 h-28 bg-purple-500/20 rounded-full blur-3xl pointer-events-none animate-drift" style={{ animationDelay: '2s' }} />
+            <div className="relative max-w-[96%] sm:max-w-[85%] rounded-2xl p-[1.5px] bg-gradient-to-br from-indigo-500/70 via-purple-500/50 to-indigo-500/70">
+              <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.2), transparent 70%)' }} />
+              <div className="absolute -bottom-10 -right-6 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.2), transparent 70%)' }} />
               <div className="relative bg-slate-900 rounded-[calc(1rem-1.5px)] px-4 sm:px-5 py-3.5 sm:py-4 text-slate-400 text-sm overflow-hidden">
-                <Sparkles className="absolute top-3 right-6 w-3 h-3 text-indigo-400/70 animate-float-up pointer-events-none" style={{ animationDelay: '0s' }} />
-                <Sparkles className="absolute top-8 right-16 w-2.5 h-2.5 text-purple-400/70 animate-float-up pointer-events-none" style={{ animationDelay: '1.1s' }} />
-                <Sparkles className="absolute top-5 right-28 w-2 h-2 text-indigo-300/60 animate-float-up pointer-events-none" style={{ animationDelay: '2.2s' }} />
 
                 <p className="text-base sm:text-lg font-black text-indigo-300 leading-snug">
                   {LOADING_EXPLANATION_HEADLINE}
@@ -1177,7 +1165,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                 <div className="mt-2.5 flex items-baseline gap-2">
                   <BookOpen className="w-4 h-4 text-indigo-400 mb-0.5" />
                   <span className="text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tight">
-                    {docCounter.toLocaleString()}
+                    <PagesCounter />
                   </span>
                   <span className="text-xs sm:text-sm font-bold text-indigo-400 uppercase tracking-wide">
                     pages checked so far
