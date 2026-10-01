@@ -723,40 +723,39 @@ function ShelfScanner({ titles }: { titles: string[] }) {
   );
 }
 
-const TERMS: { he: string; en: string; note: string }[] = [
-  { he: 'לכתחילה', en: 'Lechat’chilah', note: 'Ideally, from the outset: how one should act when there is a choice.' },
-  { he: 'בדיעבד', en: 'Bedi’avad', note: 'After the fact: what still stands once it has already happened.' },
-  { he: 'ספק ספיקא', en: 'Sefek sefeika', note: 'A double doubt: two layers of uncertainty that often allow a leniency.' },
-  { he: 'שעת הדחק', en: 'Sha’at hadechak', note: 'A time of pressing need, when the Sages relied on more lenient views.' },
-  { he: 'טעם כעיקר', en: 'Ta’am ke’ikar', note: 'Taste counts like substance: absorbed flavor of a forbidden food can matter as much as the food.' },
-  { he: 'ביטול בשישים', en: 'Bitul beshishim', note: 'A forbidden taste is nullified when the permitted food is at least sixty times larger.' },
-  { he: 'ספק דאורייתא לחומרא', en: 'Safek d’oraita lechumra', note: 'A doubt about Torah law is resolved strictly; a doubt about rabbinic law, leniently.' },
-  { he: 'הפסד מרובה', en: 'Hefsed merubeh', note: 'A major financial loss, which can be grounds to rely on a lenient opinion.' },
-  { he: 'מנהג אבותינו בידינו', en: 'Minhag avoteinu beyadeinu', note: 'The custom of our fathers is in our hands: why community custom carries real halachic weight.' },
-  { he: 'הלכה כבתראי', en: 'Halacha kebatra’ei', note: 'The law follows the later authorities, in the cases where that rule applies.' },
-  { he: 'מיגו', en: 'Migo', note: '"Since": a claimant could have made a stronger claim, so the weaker one is believed.' },
-  { he: 'קל וחומר', en: 'Kal vachomer', note: 'A fortiori reasoning: if the lenient case is forbidden, the stricter case surely is. The first of the thirteen middot.' },
-  { he: 'גזירה שוה', en: 'Gezeirah shavah', note: 'An analogy from a shared word in two verses. It must be a tradition received from a teacher.' },
-  { he: 'תיקו', en: 'Teiku', note: 'The question stands unresolved. Tradition reads it as "the Tishbi will answer questions and difficulties."' },
-  { he: 'חזקה', en: 'Chazakah', note: 'A presumption: the default assumption the law makes until there is proof otherwise.' },
-  { he: 'חומרא וקולא', en: 'Chumra and kula', note: 'A chumra is a stringency, a kula a leniency. Whether to act on either is itself a matter of halachah.' },
+const SAGE_QUOTES: { he: string; en: string; who: string }[] = [
+  { he: 'אֵיזֶהוּ חָכָם? הַלּוֹמֵד מִכָּל אָדָם', en: 'Who is wise? One who learns from every person.', who: 'Ben Zoma, Avot 4:1' },
+  { he: 'אֵיזֶהוּ גִבּוֹר? הַכּוֹבֵשׁ אֶת יִצְרוֹ', en: 'Who is strong? One who conquers his inclination.', who: 'Ben Zoma, Avot 4:1' },
+  { he: 'אֵיזֶהוּ עָשִׁיר? הַשָּׂמֵחַ בְּחֶלְקוֹ', en: 'Who is rich? One who is happy with his portion.', who: 'Ben Zoma, Avot 4:1' },
+  { he: 'אֵיזֶהוּ מְכֻבָּד? הַמְכַבֵּד אֶת הַבְּרִיּוֹת', en: 'Who is honored? One who honors others.', who: 'Ben Zoma, Avot 4:1' },
+  { he: 'עֲשֵׂה לְךָ רַב, וּקְנֵה לְךָ חָבֵר, וֶהֱוֵי דָן אֶת כָּל הָאָדָם לְכַף זְכוּת', en: 'Make for yourself a rav, acquire for yourself a friend, and judge every person favorably.', who: 'Yehoshua ben Perachya, Avot 1:6' },
+  { he: 'אִם אֵין אֲנִי לִי מִי לִי, וּכְשֶׁאֲנִי לְעַצְמִי מָה אֲנִי, וְאִם לֹא עַכְשָׁו אֵימָתַי', en: 'If I am not for myself, who will be for me? If I am only for myself, what am I? And if not now, when?', who: 'Hillel, Avot 1:14' },
+  { he: 'אַל תֹּאמַר לִכְשֶׁאִפָּנֶה אֶשְׁנֶה, שֶׁמָּא לֹא תִפָּנֶה', en: 'Do not say "when I have time I will study," lest you never have time.', who: 'Hillel, Avot 2:4' },
+  { he: 'אַל תָּדִין אֶת חֲבֵרְךָ עַד שֶׁתַּגִּיעַ לִמְקוֹמוֹ', en: 'Do not judge your fellow until you reach his place.', who: 'Hillel, Avot 2:4' },
+  { he: 'אֱמֹר מְעַט וַעֲשֵׂה הַרְבֵּה, וֶהֱוֵי מְקַבֵּל אֶת כָּל הָאָדָם בְּסֵבֶר פָּנִים יָפוֹת', en: 'Say little and do much, and receive every person with a cheerful face.', who: 'Shammai, Avot 1:15' },
+  { he: 'לֹא עָלֶיךָ הַמְּלָאכָה לִגְמֹר, וְלֹא אַתָּה בֶן חוֹרִין לִבָּטֵל מִמֶּנָּה', en: 'It is not up to you to finish the work, but you are not free to desist from it.', who: 'Rabbi Tarfon, Avot 2:16' },
+  { he: 'הֱוֵי מִתַּלְמִידָיו שֶׁל אַהֲרֹן, אוֹהֵב שָׁלוֹם וְרוֹדֵף שָׁלוֹם', en: 'Be among the students of Aharon: loving peace and pursuing peace.', who: 'Hillel, Avot 1:12' },
+  { he: 'הֱוֵי זָהִיר בְּמִצְוָה קַלָּה כְּבַחֲמוּרָה, שֶׁאֵין אַתָּה יוֹדֵעַ מַתַּן שְׂכָרָן שֶׁל מִצְוֹת', en: 'Be as careful with a light mitzvah as with a severe one, for you do not know the reward of the mitzvot.', who: 'Rabbi Yehuda HaNasi, Avot 2:1' },
+  { he: 'סְיָג לַחָכְמָה שְׁתִיקָה', en: 'Silence is a fence for wisdom.', who: 'Rabbi Akiva, Avot 3:13' },
+  { he: 'חָבִיב אָדָם שֶׁנִּבְרָא בְצֶלֶם', en: 'Beloved is man, for he was created in the image of God.', who: 'Rabbi Akiva, Avot 3:14' },
+  { he: 'עַל שְׁלשָׁה דְבָרִים הָעוֹלָם עוֹמֵד: עַל הַתּוֹרָה, וְעַל הָעֲבוֹדָה, וְעַל גְּמִילוּת חֲסָדִים', en: 'On three things the world stands: on Torah, on avodah, and on acts of kindness.', who: 'Shimon HaTzaddik, Avot 1:2' },
+  { he: 'הַיּוֹם קָצָר, וְהַמְּלָאכָה מְרֻבָּה, וְהַפּוֹעֲלִים עֲצֵלִים, וְהַשָּׂכָר הַרְבֵּה, וּבַעַל הַבַּיִת דּוֹחֵק', en: 'The day is short, the work is great, the workers are lazy, the reward is great, and the Master of the house is pressing.', who: 'Rabbi Tarfon, Avot 2:15' },
+  { he: 'דַּע מַה לְּמַעְלָה מִמְּךָ: עַיִן רוֹאָה, וְאֹזֶן שׁוֹמַעַת, וְכָל מַעֲשֶׂיךָ בַּסֵּפֶר נִכְתָּבִים', en: 'Know what is above you: an eye that sees, an ear that hears, and all your deeds are written in a book.', who: 'Rabbi Yehuda HaNasi, Avot 2:1' },
 ];
 
-function TermOfMoment() {
-  const [i, setI] = useState(() => Math.floor(Math.random() * TERMS.length));
+function SageQuote() {
+  const [i, setI] = useState(() => Math.floor(Math.random() * SAGE_QUOTES.length));
   useEffect(() => {
-    const id = setInterval(() => setI((n) => (n + 1) % TERMS.length), 7000);
+    const id = setInterval(() => setI((n) => (n + 1) % SAGE_QUOTES.length), 9000);
     return () => clearInterval(id);
   }, []);
-  const t = TERMS[i];
+  const q = SAGE_QUOTES[i];
   return (
     <div key={i} className="animate-in fade-in duration-500 rounded-xl border border-indigo-400/25 bg-indigo-500/5 p-3">
-      <p className="text-[11px] font-black uppercase tracking-wider text-indigo-300">Halachic term of the moment</p>
-      <div className="mt-1 flex items-baseline gap-2.5 flex-wrap">
-        <span className="text-xl font-black text-indigo-100" lang="he" dir="rtl">{t.he}</span>
-        <span className="text-sm font-bold text-slate-200">{t.en}</span>
-      </div>
-      <p className="text-xs text-slate-300 leading-snug mt-1">{t.note}</p>
+      <p className="text-[11px] font-black uppercase tracking-wider text-indigo-300">Words of the Sages</p>
+      <p className="mt-1.5 text-base font-bold text-indigo-100 leading-snug" lang="he" dir="rtl">{q.he}</p>
+      <p className="text-xs text-slate-200 leading-snug mt-1.5">{q.en}</p>
+      <p className="text-[11px] text-indigo-300/70 italic mt-1">{q.who}</p>
     </div>
   );
 }
@@ -780,6 +779,46 @@ const QUIZ: { q: string; a: string }[] = [
   { q: 'Which masechet of the Bavli is the longest, by number of dapim?', a: 'Bava Batra, which runs to daf 176.' },
   { q: 'The Kaf HaChayim was authored by which Hacham?', a: 'Hacham Yaakov Chaim Sofer, born in Baghdad and living in Jerusalem.' },
   { q: 'Who is the author of Yalkut Yosef, and how is he related to Hacham Ovadia Yosef?', a: 'Rabbi Yitzchak Yosef, his son.' },
+  { q: 'Which work of the Chida (Rabbi Chaim Yosef David Azulai) is a commentary on the Shulchan Aruch?', a: 'Birkei Yosef.' },
+  { q: 'Which grandson of Rashi finished his grandfather’s commentary on Bava Batra?', a: 'The Rashbam, Rabbi Shmuel ben Meir.' },
+  { q: 'Rashi’s real name, and the French city where he lived?', a: 'Rabbi Shlomo Yitzchaki, of Troyes.' },
+  { q: 'In which country did the Rambam compose the Mishneh Torah?', a: 'Egypt.' },
+  { q: 'In which Italian cities was the Zohar first printed, in the 1500s?', a: 'Mantua and Cremona, 1558–1560.' },
+  { q: 'How old was the Arizal when he passed away in Tzfat?', a: '38 (1534–1572).' },
+  { q: 'Which famous author of a Friday-night hymn was the Ramak’s brother-in-law?', a: 'Rabbi Shlomo Alkabetz, author of Lecha Dodi.' },
+  { q: 'In which city was Hacham Ovadia Yosef born?', a: 'Baghdad, in 1920. He came to Jerusalem as a child.' },
+  { q: 'Which public role did Hacham Ovadia Yosef hold from 1973 to 1983?', a: 'Rishon LeTzion, the Sephardic Chief Rabbi of Israel.' },
+  { q: 'How is the Ben Ish Chai’s halachic work organized?', a: 'By the weekly parsha, across two years of weekly derashot (Shanah Rishonah and Shanah Sheniyah).' },
+  { q: 'Which two sections of the Shulchan Aruch does the Kaf HaChayim cover?', a: 'Orach Chayim and Yoreh Deah.' },
+  { q: 'In which city did Maran Yosef Karo pass away, and when?', a: 'Tzfat, in 1575.' },
+  { q: 'In which of the six orders of the Mishnah is Masechet Pesachim?', a: 'Moed.' },
+  { q: 'In which order of the Mishnah is Masechet Sanhedrin? (Pirkei Avot is there too.)', a: 'Nezikin.' },
+  { q: 'In which order of the Mishnah is Masechet Kiddushin?', a: 'Nashim.' },
+  { q: 'How many parshiyot are there in the Chumash?', a: '54.' },
+  { q: 'Which two parshiyot contain the Ten Commandments?', a: 'Yitro and Vaetchanan.' },
+  { q: 'Which verse is the longest in all of Tanach?', a: 'Esther 8:9.' },
+  { q: 'Which is the shortest book of the Neviim?', a: 'Ovadyah, with one chapter of 21 verses.' },
+  { q: 'Which chapter of Mishlei contains Eishet Chayil?', a: 'Chapter 31, verses 10–31.' },
+  { q: 'Which megillot are read on Pesach, Shavuot, and Sukkot?', a: 'Shir HaShirim on Pesach, Rut on Shavuot, and Kohelet on Sukkot.' },
+  { q: 'Why is the weekday Amidah called Shemoneh Esrei if it has 19 blessings?', a: 'The 18 were the original blessings; Birkat HaMinim was added later.' },
+  { q: 'With what words does the Shulchan Aruch begin?', a: '"Yitgaber ka’ari la’amod baboker": be strong as a lion to rise in the morning.' },
+  { q: 'How many simanim are in Orach Chayim?', a: '697.' },
+  { q: 'Which parsha has the most mitzvot, 74 in all?', a: 'Ki Teitzei.' },
+  { q: 'Which masechet of the Mishnah has the most chapters?', a: 'Kelim, with 30.' },
+  { q: 'Where in the Mishnah are the 39 categories of Shabbat labor listed?', a: 'Masechet Shabbat, chapter 7, mishnah 2.' },
+  { q: 'Who is called "Rabbeinu HaKadosh"?', a: 'Rabbi Yehuda HaNasi, who edited the Mishnah.' },
+  { q: 'How many students of Rabbi Akiva died in the plague between Pesach and Shavuot, according to the Gemara?', a: '24,000 (Yevamot 62b).' },
+  { q: 'Rav Saadia Gaon headed which yeshiva, and what is his famous philosophical work?', a: 'The yeshiva of Sura; Emunot VeDeot.' },
+  { q: 'Who wrote Chovot HaLevavot (Duties of the Heart)?', a: 'Rabbeinu Bachya ibn Paquda.' },
+  { q: 'Who wrote the Kuzari?', a: 'Rabbi Yehuda HaLevi.' },
+  { q: 'Who wrote the Mesillat Yesharim?', a: 'The Ramchal, Rabbi Moshe Chaim Luzzatto.' },
+  { q: 'What do the commentaries known as the Shach and the Taz stand for?', a: 'Siftei Kohen (Rabbi Shabtai HaKohen) and Turei Zahav (Rabbi David HaLevi).' },
+  { q: 'Who wrote the Magen Avraham, and on which section of the Shulchan Aruch?', a: 'Rabbi Avraham Gombiner, on Orach Chayim.' },
+  { q: 'Who recorded most of the Arizal’s teachings, since he wrote very little himself?', a: 'His students, chiefly Rabbi Chaim Vital.' },
+  { q: 'How many aliyot are there on Yom Kippur morning?', a: 'Six.' },
+  { q: 'How many aliyot are there on Rosh Chodesh and Chol HaMoed?', a: 'Four.' },
+  { q: 'Which Hebrew month has no festival or special day at all?', a: 'Cheshvan (Marcheshvan).' },
+  { q: 'Which year of the Shemitah count is the Yovel?', a: 'The 50th year, after seven cycles of seven.' },
   { q: 'What is the "Tishbi" in the word Teiku?', a: 'Eliyahu HaNavi: the tradition reads Teiku as "Tishbi yetaretz kushyot ve’abayot."' },
 ];
 
@@ -1109,7 +1148,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                 ))}
 
                 <div className="mt-3.5 space-y-2.5">
-                  <TermOfMoment />
+                  <SageQuote />
                   <QuizCard />
                 </div>
 
