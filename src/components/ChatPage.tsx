@@ -723,64 +723,64 @@ function ShelfScanner({ titles }: { titles: string[] }) {
   );
 }
 
-const ALEPHBET: { ch: string; name: string; val: number; note: string }[] = [
-  { ch: 'א', name: 'Alef', val: 1, note: 'Silent, yet the first letter of the Aseret HaDibrot.' },
-  { ch: 'ב', name: 'Bet', val: 2, note: 'The Torah opens with it: Bereishit.' },
-  { ch: 'ג', name: 'Gimel', val: 3, note: 'Gomel chesed: one who gives kindness.' },
-  { ch: 'ד', name: 'Dalet', val: 4, note: 'Dalet means door, and also a poor person (dal).' },
-  { ch: 'ה', name: 'Hei', val: 5, note: 'Added to Avram and Sarai to make Avraham and Sarah.' },
-  { ch: 'ו', name: 'Vav', val: 6, note: 'Means hook; it joins words, as in "and."' },
-  { ch: 'ז', name: 'Zayin', val: 7, note: 'Seven: the days of the week, and the root of zachor, "remember."' },
-  { ch: 'ח', name: 'Chet', val: 8, note: 'Chai (life) begins with it. Eight is the day of Brit Milah.' },
-  { ch: 'ט', name: 'Tet', val: 9, note: 'First appears in the word tov, "good," in the Torah.' },
-  { ch: 'י', name: 'Yud', val: 10, note: 'The smallest letter, yet the start of Hashem’s Name.' },
-  { ch: 'כ', name: 'Kaf', val: 20, note: 'Kaf means palm, as in the palm of the hand.' },
-  { ch: 'ל', name: 'Lamed', val: 30, note: 'The tallest letter, rising above the line.' },
-  { ch: 'מ', name: 'Mem', val: 40, note: '40 days on Sinai, 40 years in the desert, 40 se’ah in a mikveh.' },
-  { ch: 'נ', name: 'Nun', val: 50, note: '50 Gates of Binah; Yovel is the 50th year.' },
-  { ch: 'ס', name: 'Samech', val: 60, note: 'Means support; the Samech and final Mem in the Luchot stood by a miracle.' },
-  { ch: 'ע', name: 'Ayin', val: 70, note: 'Means eye; 70 faces of Torah, 70 nations.' },
-  { ch: 'פ', name: 'Pei', val: 80, note: 'Means mouth; the letter of speech.' },
-  { ch: 'צ', name: 'Tzadi', val: 90, note: 'Tzaddik begins with it.' },
-  { ch: 'ק', name: 'Kuf', val: 100, note: 'Kedushah begins with it.' },
-  { ch: 'ר', name: 'Reish', val: 200, note: 'Reish means head; the root of Rosh and Reishit.' },
-  { ch: 'ש', name: 'Shin', val: 300, note: 'Appears on the tefillin shel rosh, in two forms.' },
-  { ch: 'ת', name: 'Tav', val: 400, note: 'The last letter, and the first of Torah and Teshuvah.' },
+const TERMS: { he: string; en: string; note: string }[] = [
+  { he: 'לכתחילה', en: 'Lechat’chilah', note: 'Ideally, from the outset: how one should act when there is a choice.' },
+  { he: 'בדיעבד', en: 'Bedi’avad', note: 'After the fact: what still stands once it has already happened.' },
+  { he: 'ספק ספיקא', en: 'Sefek sefeika', note: 'A double doubt: two layers of uncertainty that often allow a leniency.' },
+  { he: 'שעת הדחק', en: 'Sha’at hadechak', note: 'A time of pressing need, when the Sages relied on more lenient views.' },
+  { he: 'טעם כעיקר', en: 'Ta’am ke’ikar', note: 'Taste counts like substance: absorbed flavor of a forbidden food can matter as much as the food.' },
+  { he: 'ביטול בשישים', en: 'Bitul beshishim', note: 'A forbidden taste is nullified when the permitted food is at least sixty times larger.' },
+  { he: 'ספק דאורייתא לחומרא', en: 'Safek d’oraita lechumra', note: 'A doubt about Torah law is resolved strictly; a doubt about rabbinic law, leniently.' },
+  { he: 'הפסד מרובה', en: 'Hefsed merubeh', note: 'A major financial loss, which can be grounds to rely on a lenient opinion.' },
+  { he: 'מנהג אבותינו בידינו', en: 'Minhag avoteinu beyadeinu', note: 'The custom of our fathers is in our hands: why community custom carries real halachic weight.' },
+  { he: 'הלכה כבתראי', en: 'Halacha kebatra’ei', note: 'The law follows the later authorities, in the cases where that rule applies.' },
+  { he: 'מיגו', en: 'Migo', note: '"Since": a claimant could have made a stronger claim, so the weaker one is believed.' },
+  { he: 'קל וחומר', en: 'Kal vachomer', note: 'A fortiori reasoning: if the lenient case is forbidden, the stricter case surely is. The first of the thirteen middot.' },
+  { he: 'גזירה שוה', en: 'Gezeirah shavah', note: 'An analogy from a shared word in two verses. It must be a tradition received from a teacher.' },
+  { he: 'תיקו', en: 'Teiku', note: 'The question stands unresolved. Tradition reads it as "the Tishbi will answer questions and difficulties."' },
+  { he: 'חזקה', en: 'Chazakah', note: 'A presumption: the default assumption the law makes until there is proof otherwise.' },
+  { he: 'חומרא וקולא', en: 'Chumra and kula', note: 'A chumra is a stringency, a kula a leniency. Whether to act on either is itself a matter of halachah.' },
 ];
 
-function LetterOfMoment() {
-  const [i, setI] = useState(() => Math.floor(Math.random() * ALEPHBET.length));
+function TermOfMoment() {
+  const [i, setI] = useState(() => Math.floor(Math.random() * TERMS.length));
   useEffect(() => {
-    const id = setInterval(() => setI((n) => (n + 1) % ALEPHBET.length), 6000);
+    const id = setInterval(() => setI((n) => (n + 1) % TERMS.length), 7000);
     return () => clearInterval(id);
   }, []);
-  const l = ALEPHBET[i];
+  const t = TERMS[i];
   return (
-    <div key={i} className="animate-in fade-in duration-500 flex items-center gap-3 rounded-xl border border-indigo-400/25 bg-indigo-500/5 p-3">
-      <div className="shrink-0 w-12 h-12 rounded-lg bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center text-3xl font-black text-indigo-200" lang="he" dir="rtl">{l.ch}</div>
-      <div className="min-w-0">
-        <p className="text-[11px] font-black uppercase tracking-wider text-indigo-300">Letter of the moment · {l.name} · {l.val}</p>
-        <p className="text-xs text-slate-300 leading-snug mt-0.5">{l.note}</p>
+    <div key={i} className="animate-in fade-in duration-500 rounded-xl border border-indigo-400/25 bg-indigo-500/5 p-3">
+      <p className="text-[11px] font-black uppercase tracking-wider text-indigo-300">Halachic term of the moment</p>
+      <div className="mt-1 flex items-baseline gap-2.5 flex-wrap">
+        <span className="text-xl font-black text-indigo-100" lang="he" dir="rtl">{t.he}</span>
+        <span className="text-sm font-bold text-slate-200">{t.en}</span>
       </div>
+      <p className="text-xs text-slate-300 leading-snug mt-1">{t.note}</p>
     </div>
   );
 }
 
 const QUIZ: { q: string; a: string }[] = [
-  { q: 'How many books are in Tanach?', a: '24, counting Trei Asar as one book and Shmuel, Melachim, Divrei HaYamim, and Ezra-Nechemya each as one.' },
-  { q: 'Which book of Tanach never mentions Hashem’s Name?', a: 'Megillat Esther.' },
-  { q: 'Which is the longest chapter of Tehillim?', a: 'Chapter 119, with 176 verses, arranged by the Alef-Bet.' },
-  { q: 'Which is the shortest chapter of Tehillim?', a: 'Chapter 117, "Hallelu et Hashem kol goyim," with just two verses.' },
-  { q: 'How many books make up the Rambam’s Mishneh Torah?', a: '14, which is why it is also called "Yad HaChazakah" (yad = 14).' },
-  { q: 'Name the four sections of the Shulchan Aruch.', a: 'Orach Chaim, Yoreh Deah, Even HaEzer, and Choshen Mishpat.' },
-  { q: 'How many words are in the first verse of the Torah?', a: 'Seven: "Bereishit bara Elokim et hashamayim ve’et ha’aretz."' },
-  { q: 'Which is the longest parsha, by verses?', a: 'Parashat Naso, with 176 verses.' },
-  { q: 'How many pages does the Daf Yomi cycle cover?', a: '2,711 pages of the Babylonian Talmud, about seven and a half years.' },
-  { q: 'How many sefirot are there?', a: 'Ten: Keter (or Da’at), Chochmah, Binah, Chesed, Gevurah, Tiferet, Netzach, Hod, Yesod, Malchut.' },
-  { q: 'Who is the Zohar traditionally attributed to?', a: 'Rabbi Shimon bar Yochai, whose hillula is celebrated on Lag BaOmer.' },
-  { q: 'What is the first order of the Mishnah?', a: 'Zeraim (agricultural laws); its first masechet is Berachot.' },
-  { q: 'How many mitzvot are there in the Torah, by tradition?', a: '613: 248 positive and 365 negative.' },
-  { q: 'Who wrote the Ben Ish Chai?', a: 'Hacham Yosef Chaim of Baghdad (1835–1909).' },
+  { q: 'Only two orders of the Mishnah have a Babylonian Talmud on just one of their masechtot each. Which orders, and which masechtot?', a: 'Zeraim (only Berachot) and Taharot (only Niddah).' },
+  { q: 'Maran Yosef Karo decided disputes in the Beit Yosef by following the majority of which three Rishonim?', a: 'The Rif, the Rambam, and the Rosh.' },
+  { q: 'What is the Rema’s gloss on the Shulchan Aruch called, and what does the name mean?', a: 'The Mapah, "the tablecloth," laid over Maran’s "set table."' },
+  { q: 'The Tur, on which Maran wrote the Beit Yosef, was written by whom, and who was his father?', a: 'Rabbeinu Yaakov ben HaRosh (the Ba’al HaTurim); his father was Rabbeinu Asher, the Rosh.' },
+  { q: 'Where and when was the Shulchan Aruch first printed?', a: 'Venice, 1565. Maran composed it in Tzfat.' },
+  { q: 'Which is the first book of the Mishneh Torah, and which is the last?', a: 'The first is Sefer HaMada (Knowledge); the last is Sefer Shoftim (Judges).' },
+  { q: 'In what language did the Rambam originally write the Moreh Nevuchim?', a: 'Judeo-Arabic: Arabic written in Hebrew letters. Ibn Tibbon translated it into Hebrew.' },
+  { q: 'Which Tanach manuscript, praised by the Rambam as the standard for Torah scrolls, was kept for centuries in Aram Soba?', a: 'The Aleppo Codex (Keter Aram Tzova).' },
+  { q: 'Idra Rabba and Idra Zuta in the Zohar appear in which two parshiyot?', a: 'Idra Rabba in Parashat Naso, and Idra Zuta in Parashat Ha’azinu.' },
+  { q: 'Who compiled the Arizal’s teachings into the Shemonah She’arim, and where did he learn from the Arizal?', a: 'Rabbi Chaim Vital, in Tzfat.' },
+  { q: 'The Rashash, author of Nahar Shalom, came from which country?', a: 'Yemen, and he later settled in Jerusalem (Beit El).' },
+  { q: 'Which parsha has the fewest verses in the Torah?', a: 'Parashat Vayelech, with 30 verses.' },
+  { q: 'Which was edited first, the Yerushalmi or the Bavli?', a: 'The Yerushalmi, around the 4th century CE; the Bavli about a century later.' },
+  { q: 'How many masechtot are in the Babylonian Talmud as printed in the standard Vilna Shas?', a: '37.' },
+  { q: 'The Ohr HaChaim HaKadosh was written by whom, and from where?', a: 'Rabbi Chaim ibn Attar, born in Morocco, who ended his life in Jerusalem (d. 1743).' },
+  { q: 'Which masechet of the Bavli is the longest, by number of dapim?', a: 'Bava Batra, which runs to daf 176.' },
+  { q: 'The Kaf HaChayim was authored by which Hacham?', a: 'Hacham Yaakov Chaim Sofer, born in Baghdad and living in Jerusalem.' },
+  { q: 'Who is the author of Yalkut Yosef, and how is he related to Hacham Ovadia Yosef?', a: 'Rabbi Yitzchak Yosef, his son.' },
+  { q: 'What is the "Tishbi" in the word Teiku?', a: 'Eliyahu HaNavi: the tradition reads Teiku as "Tishbi yetaretz kushyot ve’abayot."' },
 ];
 
 function QuizCard() {
@@ -1109,7 +1109,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                 ))}
 
                 <div className="mt-3.5 space-y-2.5">
-                  <LetterOfMoment />
+                  <TermOfMoment />
                   <QuizCard />
                 </div>
 
