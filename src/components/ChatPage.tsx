@@ -729,7 +729,7 @@ const SAGE_QUOTES: { he: string; en: string; who: string }[] = [
   { he: 'אֵיזֶהוּ עָשִׁיר? הַשָּׂמֵחַ בְּחֶלְקוֹ', en: 'Who is rich? One who is happy with his portion.', who: 'Ben Zoma, Avot 4:1' },
   { he: 'אֵיזֶהוּ מְכֻבָּד? הַמְכַבֵּד אֶת הַבְּרִיּוֹת', en: 'Who is honored? One who honors others.', who: 'Ben Zoma, Avot 4:1' },
   { he: 'עֲשֵׂה לְךָ רַב, וּקְנֵה לְךָ חָבֵר, וֶהֱוֵי דָן אֶת כָּל הָאָדָם לְכַף זְכוּת', en: 'Make for yourself a rav, acquire for yourself a friend, and judge every person favorably.', who: 'Yehoshua ben Perachya, Avot 1:6' },
-  { he: 'אִם אֵין אֲנִי לִי מִי לִי, וּכְשֶׁאֲנִי לְעַצְמִי מָה אֲנִי, וְאִם לֹא עַכְשָׁו אֵימָתַי', en: 'If I am not for myself, who will be for me? If I am only for myself, what am I? And if not now, when?', who: 'Hillel, Avot 1:14' },
+  { he: 'אִם אֵין אֲנִי לִי מִי לִי, וּכְשֶׁאֲנִי לְעַצְמִי מָה אֲנִי, וְאִם לֹא עַכְשָׁיו אֵימָתָי', en: 'If I am not for myself, who will be for me? If I am only for myself, what am I? And if not now, when?', who: 'Hillel, Avot 1:14' },
   { he: 'אַל תֹּאמַר לִכְשֶׁאִפָּנֶה אֶשְׁנֶה, שֶׁמָּא לֹא תִפָּנֶה', en: 'Do not say "when I have time I will study," lest you never have time.', who: 'Hillel, Avot 2:4' },
   { he: 'אַל תָּדִין אֶת חֲבֵרְךָ עַד שֶׁתַּגִּיעַ לִמְקוֹמוֹ', en: 'Do not judge your fellow until you reach his place.', who: 'Hillel, Avot 2:4' },
   { he: 'אֱמֹר מְעַט וַעֲשֵׂה הַרְבֵּה, וֶהֱוֵי מְקַבֵּל אֶת כָּל הָאָדָם בְּסֵבֶר פָּנִים יָפוֹת', en: 'Say little and do much, and receive every person with a cheerful face.', who: 'Shammai, Avot 1:15' },
@@ -740,7 +740,7 @@ const SAGE_QUOTES: { he: string; en: string; who: string }[] = [
   { he: 'חָבִיב אָדָם שֶׁנִּבְרָא בְצֶלֶם', en: 'Beloved is man, for he was created in the image of God.', who: 'Rabbi Akiva, Avot 3:14' },
   { he: 'עַל שְׁלשָׁה דְבָרִים הָעוֹלָם עוֹמֵד: עַל הַתּוֹרָה, וְעַל הָעֲבוֹדָה, וְעַל גְּמִילוּת חֲסָדִים', en: 'On three things the world stands: on Torah, on avodah, and on acts of kindness.', who: 'Shimon HaTzaddik, Avot 1:2' },
   { he: 'הַיּוֹם קָצָר, וְהַמְּלָאכָה מְרֻבָּה, וְהַפּוֹעֲלִים עֲצֵלִים, וְהַשָּׂכָר הַרְבֵּה, וּבַעַל הַבַּיִת דּוֹחֵק', en: 'The day is short, the work is great, the workers are lazy, the reward is great, and the Master of the house is pressing.', who: 'Rabbi Tarfon, Avot 2:15' },
-  { he: 'דַּע מַה לְּמַעְלָה מִמְּךָ: עַיִן רוֹאָה, וְאֹזֶן שׁוֹמַעַת, וְכָל מַעֲשֶׂיךָ בַּסֵּפֶר נִכְתָּבִים', en: 'Know what is above you: an eye that sees, an ear that hears, and all your deeds are written in a book.', who: 'Rabbi Yehuda HaNasi, Avot 2:1' },
+  { he: 'דַּע מַה לְּמַעְלָה מִמְּךָ: עַיִן רוֹאָה, וְאֹזֶן שׁוֹמַעַת, וְכָל מַעֲשֶׂיךָ בַסֵּפֶר נִכְתָּבִין', en: 'Know what is above you: an eye that sees, an ear that hears, and all your deeds are written in a book.', who: 'Rabbi Yehuda HaNasi, Avot 2:1' },
 ];
 
 function SageQuote() {
@@ -761,59 +761,58 @@ function SageQuote() {
 }
 
 const QUIZ: { q: string; a: string }[] = [
-  { q: "Hillel could not afford the entrance fee to the beit midrash. How did he listen to Shemaya and Avtalyon?", a: "He climbed onto the roof and listened at the skylight, until snow covered it over and he was found half-frozen (Yoma 35b)." },
+  { q: "Hillel could not afford the entrance fee to the beit midrash. How did he listen to Shemaya and Avtalyon?", a: "He climbed onto the roof and listened at the skylight, until snow covered the skylight three cubits high. They found him, washed and oiled him, and sat him by a bonfire (Yoma 35b)." },
   { q: "A potential convert asked Hillel to teach him the whole Torah while standing on one foot. What did Hillel answer?", a: "“What is hateful to you, do not do to your fellow. That is the whole Torah; the rest is commentary. Go and learn” (Shabbat 31a)." },
-  { q: "Why, according to the Gemara, did the halacha follow Beit Hillel and not Beit Shammai?", a: "Beit Hillel were pleasant and humble, and they taught the words of Beit Shammai alongside their own, even before their own (Eruvin 13b)." },
-  { q: "What caused Rabbi Akiva’s 24,000 students to die in a plague, according to the Gemara?", a: "They did not treat one another with proper respect (Yevamot 62b)." },
+  { q: "Why, according to the Gemara, did the halacha follow Beit Hillel and not Beit Shammai?", a: "Beit Hillel were agreeable and forbearing, and they taught the words of Beit Shammai alongside their own, even before their own (Eruvin 13b)." },
+  { q: "How does the Gemara say Rabbi Akiva’s 24,000 students died, and why?", a: "A bad death, because they did not treat one another with proper respect (Yevamot 62b)." },
   { q: "By tradition, at what age did Rabbi Akiva begin to learn Torah, and what first inspired him?", a: "At 40; he noticed water slowly carving a hole in a hard stone (Avot DeRabbi Natan)." },
   { q: "Four sages entered the Pardes in the Gemara. Which one left unharmed?", a: "Rabbi Akiva. Ben Azzai died, Ben Zoma lost his mind, and Acher became a heretic (Chagigah 14b)." },
   { q: "Rabbi Shimon bar Yochai hid from the Romans in a cave with his son. What sustained them?", a: "A carob tree and a spring of water. They stayed 12 years (Shabbat 33b)." },
-  { q: "How did Rabban Yochanan ben Zakkai leave besieged Jerusalem to meet Vespasian?", a: "Carried out in a coffin, as if he had died. He asked Vespasian for Yavneh and its sages (Gittin 56b)." },
+  { q: "How did Rabban Yochanan ben Zakkai leave besieged Jerusalem to meet Vespasian?", a: "Carried out as if he had died (Avot DeRabbi Natan 4 says in a coffin). He asked Vespasian for Yavneh and its sages (Gittin 56a–b)." },
   { q: "Which story of a mistaken party invitation does the Gemara link to the destruction of the Second Temple?", a: "Kamtza and Bar Kamtza (Gittin 55b–56a)." },
   { q: "In the ‘Oven of Akhnai’ story, how did the sages respond when a heavenly voice sided with Rabbi Eliezer?", a: "Rabbi Yehoshua said “Lo bashamayim hi,” the Torah is not in heaven, so we follow the majority (Bava Metzia 59b)." },
   { q: "Honi HaMe’agel is the sage who slept for how long?", a: "Seventy years (Taanit 23a)." },
-  { q: "Which two famous sages, Shemaya and Avtalyon, were according to the Gemara descended from a notorious Assyrian king?", a: "They descended from converts of the line of Sancheriv (Gittin 57b)." },
+  { q: "Which two famous sages, Shemaya and Avtalyon, were according to the Gemara descended from the Assyrian king Sancheriv?", a: "They descended from converts of the line of Sancheriv (Gittin 57b)." },
   { q: "According to the Gemara, which great Tanna descended from a convert who was Emperor Nero?", a: "Rabbi Meir (Gittin 56a)." },
   { q: "Who, according to the Gemara, was so worthy that the Torah could have been given through him had Moshe not come first?", a: "Ezra HaSofer (Sanhedrin 21b)." },
   { q: "Which Navi is identified by the Gemara with the God-fearing steward who hid 100 prophets in caves?", a: "Ovadyah, who served in Achav’s house (Sanhedrin 39b)." },
   { q: "Which book of Tanach never mentions Hashem’s Name, and what is the theme of that hiddenness?", a: "Megillat Esther. Hashem’s presence is hidden throughout (hester panim), yet the whole story shows His hand." },
   { q: "What is the difference between Tannaim and Amoraim?", a: "Tannaim are the sages of the Mishnah; Amoraim are the sages of the Gemara." },
-  { q: "Who are traditionally credited with the final redaction of the Babylonian Talmud?", a: "Rav Ashi and Ravina." },
+  { q: "Which Amora is traditionally credited with beginning the editing of the Babylonian Talmud?", a: "Rav Ashi, head of the academy at Sura." },
   { q: "Which Mishnah teaches that saving one life is like saving an entire world?", a: "Sanhedrin 4:5, explaining why Adam was created as a single person." },
   { q: "Where does the Rambam present his Thirteen Principles of Faith?", a: "In his Commentary on the Mishnah, Sanhedrin chapter 10 (Perek Chelek)." },
-  { q: "Why did the Rambam write his Iggeret Teiman?", a: "To strengthen the Jews of Yemen in the face of persecution and forced conversion, and to answer a false messianic claim." },
+  { q: "Why did the Rambam write his Iggeret Teiman?", a: "To strengthen the Jews of Yemen in the face of persecution and a false messianic claim." },
   { q: "Why is the Mishneh Torah also called “Yad HaChazakah”?", a: "“Yad” (yud-dalet) equals 14, the number of its books." },
-  { q: "Where is the Rambam buried?", a: "Tiberias." },
+  { q: "Where is the Rambam buried?", a: "Tiberias, by long-standing tradition." },
   { q: "In what language did the Rambam originally write the Moreh Nevuchim?", a: "Judeo-Arabic: Arabic written in Hebrew letters. Rabbi Shmuel ibn Tibbon translated it into Hebrew." },
-  { q: "Which Tanach manuscript, praised by the Rambam as the model for Torah scrolls, was kept for centuries in Aram Soba?", a: "The Aleppo Codex (Keter Aram Tzova)." },
-  { q: "What happened to the Aleppo Codex in the 1947 riots in Aleppo?", a: "The Great Synagogue was burned and many pages were lost, including most of the Chumash. The surviving codex reached Israel in 1957." },
+  { q: "Which Tanach manuscript, identified with the Ben Asher codex the Rambam relied on, was kept for centuries in Aram Soba?", a: "The Aleppo Codex (Keter Aram Tzova)." },
+  { q: "What happened to the Aleppo Codex in the 1947 riots in Aleppo?", a: "The Great Synagogue was burned in the 1947 riots. The codex later reached Israel in 1958, with about 40% of its pages missing." },
   { q: "What is the system of Arabic musical modes that Aleppo Jews use to organize the Shabbat services and pizmonim?", a: "The maqamat (singular: maqam), with a different maqam assigned to each week." },
-  { q: "Why is Kol Nidrei said before Yom Kippur?", a: "It annuls vows made between a person and Hashem, not vows between people." },
-  { q: "What is the story of the “Maggid Meisharim”?", a: "Maran Yosef Karo recorded a heavenly voice, described as the personified Mishnah, that instructed and encouraged him." },
-  { q: "How many years did Maran Yosef Karo spend writing, and then reviewing, the Beit Yosef?", a: "About 20 years writing and 12 years reviewing." },
+  { q: "What does Kol Nidrei accomplish at the start of Yom Kippur?", a: "It annuls vows made between a person and Hashem, not vows between people." },
+  { q: "What is the story of the “Maggid Meisharim”?", a: "An angelic mentor, the personified Mishnah, whom Maran Yosef Karo recorded visiting him over about 50 years (published as Maggid Meisharim, 1646)." },
   { q: "What is the Rema’s gloss on the Shulchan Aruch called, and what does the name mean?", a: "The Mapah, “the tablecloth,” laid over Maran’s “set table.”" },
-  { q: "Maran Yosef Karo decided disputes in the Beit Yosef by following the majority of which three Rishonim?", a: "The Rif, the Rambam, and the Rosh." },
+  { q: "Maran Yosef Karo’s method for deciding halacha was to follow whichever view two of which three authorities agreed on?", a: "The Rif, the Rambam, and the Rosh." },
   { q: "In which city did Maran Yosef Karo pass away?", a: "Tzfat, in 1575." },
   { q: "Which verse inspired the names of the Ben Ish Chai and his responsa Rav Pe’alim?", a: "II Shmuel 23:20: “ben ish chai rav pe’alim,” describing Benayahu ben Yehoyada." },
   { q: "How is the Ben Ish Chai’s halachic work organized?", a: "By the weekly parsha, across two years of weekly derashot." },
-  { q: "Which two sections of the Shulchan Aruch does the Kaf HaChayim cover?", a: "Orach Chayim and Yoreh Deah." },
+  { q: "Which parts of the Shulchan Aruch does the Kaf HaChayim cover?", a: "Orach Chayim, and part of Yoreh Deah." },
   { q: "Rabbeinu Gershom banned polygamy. Was his edict accepted by every Jewish community?", a: "No. It was adopted by Ashkenazi communities, but many Sephardic and Eastern communities did not take it on in the same way." },
-  { q: "Rashi’s commentary is printed in “Rashi script.” What is surprising about the name?", a: "Rashi never wrote in it. It is a semi-cursive Sephardic hand used by the early printers of Spain and Italy." },
+  { q: "Rashi’s commentary is printed in “Rashi script.” What is surprising about the name?", a: "Rashi never wrote in it. It is based on a 15th-century Sephardic semi-cursive hand, used by early printers for his commentary." },
   { q: "Which 1475 printing is the first dated Hebrew book we know of?", a: "Rashi’s commentary on the Chumash, printed in Reggio di Calabria, Italy." },
-  { q: "Who printed the first complete Babylonian Talmud with the standard page layout, and was he Jewish?", a: "Daniel Bomberg in Venice, around 1520, and he was Christian." },
-  { q: "In which city was the Ramban forced into a public disputation in 1263?", a: "Barcelona, against the convert Pablo Christiani." },
+  { q: "Who printed the first complete Babylonian Talmud with the standard page layout, and was he Jewish?", a: "Daniel Bomberg in Venice, in the early 1520s, and he was Christian." },
+  { q: "In which city was the Ramban ordered by the king into a public disputation in 1263?", a: "Barcelona, against the convert Pablo Christiani." },
   { q: "In which Italian cities was the Zohar first printed?", a: "Mantua and Cremona, 1558–1560." },
   { q: "Which sage does tradition hold wrote the Zohar, and where is his hillula celebrated?", a: "Rabbi Shimon bar Yochai, on Lag BaOmer at Meron." },
   { q: "Idra Rabba and Idra Zuta in the Zohar appear in which two parshiyot?", a: "Idra Rabba in Naso, and Idra Zuta in Ha’azinu." },
-  { q: "Why did the kabbalists of Tzfat go out to the fields on Friday afternoon?", a: "To welcome the Shabbat Queen, which led to Lecha Dodi." },
+  { q: "What did the kabbalists of Tzfat do in the fields on Friday afternoon?", a: "They went out to the fields to welcome Shabbat as a bride or queen, the custom reflected in Lecha Dodi, which Rabbi Shlomo Alkabetz composed in Tzfat." },
   { q: "Which famous author of Lecha Dodi was the Ramak’s brother-in-law?", a: "Rabbi Shlomo Alkabetz." },
-  { q: "The Arizal passed away young. How old was he?", a: "38 (1534–1572)." },
+  { q: "The Arizal passed away young. How old was he?", a: "37 or 38 (c. 1534–1572)." },
   { q: "Who recorded most of the Arizal’s teachings, since he wrote very little himself?", a: "His students, chiefly Rabbi Chaim Vital." },
-  { q: "Where was the Cairo Genizah, and what was found there?", a: "In the Ben Ezra Synagogue in Fustat (Old Cairo): hundreds of thousands of fragments, including writings of the Rambam." },
+  { q: "Where was the Cairo Genizah, and what was found there?", a: "In the Ben Ezra Synagogue in Fustat (Old Cairo): hundreds of thousands of fragments, including autograph fragments of the Rambam." },
   { q: "The Chida’s Birkei Yosef is a commentary on what?", a: "The Shulchan Aruch." },
   { q: "What is the Shach, and what does the abbreviation stand for?", a: "A commentary on the Shulchan Aruch (Yoreh Deah and Choshen Mishpat) by Rabbi Shabtai HaKohen: Siftei Kohen." },
-  { q: "Which Mishnaic masechet is entirely ethical teachings, and in which order is it?", a: "Pirkei Avot, in Nezikin." },
-  { q: "Which masechet of the Bavli has the most dapim, and why isn’t that the same as “longest”?", a: "Bava Batra, with 176 dapim. A daf is a page, so it counts pages, not words, and the ranking by word count can differ." },
+  { q: "Which Mishnaic masechet is almost entirely ethical teachings, and in which order is it?", a: "Pirkei Avot, in Nezikin." },
+  { q: "Which masechet of the Bavli has the most dapim?", a: "Bava Batra. That counts pages (dapim), not words." },
   { q: "According to tradition, how did Antigonus of Socho’s teaching about serving without expecting reward lead to the Sadducees?", a: "His students are said to have misread it as meaning there is no reward, and so founded the Sadducee and Boethusian sects (Avot DeRabbi Natan)." },
   { q: "Which sage’s teaching is “Make for yourself a rav, acquire a friend, and judge everyone favorably”?", a: "Yehoshua ben Perachya (Avot 1:6)." },
   { q: "From which sage did the Nesiim, the leaders of the Jewish people after the Temple, descend?", a: "Hillel." },
@@ -842,6 +841,46 @@ function QuizCard() {
           <button type="button" onClick={() => { setShown(false); setN((x) => x + 1); }} className="text-[11px] font-bold text-slate-200 border border-slate-600 hover:bg-slate-800 rounded-full px-3 py-1 active:scale-95 transition-all">Next question</button>
         )}
       </div>
+    </div>
+  );
+}
+
+const DVARIM: { title: string; body: string; source: string }[] = [
+  { title: "Why does the Torah begin with Creation?", body: "Rashi opens the Torah with a question: it could have started with the first mitzvah to the nation, “HaChodesh hazeh lachem.” Why Creation? Because if the nations ever say, “You stole this land,” Israel can answer: the whole earth belongs to the Holy One, who created it and gave it to whom He saw fit. Our claim is not only history. It is the opening line of the Torah.", source: "Rashi on Bereishit 1:1" },
+  { title: "A calling that begins with love", body: "Every time Hashem spoke to Moshe, the Torah says He first “called” (Vayikra). Rashi explains that calling is a language of affection, the same word used for the angels calling to one another. Before any command, before any instruction, there is warmth. The Torah teaches that the way Hashem addresses us comes before what He says to us.", source: "Rashi on Vayikra 1:1" },
+  { title: "Lech lecha: for your own good", body: "Hashem tells Avraham “lech lecha,” go from your land. Rashi reads the extra word “lecha” as: for your benefit, for your good. There I will make you a great nation, and here you cannot have children. The journey that felt like losing everything was, in fact, the route to everything he wanted.", source: "Rashi on Bereishit 12:1" },
+  { title: "One man, one heart", body: "At Sinai, the Torah says Israel “camped” in the singular. Rashi explains: as one man with one heart. All the other encampments were marked by complaints and disputes. The Torah follows right after. Torah is received together, not alone.", source: "Rashi on Shemot 19:2" },
+  { title: "Was Noach really righteous?", body: "The Torah calls Noach “righteous in his generation.” Rashi brings two views. Some read it as praise: if he was righteous even in a corrupt generation, how much more so in a righteous one. Others read it as criticism: only in his generation was he considered righteous; in Avraham’s generation he would have been nothing special. Rashi leaves both readings standing, a lesson in how carefully a person is weighed.", source: "Rashi on Bereishit 6:9" },
+  { title: "Love Hashem with both inclinations", body: "“You shall love Hashem your God with all your heart.” The Mishnah teaches that “with all your heart” means with both of your inclinations, the good and the evil. Not only the easy part of us. Even the drive that pulls us the wrong way can be turned toward serving Hashem.", source: "Mishnah Berachot 9:5" },
+  { title: "Another person’s honor as your own", body: "Rabbi Elazar ben Shammua taught: let the honor of your student be as dear to you as your own, and the honor of your colleague as the awe of your teacher, and the awe of your teacher as the awe of Heaven. Respect is a ladder, and it starts with how we treat the people beside and below us.", source: "Pirkei Avot 4:12" },
+  { title: "The carob tree", body: "Honi saw a man planting a carob tree, which takes seventy years to bear fruit. He asked: “Will you live to eat from it?” The man answered: “I found a world with carob trees. As my fathers planted for me, so I plant for my children.” Much of what we enjoy was planted by someone who never saw the fruit.", source: "Taanit 23a" },
+  { title: "A world created for me", body: "The Mishnah gives several reasons humanity began with one person. One: each of us is obligated to say, “The world was created for me.” Whoever sustains one soul is credited as if he sustained an entire world. Every individual carries that weight and that dignity.", source: "Mishnah Sanhedrin 4:5" },
+  { title: "What is true teshuvah?", body: "The Rambam teaches that complete teshuvah is when someone has the chance to repeat the sin, the opportunity is in their hands, and they abstain, because of teshuvah, not out of fear or weakness. Change is measured not when it is easy but when the old choice is available again.", source: "Rambam, Hilchot Teshuvah 2:1" },
+  { title: "Learning from everyone", body: "Rabbi Chanina said: I have learned much from my teachers, more from my colleagues, and from my students most of all. Teaching is itself a form of learning. Explaining something forces us to understand it, and every student’s question opens a door we had not seen.", source: "Taanit 7a" },
+  { title: "Avraham, Avraham", body: "At the Akeidah, the angel calls out “Avraham, Avraham.” Rashi explains that the repetition of his name is an expression of affection. At the hardest moment of Avraham’s life, the call that stops him does not come as a rebuke. It comes with love.", source: "Rashi on Bereishit 22:11" },
+];
+
+function DvarTorah() {
+  const [order] = useState(() => shuffled(DVARIM.map((_, k) => k)));
+  const [n, setN] = useState(0);
+  const [open, setOpen] = useState(false);
+  const d = DVARIM[order[n % order.length]];
+  return (
+    <div className="rounded-xl border border-amber-400/25 bg-amber-500/5 p-3">
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="w-full text-left flex items-center justify-between gap-2">
+        <span className="min-w-0">
+          <span className="block text-[11px] font-black uppercase tracking-wider text-amber-300">30-second Dvar Torah · tap to read</span>
+          <span className="block text-sm font-bold text-slate-100 mt-0.5">{d.title}</span>
+        </span>
+        <span className={`shrink-0 text-amber-300 text-lg leading-none transition-transform ${open ? 'rotate-45' : ''}`}>+</span>
+      </button>
+      {open && (
+        <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
+          <p className="mt-2 text-xs sm:text-[13px] text-slate-200 leading-relaxed">{d.body}</p>
+          <p className="mt-1.5 text-[11px] text-amber-300/70 italic">{d.source}</p>
+          <button type="button" onClick={() => { setOpen(false); setN((x) => x + 1); }} className="mt-2 text-[11px] font-bold text-slate-200 border border-slate-600 hover:bg-slate-800 rounded-full px-3 py-1 active:scale-95 transition-all">Another one</button>
+        </div>
+      )}
     </div>
   );
 }
@@ -1151,6 +1190,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                 <div className="mt-3.5 space-y-2.5">
                   <SageQuote />
                   <QuizCard />
+                  <DvarTorah />
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-700/40 space-y-2">
