@@ -738,7 +738,7 @@ const ALEPHBET: { ch: string; name: string; val: number; note: string }[] = [
   { ch: 'ל', name: 'Lamed', val: 30, note: 'The tallest letter, rising above the line.' },
   { ch: 'מ', name: 'Mem', val: 40, note: '40 days on Sinai, 40 years in the desert, 40 se’ah in a mikveh.' },
   { ch: 'נ', name: 'Nun', val: 50, note: '50 Gates of Binah; Yovel is the 50th year.' },
-  { ch: 'ס', name: 'Samech', val: 60, note: 'Means support; a closed circle, like the Luchot’s inner letters.' },
+  { ch: 'ס', name: 'Samech', val: 60, note: 'Means support; the Samech and final Mem in the Luchot stood by a miracle.' },
   { ch: 'ע', name: 'Ayin', val: 70, note: 'Means eye; 70 faces of Torah, 70 nations.' },
   { ch: 'פ', name: 'Pei', val: 80, note: 'Means mouth; the letter of speech.' },
   { ch: 'צ', name: 'Tzadi', val: 90, note: 'Tzaddik begins with it.' },
