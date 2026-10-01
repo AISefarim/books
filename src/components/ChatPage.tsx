@@ -128,7 +128,64 @@ const WAIT_CARDS = [
     punch: 'So you can wait 45 seconds while we scan all of Jewish thought.',
     source: 'Mishnah Ta\u2019anit 10a',
   },
+  {
+    title: 'Perspective',
+    body: 'Honi saw a man planting a carob tree that would take seventy years to bear fruit, sat down to eat, and fell asleep for seventy years.',
+    punch: 'So you can handle 45 seconds without a nap.',
+    source: 'Ta\u2019anit 23a',
+  },
+  {
+    title: 'Perspective',
+    body: 'Too poor to pay the doorkeeper, Hillel climbed onto the roof of the beit midrash to hear the lesson, and the snow buried him there until morning.',
+    punch: 'So you can wait 45 seconds, indoors, with the heating on.',
+    source: 'Yoma 35b',
+  },
+  {
+    title: 'Perspective',
+    body: 'Mashiach sits at the gates of Rome among the lepers, unwrapping and rewrapping one bandage at a time, so he is ready the moment he is called.',
+    punch: 'He has been waiting a while. You have 45 seconds.',
+    source: 'Sanhedrin 98a',
+  },
+  {
+    title: 'Perspective',
+    body: 'Rabbi Shimon bar Yochai hid in a cave for twelve years, living on carobs and spring water, learning Torah with his son.',
+    punch: 'So you can wait 45 seconds, and we don\u2019t even need a cave.',
+    source: 'Shabbat 33b',
+  },
+  {
+    title: 'Perspective',
+    body: 'A man bet 400 zuz that he could make Hillel lose his temper, and kept interrupting his Friday bath with silly questions. Hillel answered every one patiently.',
+    punch: 'Hillel\u2019s patience cost someone 400 zuz. Yours costs 45 seconds.',
+    source: 'Shabbat 31a',
+  },
+  {
+    title: 'Perspective',
+    body: 'Rabbi Preida taught every lesson 400 times to one slow student. One day the student still did not understand, so he taught it 400 times more.',
+    punch: 'We are asking for 45 seconds, not 400 repetitions.',
+    source: 'Eruvin 54b',
+  },
+  {
+    title: 'Perspective',
+    body: 'The great synagogue of Alexandria was so vast that an attendant waved a cloth so the people at the back knew when to answer Amen.',
+    punch: 'You only need to wait 45 seconds. No flag required.',
+    source: 'Sukkah 51b',
+  },
+  {
+    title: 'Perspective',
+    body: 'Rabbi Akiva was forty years old and had learned nothing, until he watched water wear a hole in solid rock and decided to begin.',
+    punch: 'A great deal can happen in 45 seconds. Nobody has to wait until forty.',
+    source: 'Avot DeRabbi Natan 6',
+  },
 ];
+
+function shuffledOrder(n: number): number[] {
+  const a = Array.from({ length: n }, (_, i) => i);
+  for (let i = n - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
 
 
 
@@ -519,6 +576,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
   const [factStart, setFactStart] = useState(0);
   const [factCount, setFactCount] = useState(1);
   const [waitCount, setWaitCount] = useState(1);
+  const [waitOrder, setWaitOrder] = useState<number[]>(() => shuffledOrder(WAIT_CARDS.length));
   const [docCounter, setDocCounter] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const [openSource, setOpenSource] = useState<Source | null>(null);
@@ -549,6 +607,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
     setFactStart(Math.floor(Math.random() * LIBRARY_FACTS.length));
     setFactCount(1);
     setWaitCount(1);
+    setWaitOrder(shuffledOrder(WAIT_CARDS.length));
     const waitId = setInterval(() => {
       setWaitCount((c) => Math.min(c + 1, WAIT_CARDS.length));
     }, 20000);
@@ -558,6 +617,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
     return () => {
       clearInterval(id);
       clearInterval(waitId);
+      setWaitOrder(shuffledOrder(WAIT_CARDS.length));
     };
   }, [isLoading]);
 
@@ -797,7 +857,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                   {LOADING_EXPLANATION_DETAIL}
                 </p>
 
-                {WAIT_CARDS.slice(0, waitCount).map((card) => (
+                {waitOrder.slice(0, waitCount).map((i) => WAIT_CARDS[i]).map((card) => (
                   <div key={card.source} className="animate-in fade-in slide-in-from-bottom-2 duration-700 mt-3.5 rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent p-3.5 shadow-[0_0_24px_-10px_rgba(251,191,36,0.6)]">
                     <div className="flex items-center gap-2">
                       <Compass className="w-4 h-4 text-amber-300 shrink-0" />
