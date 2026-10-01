@@ -688,7 +688,7 @@ function LibraryShowcase({ books, media, thumbs }: { books: Book[]; media: Media
   if (bookItems.length === 0 && mediaItems.length === 0) return null;
   return (
     <div className="mt-3 pt-3 border-t border-slate-700/40">
-      <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Meanwhile, from the library <span className="text-emerald-400">· all free</span></p>
+      <p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Learn it yourself, from the library <span className="text-emerald-400">· all free</span></p>
       <ShowcaseRow label="Books" items={bookItems} tall />
       <ShowcaseRow label="Videos & podcasts" items={mediaItems} tall={false} />
     </div>
@@ -881,6 +881,27 @@ function DvarTorah() {
           <button type="button" onClick={() => { setOpen(false); setN((x) => x + 1); }} className="mt-2 text-[11px] font-bold text-slate-200 border border-slate-600 hover:bg-slate-800 rounded-full px-3 py-1 active:scale-95 transition-all">Another one</button>
         </div>
       )}
+    </div>
+  );
+}
+
+const LEARN_NUDGES = [
+  'It is great to rely on me for answers, but you can learn all of this for yourself. The sefarim I am quoting are in the library, free, and many are translated into English.',
+  'I can point you to the passage, but nothing beats opening the sefer. Every book on AI Sefarim is free to read.',
+  'Do not just take my word for it. Tap any source under an answer and read the original. That is how you start to learn it yourself.',
+  'Prefer to listen? There are hundreds of free videos and daily podcasts on Daf Yomi, Tanach, Rambam, the Zohar and more.',
+  'Think of me as a study partner, not a replacement. The goal is for you to open the book and learn it for yourself.',
+];
+
+function LearnNudge() {
+  const [i] = useState(() => Math.floor(Math.random() * LEARN_NUDGES.length));
+  return (
+    <div className="rounded-xl border border-sky-400/25 bg-sky-500/5 p-3">
+      <p className="text-[11px] font-black uppercase tracking-wider text-sky-300">Learn it yourself</p>
+      <p className="text-xs sm:text-[13px] text-slate-200 mt-1 leading-relaxed">{LEARN_NUDGES[i]}</p>
+      <div className="mt-2 flex flex-wrap gap-2">
+        <a href="/" target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-sky-950 bg-sky-300 hover:bg-sky-200 rounded-full px-3 py-1 active:scale-95 transition-all">Browse the free library</a>
+      </div>
     </div>
   );
 }
@@ -1192,6 +1213,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                 <div className="mt-3.5 space-y-2.5">
                   <SageQuote />
                   <QuizCard />
+                  <LearnNudge />
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-700/40 space-y-2">
