@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo } from 'react';
+import { useState, useRef, useEffect, useMemo, memo } from 'react';
 import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText, UserPlus, Video, Headphones, ShieldAlert, Gift, Compass } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -822,7 +822,7 @@ const QUIZ: { q: string; a: string }[] = [
   { q: "Who is the author of Yalkut Yosef, and how is he related to Hacham Ovadia Yosef?", a: "Rabbi Yitzchak Yosef, his son." },
 ];
 
-function QuizCard() {
+const QuizCard = memo(function QuizCard() {
   const [order] = useState(() => shuffled(QUIZ.map((_, k) => k)));
   const [n, setN] = useState(0);
   const [shown, setShown] = useState(false);
@@ -843,7 +843,7 @@ function QuizCard() {
       </div>
     </div>
   );
-}
+});
 
 const DVARIM: { title: string; body: string; source: string }[] = [
   { title: "Why does the Torah begin with Creation?", body: "Rashi opens the Torah with a question: it could have started with the first mitzvah to the nation, “HaChodesh hazeh lachem.” Why Creation? Because if the nations ever say, “You stole this land,” Israel can answer: the whole earth belongs to the Holy One, who created it and gave it to whom He saw fit. Our claim is not only history. It is the opening line of the Torah.", source: "Rashi on Bereishit 1:1" },
@@ -860,19 +860,19 @@ const DVARIM: { title: string; body: string; source: string }[] = [
   { title: "Avraham, Avraham", body: "At the Akeidah, the angel calls out “Avraham, Avraham.” Rashi explains that the repetition of his name is an expression of affection. At the hardest moment of Avraham’s life, the call that stops him does not come as a rebuke. It comes with love.", source: "Rashi on Bereishit 22:11" },
 ];
 
-function DvarTorah() {
+const DvarTorah = memo(function DvarTorah() {
   const [order] = useState(() => shuffled(DVARIM.map((_, k) => k)));
   const [n, setN] = useState(0);
   const [open, setOpen] = useState(false);
   const d = DVARIM[order[n % order.length]];
   return (
     <div className="rounded-xl border border-amber-400/25 bg-amber-500/5 p-3">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="w-full text-left flex items-center justify-between gap-2">
+      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="w-full min-h-[48px] text-left flex items-center justify-between gap-3 touch-manipulation cursor-pointer">
         <span className="min-w-0">
           <span className="block text-[11px] font-black uppercase tracking-wider text-amber-300">30-second Dvar Torah · tap to read</span>
           <span className="block text-sm font-bold text-slate-100 mt-0.5">{d.title}</span>
         </span>
-        <span className={`shrink-0 text-amber-300 text-lg leading-none transition-transform ${open ? 'rotate-45' : ''}`}>+</span>
+        <span className="shrink-0 text-[11px] font-black text-amber-950 bg-amber-300 rounded-full px-3 py-1.5">{open ? 'Close' : 'Read'}</span>
       </button>
       {open && (
         <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
@@ -883,7 +883,7 @@ function DvarTorah() {
       )}
     </div>
   );
-}
+});
 
 const LEARN_NUDGES = [
   'It is great to rely on me for answers, but you can learn all of this for yourself. The sefarim I am quoting are in the library, free, and many are translated into English.',
@@ -1188,11 +1188,11 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                   <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-indigo-400 to-transparent animate-shimmer-sweep" />
                 </div>
 
-                <div className="mt-3"><DvarTorah /></div>
-
                 <ShelfScanner titles={books.map((b) => b.title)} />
 
                 <AscentIndicator />
+
+                <div className="mt-3"><DvarTorah /></div>
 
                 <p className="text-xs text-slate-500 mt-2.5 leading-relaxed">
                   {LOADING_EXPLANATION_DETAIL}
