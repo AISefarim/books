@@ -695,6 +695,117 @@ function LibraryShowcase({ books, media, thumbs }: { books: Book[]; media: Media
   );
 }
 
+const SHELF_FALLBACK = ['Zohar', 'Etz Chaim', 'Shulchan Aruch', 'Mishneh Torah', 'Yalkut Yosef', 'Ben Ish Chai', 'Kaf HaChayim', 'Nahar Shalom', 'Pardes Rimonim', 'Halacha Yomit'];
+
+// A "now scanning" ticker: one library title swaps in every ~1.3s with a
+// pulsing dot. Purely visual motion that shows the scale of the shelves.
+function ShelfScanner({ titles }: { titles: string[] }) {
+  const list = useMemo(() => {
+    const t = titles.filter(Boolean);
+    return shuffled(t.length >= 6 ? t : SHELF_FALLBACK);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [titles.length > 0]);
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setI((n) => n + 1), 1300);
+    return () => clearInterval(id);
+  }, []);
+  const title = list[i % list.length];
+  return (
+    <div className="mt-2.5 flex items-center gap-2 text-xs text-slate-400 min-w-0">
+      <span className="relative flex h-2 w-2 shrink-0">
+        <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-70 animate-ping" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-400" />
+      </span>
+      <span className="shrink-0 font-bold uppercase tracking-wide text-slate-500">Scanning</span>
+      <span key={i} className="truncate text-slate-200 font-semibold animate-in fade-in slide-in-from-bottom-1 duration-300">{title}</span>
+    </div>
+  );
+}
+
+const ALEPHBET: { ch: string; name: string; val: number; note: string }[] = [
+  { ch: 'א', name: 'Alef', val: 1, note: 'Silent, yet the first letter of the Aseret HaDibrot.' },
+  { ch: 'ב', name: 'Bet', val: 2, note: 'The Torah opens with it: Bereishit.' },
+  { ch: 'ג', name: 'Gimel', val: 3, note: 'Gomel chesed: one who gives kindness.' },
+  { ch: 'ד', name: 'Dalet', val: 4, note: 'Dalet means door, and also a poor person (dal).' },
+  { ch: 'ה', name: 'Hei', val: 5, note: 'Added to Avram and Sarai to make Avraham and Sarah.' },
+  { ch: 'ו', name: 'Vav', val: 6, note: 'Means hook; it joins words, as in "and."' },
+  { ch: 'ז', name: 'Zayin', val: 7, note: 'Seven: the days of the week, and the root of zachor, "remember."' },
+  { ch: 'ח', name: 'Chet', val: 8, note: 'Chai (life) begins with it. Eight is the day of Brit Milah.' },
+  { ch: 'ט', name: 'Tet', val: 9, note: 'First appears in the word tov, "good," in the Torah.' },
+  { ch: 'י', name: 'Yud', val: 10, note: 'The smallest letter, yet the start of Hashem’s Name.' },
+  { ch: 'כ', name: 'Kaf', val: 20, note: 'Kaf means palm, as in the palm of the hand.' },
+  { ch: 'ל', name: 'Lamed', val: 30, note: 'The tallest letter, rising above the line.' },
+  { ch: 'מ', name: 'Mem', val: 40, note: '40 days on Sinai, 40 years in the desert, 40 se’ah in a mikveh.' },
+  { ch: 'נ', name: 'Nun', val: 50, note: '50 Gates of Binah; Yovel is the 50th year.' },
+  { ch: 'ס', name: 'Samech', val: 60, note: 'Means support; a closed circle, like the Luchot’s inner letters.' },
+  { ch: 'ע', name: 'Ayin', val: 70, note: 'Means eye; 70 faces of Torah, 70 nations.' },
+  { ch: 'פ', name: 'Pei', val: 80, note: 'Means mouth; the letter of speech.' },
+  { ch: 'צ', name: 'Tzadi', val: 90, note: 'Tzaddik begins with it.' },
+  { ch: 'ק', name: 'Kuf', val: 100, note: 'Kedushah begins with it.' },
+  { ch: 'ר', name: 'Reish', val: 200, note: 'Reish means head; the root of Rosh and Reishit.' },
+  { ch: 'ש', name: 'Shin', val: 300, note: 'Appears on the tefillin shel rosh, in two forms.' },
+  { ch: 'ת', name: 'Tav', val: 400, note: 'The last letter, and the first of Torah and Teshuvah.' },
+];
+
+function LetterOfMoment() {
+  const [i, setI] = useState(() => Math.floor(Math.random() * ALEPHBET.length));
+  useEffect(() => {
+    const id = setInterval(() => setI((n) => (n + 1) % ALEPHBET.length), 6000);
+    return () => clearInterval(id);
+  }, []);
+  const l = ALEPHBET[i];
+  return (
+    <div key={i} className="animate-in fade-in duration-500 flex items-center gap-3 rounded-xl border border-indigo-400/25 bg-indigo-500/5 p-3">
+      <div className="shrink-0 w-12 h-12 rounded-lg bg-indigo-500/15 border border-indigo-400/30 flex items-center justify-center text-3xl font-black text-indigo-200" lang="he" dir="rtl">{l.ch}</div>
+      <div className="min-w-0">
+        <p className="text-[11px] font-black uppercase tracking-wider text-indigo-300">Letter of the moment · {l.name} · {l.val}</p>
+        <p className="text-xs text-slate-300 leading-snug mt-0.5">{l.note}</p>
+      </div>
+    </div>
+  );
+}
+
+const QUIZ: { q: string; a: string }[] = [
+  { q: 'How many books are in Tanach?', a: '24, counting Trei Asar as one book and Shmuel, Melachim, Divrei HaYamim, and Ezra-Nechemya each as one.' },
+  { q: 'Which book of Tanach never mentions Hashem’s Name?', a: 'Megillat Esther.' },
+  { q: 'Which is the longest chapter of Tehillim?', a: 'Chapter 119, with 176 verses, arranged by the Alef-Bet.' },
+  { q: 'Which is the shortest chapter of Tehillim?', a: 'Chapter 117, "Hallelu et Hashem kol goyim," with just two verses.' },
+  { q: 'How many books make up the Rambam’s Mishneh Torah?', a: '14, which is why it is also called "Yad HaChazakah" (yad = 14).' },
+  { q: 'Name the four sections of the Shulchan Aruch.', a: 'Orach Chaim, Yoreh Deah, Even HaEzer, and Choshen Mishpat.' },
+  { q: 'How many words are in the first verse of the Torah?', a: 'Seven: "Bereishit bara Elokim et hashamayim ve’et ha’aretz."' },
+  { q: 'Which is the longest parsha, by verses?', a: 'Parashat Naso, with 176 verses.' },
+  { q: 'How many pages does the Daf Yomi cycle cover?', a: '2,711 pages of the Babylonian Talmud, about seven and a half years.' },
+  { q: 'How many sefirot are there?', a: 'Ten: Keter (or Da’at), Chochmah, Binah, Chesed, Gevurah, Tiferet, Netzach, Hod, Yesod, Malchut.' },
+  { q: 'Who is the Zohar traditionally attributed to?', a: 'Rabbi Shimon bar Yochai, whose hillula is celebrated on Lag BaOmer.' },
+  { q: 'What is the first order of the Mishnah?', a: 'Zeraim (agricultural laws); its first masechet is Berachot.' },
+  { q: 'How many mitzvot are there in the Torah, by tradition?', a: '613: 248 positive and 365 negative.' },
+  { q: 'Who wrote the Ben Ish Chai?', a: 'Hacham Yosef Chaim of Baghdad (1835–1909).' },
+];
+
+function QuizCard() {
+  const [order] = useState(() => shuffled(QUIZ.map((_, k) => k)));
+  const [n, setN] = useState(0);
+  const [shown, setShown] = useState(false);
+  const item = QUIZ[order[n % order.length]];
+  return (
+    <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/5 p-3">
+      <p className="text-[11px] font-black uppercase tracking-wider text-emerald-300">Quick quiz · no cheating</p>
+      <p key={n} className="text-sm font-bold text-slate-100 mt-1 animate-in fade-in duration-300">{item.q}</p>
+      {shown ? (
+        <p className="text-xs text-emerald-200 mt-1.5 leading-snug animate-in fade-in slide-in-from-bottom-1 duration-300">{item.a}</p>
+      ) : null}
+      <div className="mt-2 flex gap-2">
+        {!shown ? (
+          <button type="button" onClick={() => setShown(true)} className="text-[11px] font-bold text-emerald-950 bg-emerald-300 hover:bg-emerald-200 rounded-full px-3 py-1 active:scale-95 transition-all">Reveal answer</button>
+        ) : (
+          <button type="button" onClick={() => { setShown(false); setN((x) => x + 1); }} className="text-[11px] font-bold text-slate-200 border border-slate-600 hover:bg-slate-800 rounded-full px-3 py-1 active:scale-95 transition-all">Next question</button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryThumbnails = NO_THUMBS }: { onExit: () => void; books?: Book[]; media?: MediaItem[]; categoryThumbnails?: Record<string, string> }) {
   const [messages, setMessages] = useState<ChatMessage[]>(loadHistory);
   const [input, setInput] = useState('');
@@ -977,6 +1088,8 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                   <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-indigo-400 to-transparent animate-shimmer-sweep" />
                 </div>
 
+                <ShelfScanner titles={books.map((b) => b.title)} />
+
                 <AscentIndicator />
 
                 <p className="text-xs text-slate-500 mt-2.5 leading-relaxed">
@@ -994,6 +1107,11 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                     <p className="mt-1.5 text-[11px] text-amber-300/70 italic">{card.source}</p>
                   </div>
                 ))}
+
+                <div className="mt-3.5 space-y-2.5">
+                  <LetterOfMoment />
+                  <QuizCard />
+                </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-700/40 space-y-2">
                   {Array.from({ length: factCount }, (_, k) => LIBRARY_FACTS[(factStart + k) % LIBRARY_FACTS.length]).map((fact, k) => {
