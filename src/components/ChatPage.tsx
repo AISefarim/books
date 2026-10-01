@@ -1167,6 +1167,8 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                   <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-indigo-400 to-transparent animate-shimmer-sweep" />
                 </div>
 
+                <div className="mt-3"><DvarTorah /></div>
+
                 <ShelfScanner titles={books.map((b) => b.title)} />
 
                 <AscentIndicator />
@@ -1190,7 +1192,6 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                 <div className="mt-3.5 space-y-2.5">
                   <SageQuote />
                   <QuizCard />
-                  <DvarTorah />
                 </div>
 
                 <div className="mt-3 pt-3 border-t border-slate-700/40 space-y-2">
