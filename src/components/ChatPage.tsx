@@ -579,11 +579,12 @@ function buildShareMessage(messages: ChatMessage[]): string {
   return appendLinks(body);
 }
 
-function buildSingleMessageText(m: ChatMessage, forSharing: boolean): string {
+function buildSingleMessageText(m: ChatMessage, forSharing: boolean, question?: string): string {
   const cleanContent = markdownToPlainText(m.content);
+  const q = question?.trim();
   const body = forSharing
-    ? `🎙️ *AI Sefarim Super Agent*\n\n${truncate(cleanContent, MAX_SHARE_BODY)}`
-    : cleanContent;
+    ? `🎙️ *AI Sefarim Super Agent*\n\n${q ? `*Q:* ${q}\n\n*A:* ` : ''}${truncate(cleanContent, MAX_SHARE_BODY)}`
+    : `${q ? `Q: ${q}\n\nA: ` : ''}${cleanContent}`;
   return appendLinks(body + formatSourcesList(m.sources));
 }
 
@@ -958,6 +959,10 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
   const [error, setError] = useState<string | null>(null);
   const [openSource, setOpenSource] = useState<Source | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+  const questionFor = (i: number): string | undefined => {
+    for (let j = i - 1; j >= 0; j--) if (messages[j].role === 'user') return messages[j].content;
+    return undefined;
+  };
   const [isExportingDoc, setIsExportingDoc] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef<HTMLDivElement>(null);
@@ -1133,7 +1138,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                 <div className="mt-3 pt-3 border-t border-slate-700/50 flex items-center gap-1.5">
                   <button
                     onClick={async () => {
-                      const ok = await copyText(buildSingleMessageText(m, false));
+                      const ok = await copyText(buildSingleMessageText(m, false, questionFor(i)));
                       if (ok) {
                         setCopiedIndex(i);
                         setTimeout(() => setCopiedIndex(null), 1800);
@@ -1145,14 +1150,14 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                     {copiedIndex === i ? 'Copied' : 'Copy'}
                   </button>
                   <button
-                    onClick={() => shareToWhatsApp(buildSingleMessageText(m, true))}
+                    onClick={() => shareToWhatsApp(buildSingleMessageText(m, true, questionFor(i)))}
                     className="flex items-center gap-1 text-[10px] font-bold text-emerald-300 hover:text-white bg-[#25D366]/10 hover:bg-[#25D366] rounded-md px-2 py-1 transition-colors"
                   >
                     <MessageCircle className="w-3 h-3 fill-current" />
                     WhatsApp
                   </button>
                   <button
-                    onClick={() => shareToSms(buildSingleMessageText(m, true))}
+                    onClick={() => shareToSms(buildSingleMessageText(m, true, questionFor(i)))}
                     className="flex items-center gap-1 text-[10px] font-bold text-sky-300 hover:text-white bg-sky-500/10 hover:bg-sky-500 rounded-md px-2 py-1 transition-colors"
                   >
                     <MessageSquare className="w-3 h-3" />
