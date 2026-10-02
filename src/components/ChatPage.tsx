@@ -318,7 +318,7 @@ function shuffledOrder(n: number): number[] {
 const LOADING_EXPLANATION_HEADLINE = "This takes longer than a typical search engine.";
 const SCALE_PERSPECTIVE_BIG = "370,000 pages.";
 const SCALE_PERSPECTIVE_LINE =
-  "Reading that library cover to cover would take a dedicated scholar about a decade of full-time study. Super Agent searches all of it for you in about a minute.";
+  "Reading that library cover to cover would take a dedicated Talmud Hacham about a decade of full-time study. Super Agent searches all of it for you in about a minute.";
 const LOADING_EXPLANATION_DETAIL =
   "Super Agent is sifting through hundreds of thousands of pages of Torah literature, spanning 3,339 years back to Sinai — not just matching keywords.";
 
