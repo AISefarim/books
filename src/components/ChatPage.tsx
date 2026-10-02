@@ -316,6 +316,9 @@ function shuffledOrder(n: number): number[] {
 
 
 const LOADING_EXPLANATION_HEADLINE = "This takes longer than a typical search engine.";
+const SCALE_PERSPECTIVE_BIG = "370,000 pages.";
+const SCALE_PERSPECTIVE_LINE =
+  "Reading that library cover to cover would take a dedicated scholar about a decade of full-time study. Super Agent searches all of it for you in about a minute.";
 const LOADING_EXPLANATION_DETAIL =
   "Super Agent is sifting through hundreds of thousands of pages of Torah literature, spanning 3,339 years back to Sinai — not just matching keywords.";
 
@@ -1193,6 +1196,12 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                   <span className="text-xs sm:text-sm font-bold text-indigo-400 uppercase tracking-wide">
                     pages checked so far
                   </span>
+                </div>
+
+                <div className="mt-3 rounded-xl border border-indigo-400/30 bg-indigo-500/10 px-3.5 py-3">
+                  <p className="text-[11px] font-bold uppercase tracking-widest text-indigo-300">Put it in perspective</p>
+                  <p className="mt-1 text-2xl sm:text-3xl font-black text-white tracking-tight">{SCALE_PERSPECTIVE_BIG}</p>
+                  <p className="mt-1 text-sm text-slate-300 leading-relaxed">{SCALE_PERSPECTIVE_LINE}</p>
                 </div>
 
                 <div className="mt-2 h-1 w-full rounded-full bg-slate-800 overflow-hidden relative">
