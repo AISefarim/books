@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
-import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText, UserPlus, Video, Headphones, ShieldAlert, Gift, Compass } from 'lucide-react';
+import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText, UserPlus, Video, Headphones, ShieldAlert, Gift, Compass, HelpCircle, Quote, Library, Zap } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -22,6 +22,9 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   sources?: Source[];
+  // Served from the worker's answer cache (a recent identical question) - shown
+  // as a small "Instant" chip so the sub-second reply doesn't look suspicious.
+  cached?: boolean;
 }
 
 const SUGGESTIONS = [
@@ -31,65 +34,56 @@ const SUGGESTIONS = [
   'Summarize the Rambam\'s laws of Teshuvah',
 ];
 
-const ASCENT_STAGES = [
-  { label: 'Ascending to Shamayim…', aside: '(where the Cloud lives. Both of them.)' },
-  { label: 'Entering the cloud, like Moshe…', aside: '(Shemot 24:18. His trip took 40 days, ours about 40 seconds.)' },
-  { label: 'No bread, no water, like Moshe…', aside: '(Shemot 34:28. You, however, are allowed a snack.)' },
-  { label: 'וַיֵּרֶד AI Sefarim בֶּעָנָן…', aside: '(Shemot 34:5, with one small edit)' },
-  { label: 'Almost down…', aside: '(the descent is always the slower part)' },
+// What the worker is actually doing, in the order it happens: one Gemini call
+// that retrieves, reads and then writes. The timings are typical, not
+// measured - the stages exist so the reader sees progress, and the elapsed
+// clock is the one number on the card that is always honest.
+const THINK_STAGES = [
+  { at: 0, label: 'Searching the library', short: 'Searching' },
+  { at: 7, label: 'Reading the passages', short: 'Reading' },
+  { at: 16, label: 'Writing your answer', short: 'Writing' },
 ];
 
-// Starts on mount (the loading card mounts when a question is sent): climbs to
-// the cloud, pauses there, then comes back down. Real duration is unknowable,
-// so the last stage just holds near the base until the answer replaces it.
-function AscentIndicator() {
-  const [stage, setStage] = useState(0);
-  const [launched, setLaunched] = useState(false);
-
+function useElapsedSeconds() {
+  const [s, setS] = useState(0);
   useEffect(() => {
-    const timers = [
-      setTimeout(() => setLaunched(true), 60),
-      setTimeout(() => setStage(1), 14000),
-      setTimeout(() => setStage(2), 22000),
-      setTimeout(() => setStage(3), 32000),
-      setTimeout(() => setStage(4), 48000),
-    ];
-    return () => timers.forEach(clearTimeout);
+    const id = setInterval(() => setS((x) => x + 1), 1000);
+    return () => clearInterval(id);
   }, []);
+  return s;
+}
 
-  const atSummit = launched && stage <= 2;
-  const pos = atSummit ? { left: '63%', top: '19%' } : { left: '17%', top: '83%' };
-  const duration = stage === 0 ? '13s' : stage === 3 ? '16s' : '3s';
-
+function ThinkingStages() {
+  const s = useElapsedSeconds();
+  const current = THINK_STAGES.filter((st) => s >= st.at).length - 1;
   return (
-    <div className="flex items-center gap-3.5 mt-3">
-      <div className="relative shrink-0 w-[112px] h-[64px]">
-        <svg viewBox="0 0 112 64" className="absolute inset-0 w-full h-full" fill="none" aria-hidden="true">
-          <defs>
-            <linearGradient id="ascent-mtn" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0" stopColor="#818cf8" stopOpacity="0.28" />
-              <stop offset="1" stopColor="#1e293b" stopOpacity="0.1" />
-            </linearGradient>
-          </defs>
-          <path d="M2 62 L34 26 L46 37 L71 12 L110 62 Z" fill="url(#ascent-mtn)" stroke="#818cf8" strokeOpacity="0.35" strokeWidth="1" strokeLinejoin="round" />
-          <path d="M19 54 L34 38 L47 46 L71 22" stroke="#a5b4fc" strokeOpacity="0.35" strokeWidth="1" strokeDasharray="2 3" strokeLinecap="round" />
-          <g className={`transition-opacity duration-1000 ${stage === 1 || stage === 2 ? 'opacity-100' : 'opacity-70'}`}>
-            <ellipse cx="74" cy="9" rx="15" ry="4.5" fill="#e0e7ff" fillOpacity="0.22" />
-            <ellipse cx="64" cy="11" rx="9" ry="3.5" fill="#e0e7ff" fillOpacity="0.18" />
-            <ellipse cx="85" cy="11" rx="8" ry="3" fill="#e0e7ff" fillOpacity="0.16" />
-          </g>
-        </svg>
-        <div
-          className="absolute w-2.5 h-2.5 -ml-[5px] -mt-[5px] rounded-full bg-amber-300 shadow-[0_0_10px_2px_rgba(252,211,77,0.75)] transition-all ease-in-out motion-reduce:transition-none"
-          style={{ ...pos, transitionDuration: duration }}
-        >
-          <div className={`absolute inset-0 rounded-full bg-amber-300/60 ${stage === 1 || stage === 2 ? 'animate-ping' : 'opacity-0'}`} />
-        </div>
-      </div>
-      <div key={stage} className="animate-in fade-in slide-in-from-bottom-1 duration-500 min-w-0">
-        <p className="text-sm font-bold text-slate-200 leading-snug">{ASCENT_STAGES[stage].label}</p>
-        <p className="text-xs text-slate-500 italic leading-snug">{ASCENT_STAGES[stage].aside}</p>
-      </div>
+    <div className="mt-3 flex items-center gap-1.5 flex-wrap">
+      {THINK_STAGES.map((st, i) => {
+        const done = i < current;
+        const active = i === current;
+        return (
+          <span
+            key={st.label}
+            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors duration-500 ${
+              active ? 'bg-indigo-500/15 text-indigo-200 ring-1 ring-indigo-400/40' : done ? 'text-emerald-300' : 'text-slate-500'
+            }`}
+          >
+            {done ? (
+              <Check className="w-3 h-3" />
+            ) : active ? (
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75 animate-ping" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-300" />
+              </span>
+            ) : (
+              <span className="h-1.5 w-1.5 rounded-full bg-slate-600" />
+            )}
+            <span className="sm:hidden">{st.short}</span>
+            <span className="hidden sm:inline">{st.label}</span>
+          </span>
+        );
+      })}
+      <span className="ml-auto text-[11px] tabular-nums text-slate-500">{s}s</span>
     </div>
   );
 }
@@ -304,20 +298,8 @@ const WAIT_CARDS = [
   },
 ];
 
-function shuffledOrder(n: number): number[] {
-  const a = Array.from({ length: n }, (_, i) => i);
-  for (let i = n - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [a[i], a[j]] = [a[j], a[i]];
-  }
-  return a;
-}
-
-
-
-const LOADING_EXPLANATION_HEADLINE = "This takes longer than a typical search engine.";
 const LOADING_EXPLANATION_DETAIL =
-  "Super Agent is sifting through hundreds of thousands of pages of Torah literature, spanning 3,339 years back to Sinai — not just matching keywords.";
+  "Super Agent is reading through hundreds of thousands of pages of Torah literature, spanning 3,339 years back to Sinai — not just matching keywords.";
 
 const Markdown = memo(function Markdown({ text, sources, onOpenSource }: { text: string; sources?: Source[]; onOpenSource: (s: Source) => void }) {
   const onCiteClick = (n: number) => {
@@ -421,7 +403,11 @@ const HISTORY_KEY = 'super_agent_chat_history';
 function loadHistory(): ChatMessage[] {
   try {
     const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    const msgs: ChatMessage[] = raw ? JSON.parse(raw) : [];
+    // A question is saved the moment it's sent; if the page was closed before
+    // the answer arrived it would otherwise sit there forever, unanswered.
+    while (msgs.length > 0 && msgs[msgs.length - 1].role === 'user') msgs.pop();
+    return msgs;
   } catch {
     return [];
   }
@@ -756,11 +742,10 @@ function SageQuote() {
   }, []);
   const q = SAGE_QUOTES[i];
   return (
-    <div key={i} className="animate-in fade-in duration-500 rounded-xl border border-indigo-400/25 bg-indigo-500/5 p-3">
-      <p className="text-[11px] font-black uppercase tracking-wider text-indigo-300">Words of the Sages</p>
-      <p className="mt-1.5 text-base font-bold text-indigo-100 leading-snug" lang="he" dir="rtl">{q.he}</p>
-      <p className="text-xs text-slate-200 leading-snug mt-1.5">{q.en}</p>
-      <p className="text-[11px] text-indigo-300/70 italic mt-1">{q.who}</p>
+    <div key={i} className="animate-in fade-in duration-500">
+      <p className="text-lg sm:text-xl font-bold text-indigo-100 leading-relaxed" lang="he" dir="rtl">{q.he}</p>
+      <p className="text-sm text-slate-200 leading-relaxed mt-2">{q.en}</p>
+      <p className="text-[11px] text-slate-500 italic mt-1.5">{q.who}</p>
     </div>
   );
 }
@@ -833,17 +818,17 @@ const QuizCard = memo(function QuizCard() {
   const [shown, setShown] = useState(false);
   const item = QUIZ[order[n % order.length]];
   return (
-    <div className="rounded-xl border border-emerald-400/25 bg-emerald-500/5 p-3">
-      <p className="text-[11px] font-black uppercase tracking-wider text-emerald-300">Quick quiz · no cheating</p>
-      <p key={n} className="text-sm font-bold text-slate-100 mt-1 animate-in fade-in duration-300">{item.q}</p>
+    <div>
+      <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">Quick quiz · no cheating</p>
+      <p key={n} className="text-sm sm:text-[15px] font-bold text-slate-100 mt-1.5 leading-snug animate-in fade-in duration-300">{item.q}</p>
       {shown ? (
-        <p className="text-xs text-emerald-200 mt-1.5 leading-snug animate-in fade-in slide-in-from-bottom-1 duration-300">{item.a}</p>
+        <p className="text-sm text-indigo-100 mt-2 leading-relaxed animate-in fade-in slide-in-from-bottom-1 duration-300">{item.a}</p>
       ) : null}
-      <div className="mt-2 flex gap-2">
+      <div className="mt-3 flex gap-2">
         {!shown ? (
-          <button type="button" onClick={() => setShown(true)} className="text-[11px] font-bold text-emerald-950 bg-emerald-300 hover:bg-emerald-200 rounded-full px-3 py-1 active:scale-95 transition-all">Reveal answer</button>
+          <button type="button" onClick={() => setShown(true)} className="text-[11px] font-bold text-slate-900 bg-slate-100 hover:bg-white rounded-full px-3.5 py-1.5 active:scale-95 transition-all">Reveal answer</button>
         ) : (
-          <button type="button" onClick={() => { setShown(false); setN((x) => x + 1); }} className="text-[11px] font-bold text-slate-200 border border-slate-600 hover:bg-slate-800 rounded-full px-3 py-1 active:scale-95 transition-all">Next question</button>
+          <button type="button" onClick={() => { setShown(false); setN((x) => x + 1); }} className="text-[11px] font-bold text-slate-200 border border-slate-600 hover:bg-slate-800 rounded-full px-3.5 py-1.5 active:scale-95 transition-all">Next question</button>
         )}
       </div>
     </div>
@@ -889,21 +874,24 @@ const DvarTorah = memo(function DvarTorah() {
   const [open, setOpen] = useState(false);
   const d = DVARIM[order[n % order.length]];
   return (
-    <div className="rounded-xl border border-amber-400/25 bg-amber-500/5 p-3">
-      <button type="button" onClick={() => setOpen((o) => !o)} aria-expanded={open} className="w-full min-h-[48px] text-left flex items-center justify-between gap-3 touch-manipulation cursor-pointer">
-        <span className="min-w-0">
-          <span className="block text-[11px] font-black uppercase tracking-wider text-amber-300">30-second Dvar Torah · tap to read</span>
-          <span className="block text-sm font-bold text-slate-100 mt-0.5">{d.title}</span>
-        </span>
-        <span className="shrink-0 text-[11px] font-black text-amber-950 bg-amber-300 rounded-full px-3 py-1.5">{open ? 'Close' : 'Read'}</span>
-      </button>
-      {open && (
+    <div>
+      <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">30-second Dvar Torah</p>
+      <p key={n} className="text-sm sm:text-[15px] font-bold text-slate-100 mt-1.5 leading-snug animate-in fade-in duration-300">{d.title}</p>
+      {open ? (
         <div className="animate-in fade-in slide-in-from-bottom-1 duration-300">
-          <p className="mt-2 text-xs sm:text-[13px] text-slate-200 leading-relaxed">{d.body}</p>
-          <p className="mt-1.5 text-[11px] text-amber-300/70 italic">{d.source}</p>
-          <button type="button" onClick={() => { setOpen(false); setN((x) => x + 1); }} className="mt-2 text-[11px] font-bold text-slate-200 border border-slate-600 hover:bg-slate-800 rounded-full px-3 py-1 active:scale-95 transition-all">Another one</button>
+          <p className="mt-2 text-sm text-slate-200 leading-relaxed">{d.body}</p>
+          <p className="mt-1.5 text-[11px] text-slate-500 italic">{d.source}</p>
         </div>
+      ) : (
+        <p className="mt-2 text-sm text-slate-400 leading-relaxed line-clamp-2">{d.body}</p>
       )}
+      <div className="mt-3 flex gap-2">
+        {!open ? (
+          <button type="button" onClick={() => setOpen(true)} className="text-[11px] font-bold text-slate-900 bg-slate-100 hover:bg-white rounded-full px-3.5 py-1.5 active:scale-95 transition-all">Read it</button>
+        ) : (
+          <button type="button" onClick={() => { setOpen(false); setN((x) => x + 1); }} className="text-[11px] font-bold text-slate-200 border border-slate-600 hover:bg-slate-800 rounded-full px-3.5 py-1.5 active:scale-95 transition-all">Another one</button>
+        )}
+      </div>
     </div>
   );
 });
@@ -916,46 +904,154 @@ const LEARN_NUDGES = [
   'Think of me as a study partner, not a replacement. The goal is for you to open the book and learn it for yourself.',
 ];
 
-function LearnNudge() {
-  const [i] = useState(() => Math.floor(Math.random() * LEARN_NUDGES.length));
+// One story from WAIT_CARDS at a time, with a way to ask for another.
+const PerspectiveCard = memo(function PerspectiveCard() {
+  const [order] = useState(() => shuffled(WAIT_CARDS.map((_, k) => k)));
+  const [n, setN] = useState(0);
+  const card = WAIT_CARDS[order[n % order.length]];
   return (
-    <div className="rounded-xl border border-sky-400/25 bg-sky-500/5 p-3">
-      <p className="text-[11px] font-black uppercase tracking-wider text-sky-300">Learn it yourself</p>
-      <p className="text-xs sm:text-[13px] text-slate-200 mt-1 leading-relaxed">{LEARN_NUDGES[i]}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
-        <a href="/" target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-sky-950 bg-sky-300 hover:bg-sky-200 rounded-full px-3 py-1 active:scale-95 transition-all">Browse the free library</a>
+    <div key={n} className="animate-in fade-in duration-300">
+      <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">Perspective</p>
+      <p className="mt-1.5 text-sm text-slate-200 leading-relaxed">{card.body}</p>
+      <p className="mt-2 text-sm sm:text-[15px] font-black text-amber-200">{card.punch}</p>
+      <div className="mt-2 flex items-center justify-between gap-3">
+        <p className="text-[11px] text-slate-500 italic">{card.source}</p>
+        <button type="button" onClick={() => setN((x) => x + 1)} className="shrink-0 text-[11px] font-bold text-slate-200 border border-slate-600 hover:bg-slate-800 rounded-full px-3.5 py-1.5 active:scale-95 transition-all">Another one</button>
+      </div>
+    </div>
+  );
+});
+
+// Facts about the library plus real books/media to open while waiting.
+function LibraryStage({ books, media, thumbs }: { books: Book[]; media: MediaItem[]; thumbs: Record<string, string> }) {
+  const [start] = useState(() => Math.floor(Math.random() * LIBRARY_FACTS.length));
+  const [nudge] = useState(() => LEARN_NUDGES[Math.floor(Math.random() * LEARN_NUDGES.length)]);
+  const facts = Array.from({ length: 3 }, (_, k) => LIBRARY_FACTS[(start + k) % LIBRARY_FACTS.length]);
+  return (
+    <div>
+      <p className="text-[11px] font-black uppercase tracking-wider text-slate-500">Learn it yourself</p>
+      <p className="mt-1.5 text-sm text-slate-200 leading-relaxed">{nudge}</p>
+      <div className="mt-3 space-y-2">
+        {facts.map((fact, k) => {
+          const FactIcon = fact.icon;
+          return (
+            <div key={k} className="flex items-start gap-2">
+              <FactIcon className="w-4 h-4 text-indigo-400 shrink-0 mt-0.5" />
+              <span className="text-slate-300 text-xs leading-relaxed">{fact.text}</span>
+            </div>
+          );
+        })}
+      </div>
+      <LibraryShowcase books={books} media={media} thumbs={thumbs} />
+    </div>
+  );
+}
+
+type WaitTab = 'dvar' | 'perspective' | 'quiz' | 'sages' | 'library';
+const WAIT_TABS: { id: WaitTab; label: string; icon: typeof BookOpen }[] = [
+  { id: 'dvar', label: 'Dvar Torah', icon: BookOpen },
+  { id: 'perspective', label: 'Perspective', icon: Compass },
+  { id: 'quiz', label: 'Quiz', icon: HelpCircle },
+  { id: 'sages', label: 'Sages', icon: Quote },
+  { id: 'library', label: 'Library', icon: Library },
+];
+const WAIT_TAB_ROTATE_MS = 14000;
+
+// The wait is a captive audience, but one thing at a time: a single panel of
+// fixed height that rotates through the tabs on its own until the reader
+// touches it - after that it stays where they put it.
+function WaitCarousel({ books, media, thumbs }: { books: Book[]; media: MediaItem[]; thumbs: Record<string, string> }) {
+  const [tab, setTab] = useState<WaitTab>('dvar');
+  const [pinned, setPinned] = useState(false);
+
+  useEffect(() => {
+    if (pinned) return;
+    const id = setInterval(() => {
+      setTab((t) => WAIT_TABS[(WAIT_TABS.findIndex((x) => x.id === t) + 1) % WAIT_TABS.length].id);
+    }, WAIT_TAB_ROTATE_MS);
+    return () => clearInterval(id);
+  }, [pinned]);
+
+  const pick = (id: WaitTab) => {
+    setTab(id);
+    setPinned(true);
+  };
+
+  return (
+    <div className="mt-4 rounded-xl border border-slate-700/60 bg-slate-800/40 overflow-hidden">
+      <div role="tablist" aria-label="While you wait" className="flex gap-1 overflow-x-auto px-2 pt-2 pb-1.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden border-b border-slate-700/50">
+        {WAIT_TABS.map(({ id, label, icon: Icon }) => (
+          <button
+            key={id}
+            type="button"
+            role="tab"
+            aria-selected={tab === id}
+            onClick={() => pick(id)}
+            className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold transition-all ${
+              tab === id ? 'bg-indigo-500/20 text-indigo-100 ring-1 ring-indigo-400/40' : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+            }`}
+          >
+            <Icon className="w-3 h-3" />
+            {label}
+          </button>
+        ))}
+      </div>
+      <div key={tab} role="tabpanel" onPointerDown={() => setPinned(true)} className="p-3.5 min-h-[176px] animate-in fade-in slide-in-from-bottom-1 duration-500">
+        {tab === 'dvar' && <DvarTorah />}
+        {tab === 'perspective' && <PerspectiveCard />}
+        {tab === 'quiz' && <QuizCard />}
+        {tab === 'sages' && <SageQuote />}
+        {tab === 'library' && <LibraryStage books={books} media={media} thumbs={thumbs} />}
       </div>
     </div>
   );
 }
 
-// Own component so its ~4 ticks/second re-render only this number, not the
-// whole chat page (every previous answer's markdown included).
-const DOC_COUNTER_TARGET = 340000;
-function PagesCounter() {
-  const [n, setN] = useState(0);
-  useEffect(() => {
-    const id = setInterval(() => {
-      setN((c) => {
-        const remaining = DOC_COUNTER_TARGET - c;
-        if (remaining <= 0) return c;
-        const step = Math.max(100, Math.floor(remaining * 0.012));
-        return Math.min(DOC_COUNTER_TARGET, c + step);
-      });
-    }, 280);
-    return () => clearInterval(id);
-  }, []);
-  return <>{n.toLocaleString()}</>;
+function LoadingCard({ books, media, thumbs }: { books: Book[]; media: MediaItem[]; thumbs: Record<string, string> }) {
+  return (
+    <div className="relative w-full sm:max-w-[85%] rounded-2xl p-[1.5px] bg-gradient-to-br from-indigo-500/70 via-purple-500/50 to-indigo-500/70 animate-glow-pulse">
+      <div className="relative bg-slate-900 rounded-[calc(1rem-1.5px)] px-4 sm:px-5 py-3.5 sm:py-4 text-slate-400 text-sm overflow-hidden">
+        <div className="absolute -top-16 -right-10 w-48 h-48 rounded-full pointer-events-none animate-drift" style={{ background: 'radial-gradient(circle, rgba(129,140,248,0.16), transparent 70%)' }} />
+        <div className="absolute -bottom-16 -left-10 w-40 h-40 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.12), transparent 70%)' }} />
+
+        <div className="relative">
+          <p className="text-base sm:text-lg font-black text-slate-50 leading-snug">Super Agent is reading the sources…</p>
+          <p className="mt-1 text-xs text-slate-400 leading-relaxed">{LOADING_EXPLANATION_DETAIL}</p>
+
+          <ThinkingStages />
+
+          <div className="mt-2.5 h-1 w-full rounded-full bg-slate-800 overflow-hidden relative">
+            <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-indigo-400 to-transparent animate-shimmer-sweep" />
+          </div>
+
+          <ShelfScanner titles={books.map((b) => b.title)} />
+
+          <WaitCarousel books={books} media={media} thumbs={thumbs} />
+
+          <div className="mt-3 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+            <div className="flex items-start gap-1.5 text-[11px] text-slate-500 leading-relaxed min-w-0">
+              <ShieldAlert className="w-3.5 h-3.5 text-amber-500/80 shrink-0 mt-0.5" />
+              <span>Super Agent is AI, not a rabbi - always confirm practical halachah with a qualified rav.</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => window.open(WHATSAPP_GROUP_URL, '_blank')}
+              className="flex items-center gap-1.5 text-[11px] font-bold text-emerald-300 hover:text-white bg-[#25D366]/10 hover:bg-[#25D366] rounded-full px-3 py-1.5 transition-all active:scale-95 shrink-0"
+            >
+              <MessageCircle className="w-3.5 h-3.5 fill-current" />
+              Join our WhatsApp community
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 }
 
 export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryThumbnails = NO_THUMBS }: { onExit: () => void; books?: Book[]; media?: MediaItem[]; categoryThumbnails?: Record<string, string> }) {
   const [messages, setMessages] = useState<ChatMessage[]>(loadHistory);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [factStart, setFactStart] = useState(0);
-  const [factCount, setFactCount] = useState(1);
-  const [waitCount, setWaitCount] = useState(1);
-  const [waitOrder, setWaitOrder] = useState<number[]>(() => shuffledOrder(WAIT_CARDS.length));
   const [error, setError] = useState<string | null>(null);
   const [openSource, setOpenSource] = useState<Source | null>(null);
   const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -984,25 +1080,6 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
     }
   }, [messages]);
 
-  useEffect(() => {
-    if (!isLoading) return;
-    setFactStart(Math.floor(Math.random() * LIBRARY_FACTS.length));
-    setFactCount(1);
-    setWaitCount(1);
-    setWaitOrder(shuffledOrder(WAIT_CARDS.length));
-    const waitId = setInterval(() => {
-      setWaitCount((c) => Math.min(c + 1, WAIT_CARDS.length));
-    }, 20000);
-    const id = setInterval(() => {
-      setFactCount((c) => Math.min(c + 1, LIBRARY_FACTS.length));
-    }, 7000);
-    return () => {
-      clearInterval(id);
-      clearInterval(waitId);
-      setWaitOrder(shuffledOrder(WAIT_CARDS.length));
-    };
-  }, [isLoading]);
-
   async function sendQuestion(question: string) {
     const trimmed = question.trim();
     if (!trimmed || isLoading) return;
@@ -1027,7 +1104,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
         setMessages((prev) => prev.slice(0, -1));
         return;
       }
-      setMessages((prev) => [...prev, { role: 'assistant', content: data.answer, sources: data.sources }]);
+      setMessages((prev) => [...prev, { role: 'assistant', content: data.answer, sources: data.sources, cached: data.cached === true }]);
     } catch {
       setError('Could not reach the AI Sefarim library. Please check your connection and try again.');
       setMessages((prev) => prev.slice(0, -1));
@@ -1035,6 +1112,10 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
       setIsLoading(false);
     }
   }
+
+  // Once a conversation exists the hero has done its job - shrink it so the
+  // answers, not the pitch, own the screen.
+  const compact = messages.length > 0;
 
   return (
     <div className="relative animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-3xl mx-auto flex flex-col">
@@ -1050,25 +1131,31 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
         Back to AI Sefarim
       </button>
 
-      <div className="relative text-center mb-5 sm:mb-8 px-2">
+      <div className={`relative text-center px-2 transition-all duration-500 ${compact ? 'mb-4 sm:mb-5' : 'mb-5 sm:mb-8'}`}>
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
-        <div className="hidden sm:inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border border-indigo-500/30 mb-4">
-          <Sparkles className="w-3.5 h-3.5" />
-          Powered by the AI Sefarim library
-        </div>
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tighter leading-tight mb-2 sm:mb-3">
+        {!compact && (
+          <div className="hidden sm:inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border border-indigo-500/30 mb-4">
+            <Sparkles className="w-3.5 h-3.5" />
+            Powered by the AI Sefarim library
+          </div>
+        )}
+        <h1 className={`font-black tracking-tighter leading-tight transition-all duration-500 ${compact ? 'text-xl sm:text-2xl mb-0' : 'text-2xl sm:text-4xl md:text-5xl mb-2 sm:mb-3'}`}>
           <span className="text-slate-50">AI Sefarim </span>
           <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">Super Agent</span>
         </h1>
-        <p className="hidden sm:block text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
-          Ask anything and Super Agent searches an entire Torah library on <span className="font-black text-slate-100">AI Sefarim</span> &mdash; hundreds of sources, fully indexed and instantly searchable &mdash;
-          to ground its answer in the actual texts, from the <span className="text-indigo-400 font-bold">Mishnah</span> to the present day.
-          Every tractate of <span className="text-indigo-400 font-bold">Gemara</span>, all of the <span className="text-indigo-400 font-bold">Rambam</span>, the complete <span className="text-indigo-400 font-bold">Beit Yosef</span> and <span className="text-indigo-400 font-bold">Shulchan Aruch</span>,
-          the full <span className="text-indigo-400 font-bold">Arizal</span>, the Zohar, and every AI Sefarim book &mdash; 3,300 years of Torah, one question away.
-        </p>
-        <p className="sm:hidden text-xs text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
-          Super Agent searches an entire Torah library on <span className="font-black text-slate-300">AI Sefarim</span> to ground its answers in the actual texts &mdash; Mishnah to modern day, Gemara, Rambam, Beit Yosef, Shulchan Aruch, the Arizal &amp; more.
-        </p>
+        {!compact && (
+          <>
+            <p className="hidden sm:block text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
+              Ask anything and Super Agent searches an entire Torah library on <span className="font-black text-slate-100">AI Sefarim</span> &mdash; hundreds of sources, fully indexed and instantly searchable &mdash;
+              to ground its answer in the actual texts, from the <span className="text-indigo-400 font-bold">Mishnah</span> to the present day.
+              Every tractate of <span className="text-indigo-400 font-bold">Gemara</span>, all of the <span className="text-indigo-400 font-bold">Rambam</span>, the complete <span className="text-indigo-400 font-bold">Beit Yosef</span> and <span className="text-indigo-400 font-bold">Shulchan Aruch</span>,
+              the full <span className="text-indigo-400 font-bold">Arizal</span>, the Zohar, and every AI Sefarim book &mdash; 3,300 years of Torah, one question away.
+            </p>
+            <p className="sm:hidden text-xs text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
+              Super Agent searches an entire Torah library on <span className="font-black text-slate-300">AI Sefarim</span> to ground its answers in the actual texts &mdash; Mishnah to modern day, Gemara, Rambam, Beit Yosef, Shulchan Aruch, the Arizal &amp; more.
+            </p>
+          </>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col gap-3 sm:gap-4 mb-4 px-1 sm:px-0">
@@ -1110,8 +1197,14 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
 
               {m.sources && m.sources.length > 0 && (
                 <div className="mt-3 pt-3 border-t border-slate-700/50 space-y-1">
-                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5">
-                    Sources &mdash; tap to read the actual text
+                  <p className="text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1.5 flex items-center gap-2 flex-wrap">
+                    <span>Sources &mdash; tap to read the actual text</span>
+                    {m.cached && (
+                      <span className="inline-flex items-center gap-1 normal-case tracking-normal font-bold text-amber-300/90 bg-amber-400/10 rounded-full px-2 py-0.5" title="This exact question was answered recently, so the answer came straight from the library's memory.">
+                        <Zap className="w-3 h-3 fill-current" />
+                        Instant
+                      </span>
+                    )}
                   </p>
                   {m.sources.map((s) => (
                     <button
@@ -1176,88 +1269,7 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
                 <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
               </div>
             </div>
-            <div className="relative max-w-[96%] sm:max-w-[85%] rounded-2xl p-[1.5px] bg-gradient-to-br from-indigo-500/70 via-purple-500/50 to-indigo-500/70">
-              <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.2), transparent 70%)' }} />
-              <div className="absolute -bottom-10 -right-6 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.2), transparent 70%)' }} />
-              <div className="relative bg-slate-900 rounded-[calc(1rem-1.5px)] px-4 sm:px-5 py-3.5 sm:py-4 text-slate-400 text-sm overflow-hidden">
-
-                <p className="text-base sm:text-lg font-black text-indigo-300 leading-snug">
-                  {LOADING_EXPLANATION_HEADLINE}
-                </p>
-
-                <div className="mt-2.5 flex items-baseline gap-2">
-                  <BookOpen className="w-4 h-4 text-indigo-400 mb-0.5" />
-                  <span className="text-2xl sm:text-3xl font-black text-white tabular-nums tracking-tight">
-                    <PagesCounter />
-                  </span>
-                  <span className="text-xs sm:text-sm font-bold text-indigo-400 uppercase tracking-wide">
-                    pages checked so far
-                  </span>
-                </div>
-
-                <div className="mt-2 h-1 w-full rounded-full bg-slate-800 overflow-hidden relative">
-                  <div className="absolute inset-y-0 left-0 w-1/3 rounded-full bg-gradient-to-r from-transparent via-indigo-400 to-transparent animate-shimmer-sweep" />
-                </div>
-
-                <ShelfScanner titles={books.map((b) => b.title)} />
-
-                <AscentIndicator />
-
-                <div className="mt-3"><DvarTorah /></div>
-
-                <p className="text-xs text-slate-500 mt-2.5 leading-relaxed">
-                  {LOADING_EXPLANATION_DETAIL}
-                </p>
-
-                {waitOrder.slice(0, waitCount).map((i) => WAIT_CARDS[i]).map((card) => (
-                  <div key={card.source} className="animate-in fade-in slide-in-from-bottom-2 duration-700 mt-3.5 rounded-xl border border-amber-400/40 bg-gradient-to-br from-amber-500/15 via-amber-500/5 to-transparent p-3.5 shadow-[0_0_24px_-10px_rgba(251,191,36,0.6)]">
-                    <div className="flex items-center gap-2">
-                      <Compass className="w-4 h-4 text-amber-300 shrink-0" />
-                      <span className="text-[11px] sm:text-xs font-black uppercase tracking-wider text-amber-300">{card.title}</span>
-                    </div>
-                    <p className="mt-2 text-[13px] sm:text-sm text-slate-200 leading-relaxed">{card.body}</p>
-                    <p className="mt-2 text-sm sm:text-base font-black text-amber-200">{card.punch}</p>
-                    <p className="mt-1.5 text-[11px] text-amber-300/70 italic">{card.source}</p>
-                  </div>
-                ))}
-
-                <div className="mt-3.5 space-y-2.5">
-                  <SageQuote />
-                  <QuizCard />
-                  <LearnNudge />
-                </div>
-
-                <div className="mt-3 pt-3 border-t border-slate-700/40 space-y-2">
-                  {Array.from({ length: factCount }, (_, k) => LIBRARY_FACTS[(factStart + k) % LIBRARY_FACTS.length]).map((fact, k) => {
-                    const FactIcon = fact.icon;
-                    return (
-                      <div key={k} className="animate-in fade-in slide-in-from-bottom-1 duration-500 flex items-start gap-2">
-                        <FactIcon className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
-                        <span className="text-slate-300 text-xs leading-relaxed">{fact.text}</span>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <LibraryShowcase books={books} media={media} thumbs={categoryThumbnails} />
-
-                <div className="mt-3 pt-3 border-t border-slate-700/40 flex flex-wrap items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => window.open(WHATSAPP_GROUP_URL, '_blank')}
-                    className="flex items-center gap-1.5 text-[11px] font-bold text-white bg-[#25D366] hover:bg-[#1fa14b] rounded-full px-3 py-1.5 shadow-sm transition-all active:scale-95"
-                  >
-                    <MessageCircle className="w-3.5 h-3.5 fill-current" />
-                    Join our WhatsApp community
-                  </button>
-                </div>
-
-                <div className="mt-2.5 flex items-start gap-1.5 text-[11px] text-slate-500 leading-relaxed">
-                  <ShieldAlert className="w-3.5 h-3.5 text-amber-500/80 shrink-0 mt-0.5" />
-                  <span>Super Agent is AI, not a rabbi - always confirm practical halachah with a qualified rav.</span>
-                </div>
-              </div>
-            </div>
+            <LoadingCard books={books} media={media} thumbs={categoryThumbnails} />
           </div>
         )}
 
