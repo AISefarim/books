@@ -37,44 +37,53 @@ export function AudioPlayer({ url, title, onNext, onPlay }: AudioPlayerProps) {
     if (lower.includes('podbean.com')) {
       return { name: 'Podbean', isKnown: true, color: 'bg-amber-500/10 text-amber-400 border-amber-500/30 hover:bg-amber-500/20' };
     }
+    if (lower.includes('notebook.google.com') || lower.includes('notebooklm')) {
+      return { name: 'NotebookLM', isKnown: true, color: 'bg-sky-500/10 text-sky-300 border-sky-500/30 hover:bg-sky-500/20' };
+    }
     return { name: 'Podcast', isKnown: false, color: 'bg-indigo-500/10 text-indigo-400 border-indigo-500/30 hover:bg-indigo-500/20' };
   };
 
   const platform = getPlatformInfo(url);
 
-  // If not a direct audio file or if the audio element failed to decode, render the direct podcast platform card
+  // If not a direct audio file or if the audio element failed to decode, render the hero listen card
   if (!isDirectAudio || audioError) {
+    const ctaLabel = platform.isKnown ? `Listen on ${platform.name}` : 'Listen Now';
     return (
-      <div className="bg-slate-900 rounded-3xl p-6 md:p-8 flex flex-col gap-4 shadow-2xl w-full border border-slate-800">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 flex items-center justify-center border border-indigo-500/30 shrink-0">
-              <Headphones className="w-6 h-6" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-indigo-400 text-xs font-black uppercase tracking-widest">Podcast Episode</span>
-                {platform.isKnown && (
-                  <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${platform.color}`}>
-                    {platform.name}
-                  </span>
-                )}
-              </div>
-              <h3 className="text-white font-bold text-lg md:text-xl truncate max-w-[280px] sm:max-w-md">{title}</h3>
-            </div>
-          </div>
+      <div className="relative overflow-hidden rounded-[2rem] w-full border border-indigo-400/30 bg-gradient-to-br from-indigo-600/30 via-slate-900 to-violet-900/40 shadow-2xl shadow-indigo-900/40 px-6 py-10 md:px-10 md:py-12 flex flex-col items-center text-center gap-6">
+        <div className="pointer-events-none absolute -top-24 left-1/2 -translate-x-1/2 w-72 h-72 rounded-full bg-indigo-500/25 blur-3xl" />
 
-          <a
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-full sm:w-auto bg-indigo-600 text-white px-6 py-3.5 rounded-2xl text-xs sm:text-sm font-black uppercase tracking-widest flex items-center justify-center gap-2.5 hover:bg-indigo-500 transition-all shadow-lg hover:shadow-indigo-600/30 active:scale-95 group shrink-0"
-          >
-            <Headphones className="w-4 h-4 shrink-0" />
-            <span>{platform.isKnown ? `Listen on ${platform.name}` : 'Listen to Podcast'}</span>
-            <ExternalLink className="w-4 h-4 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform shrink-0" />
-          </a>
+        <div className="relative flex items-center gap-2">
+          <span className="text-indigo-300 text-xs font-black uppercase tracking-[0.25em]">Podcast Episode</span>
+          {platform.isKnown && (
+            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${platform.color}`}>
+              {platform.name}
+            </span>
+          )}
         </div>
+
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={ctaLabel}
+          className="relative group w-28 h-28 md:w-32 md:h-32 rounded-full bg-gradient-to-br from-indigo-400 to-indigo-600 flex items-center justify-center shadow-[0_0_60px_rgba(99,102,241,0.55)] hover:scale-105 active:scale-95 transition-transform"
+        >
+          <span className="absolute inset-0 rounded-full border-2 border-indigo-300/40 animate-ping [animation-duration:2.5s]" />
+          <Play className="w-12 h-12 md:w-14 md:h-14 text-white fill-white ml-2" />
+        </a>
+
+        <a
+          href={url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="relative w-full max-w-md bg-white text-indigo-950 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-indigo-50 transition-all shadow-xl active:scale-95 group"
+        >
+          <Headphones className="w-5 h-5 shrink-0" />
+          <span>{ctaLabel}</span>
+          <ExternalLink className="w-5 h-5 shrink-0 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+        </a>
+
+        <p className="relative text-slate-400 text-xs font-medium">Opens in a new tab</p>
       </div>
     );
   }
