@@ -32,13 +32,29 @@ import { RecentlyUploadedSection } from './components/RecentlyUploadedSection';
 import { NewReleasesSection } from './components/NewReleasesSection';
 import { LearningGamificationBanner } from './components/LearningGamificationBanner';
 import { ChatPage } from './components/ChatPage';
+import { SuperDafPage } from './components/SuperDafPage';
+import { SuperDafHero } from './components/SuperDafHero';
+import { refFromPath, dafFromTitle, dafPath } from './lib/daf';
 import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats, registerMediaList, recordWebsiteVisit } from './lib/deviceTracker';
 
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [audios, setAudios] = useState<Audio[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat'>('sefarim');
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf'>('sefarim');
+
+  // A daf podcast is listened to inside Super Daf, with the sources open,
+  // rather than played bare from the Media section.
+  const isDafPodcast = (v: Video) => v.type === 'audio' && /\bdaf\b/i.test(v.category || '');
+  const openSuperDaf = (podcast?: Video) => {
+    const r = podcast ? dafFromTitle(podcast.title) : null;
+    const path = (r ? dafPath(r) : '/daf') + (podcast ? `?podcast=${podcast.id}` : '');
+    window.history.pushState({}, '', path);
+    setSelectedBook(null);
+    setSelectedVideo(null);
+    setActiveTab('daf');
+    window.scrollTo(0, 0);
+  };
   const [activeSeries, setActiveSeries] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isAdmin, setIsAdmin] = useState(false);
@@ -102,6 +118,9 @@ export default function App() {
   useEffect(() => {
     if (window.location.pathname === '/chat') {
       setActiveTab('chat');
+    }
+    if (window.location.pathname === '/daf' || window.location.pathname.startsWith('/daf/')) {
+      setActiveTab('daf');
     }
   }, []);
 
@@ -278,7 +297,10 @@ export default function App() {
           }
         } else if (sharedVideoId) {
           const videoToOpen = mediaDocs.find(v => v.id === sharedVideoId);
-          if (videoToOpen) {
+          if (videoToOpen && isDafPodcast(videoToOpen)) {
+            recordDeviceWatch(videoToOpen.id, videoToOpen);
+            openSuperDaf(videoToOpen);
+          } else if (videoToOpen) {
             setSelectedVideo(videoToOpen);
             setActiveTab('videos');
             setIsDirectLinkEntry(true);
@@ -654,6 +676,12 @@ export default function App() {
   };
 
   const handleVideoSelect = (video: Video) => {
+    if (isDafPodcast(video)) {
+      recordDeviceWatch(video.id, video);
+      updateDoc(doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'sefarim', video.id), { views: increment(1) }).catch(() => {});
+      openSuperDaf(video);
+      return;
+    }
     setSelectedBook(null);
     setSelectedVideo(video);
     setIsDirectLinkEntry(false);
@@ -954,12 +982,12 @@ export default function App() {
       {/* On /chat, the full navbar (several rows tall) is only shown at
           the top on desktop - on mobile it moves to the bottom instead of
           eating the whole first screen. Unchanged on every other tab. */}
-      <div className={activeTab === 'chat' ? 'hidden sm:block' : ''}>
+      <div className={activeTab === 'chat' || activeTab === 'daf' ? 'hidden sm:block' : ''}>
         <Navbar {...navbarProps} />
       </div>
 
       {/* Welcome Video Section (Disappears for people who have been on our website over 25 times) */}
-      {activeTab !== 'chat' && !deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
+      {activeTab !== 'chat' && activeTab !== 'daf' && !deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-2">
           <div className="bg-slate-900 rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-800 shadow-indigo-950/40 relative">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/20 via-slate-900 to-slate-900 pointer-events-none" />
@@ -1038,7 +1066,7 @@ export default function App() {
         </div>
       )}
 
-      <main className={activeTab === 'chat' ? 'max-w-7xl mx-auto px-1 sm:px-6 lg:p-12 pt-2 sm:pt-4' : 'max-w-7xl mx-auto p-6 lg:p-12 pt-4'}>
+      <main className={activeTab === 'chat' || activeTab === 'daf' ? 'max-w-7xl mx-auto px-1 sm:px-6 lg:p-12 pt-2 sm:pt-4' : 'max-w-7xl mx-auto p-6 lg:p-12 pt-4'}>
         {status && (
           <div
             className={`mb-6 p-5 rounded-3xl font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4 ${
@@ -1188,6 +1216,9 @@ export default function App() {
           />
         ) : activeTab === 'sefarim' ? (
           <>
+            {!searchQuery && !selectedCategory && !activeSeries && (
+              <SuperDafHero onOpen={() => openSuperDaf()} />
+            )}
             {!isLoading && featuredBooks.length > 0 && !searchQuery && !selectedCategory && !activeSeries && (
               <FeaturedBooks 
                 books={featuredBooks} 
@@ -1829,18 +1860,25 @@ export default function App() {
           </div>
         ) : activeTab === 'chat' ? (
           <ChatPage onExit={() => { setActiveTab('sefarim'); handleHome(); }} books={books} media={videos} categoryThumbnails={siteSettings.videoCategoryThumbnails} />
+        ) : activeTab === 'daf' ? (
+          <SuperDafPage
+            initialRef={refFromPath(window.location.pathname)}
+            pinnedPodcastId={new URLSearchParams(window.location.search).get('podcast')}
+            media={videos}
+            onExit={() => { setActiveTab('sefarim'); handleHome(); window.history.pushState({}, '', '/'); }}
+          />
         ) : null}
       </main>
 
       {/* Community Growth Banner to prompt visitors - hidden on /chat, where it breaks the immersive feel */}
-      {activeTab !== 'chat' && (
+      {activeTab !== 'chat' && activeTab !== 'daf' && (
         <CommunityGrowthBanner
           whatsappUrl={bannerUrl}
           onOpenShareModal={() => setShowWhatsAppShareModal(true)}
         />
       )}
 
-      {activeTab !== 'chat' && (
+      {activeTab !== 'chat' && activeTab !== 'daf' && (
         <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-700/60 mt-8 relative">
           <p className="text-slate-400 text-sm font-medium max-w-2xl mx-auto leading-relaxed">
             <span className="font-bold text-slate-400">Please note:</span> These sefarim are generated using AI and have not been vetted by rabbinic authorities. We do not make any profit from the sale of physical books; they are printed and sold strictly at cost.
@@ -1874,7 +1912,7 @@ export default function App() {
       )}
 
       {/* Mobile-only footer nav for /chat - kept as the absolute last element on the page */}
-      {activeTab === 'chat' && (
+      {(activeTab === 'chat' || activeTab === 'daf') && (
         <div className="sm:hidden">
           <Navbar {...navbarProps} variant="footer" />
         </div>
@@ -1944,7 +1982,7 @@ export default function App() {
       )}
 
       {/* Launch announcement for Super Agent - shown site-wide, max 2x/device, 2-day window */}
-      {activeTab !== 'chat' && (
+      {activeTab !== 'chat' && activeTab !== 'daf' && (
         <SuperAgentAnnouncement
           onTryNow={() => {
             setActiveTab('chat');
@@ -1954,11 +1992,13 @@ export default function App() {
         />
       )}
 
-      {/* Floating Prompt to grow WhatsApp Community */}
-      <WhatsAppGrowthPrompt
-        whatsappUrl={bannerUrl}
-        onOpenShareModal={() => setShowWhatsAppShareModal(true)}
-      />
+      {/* Floating Prompt to grow WhatsApp Community - not over the daf, where it covers the notes panel */}
+      {activeTab !== 'daf' && (
+        <WhatsAppGrowthPrompt
+          whatsappUrl={bannerUrl}
+          onOpenShareModal={() => setShowWhatsAppShareModal(true)}
+        />
+      )}
 
       {/* Interactive Modal to share WhatsApp Community */}
       {showWhatsAppShareModal && (
