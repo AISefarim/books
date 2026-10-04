@@ -156,12 +156,22 @@ export function SuperDafPage({
     setOpenTldr({});
     setSofar({});
     window.history.replaceState({}, '', dafPath(ref) + window.location.search);
+    // While the notes are still being prepared, this tab drives the build:
+    // one task per request to /daf/step (which may take a minute), then a
+    // refresh. If another tab holds the build lock, just poll.
     const tick = async () => {
       try {
         const d = await load(ref);
         if (cancelled) return;
         setDaf(d);
-        if (d.status !== 'ready') pollRef.current = window.setTimeout(tick, 6000);
+        if (d.status !== 'ready') {
+          let delay = 7000;
+          try {
+            const r = await fetch(`${DAF_API}/step?ref=${encodeURIComponent(ref)}`).then((x) => x.json());
+            if (r && !r.locked) delay = 300; // something finished - show it right away
+          } catch { /* fall back to polling */ }
+          if (!cancelled) pollRef.current = window.setTimeout(tick, delay);
+        }
       } catch (e: any) {
         if (!cancelled) setError(e.message || 'Could not load this daf.');
       }
@@ -426,7 +436,7 @@ export function SuperDafPage({
                             </button>
                           )}
                           <span className={`ml-auto text-[11px] ${t.faint} font-semibold`}>
-                            {built ? <>{rashiCount} Rashi · {tosCount} Tosafot{built.rishonim.length ? ` · ${built.rishonim.length} Rishonim` : ''}{built.acharonim.length ? ` · ${built.acharonim.length} Acharonim` : ''}</> : <span className="inline-flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> preparing notes</span>}
+                            {built ? <>{rashiCount} Rashi · {tosCount} Tosafot{built.rishonim.length ? ` · ${built.rishonim.length} Rishonim` : ''}{built.acharonim.length ? ` · ${built.acharonim.length} Acharonim` : ''}{(built as any).partial && <span className="inline-flex items-center gap-1 ml-2"><Loader2 className="w-3 h-3 animate-spin" /> finishing notes</span>}</> : <span className="inline-flex items-center gap-1"><Loader2 className="w-3 h-3 animate-spin" /> preparing notes</span>}
                           </span>
                         </div>
                         {/* TL;DR */}
