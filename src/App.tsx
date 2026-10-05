@@ -330,6 +330,9 @@ export default function App() {
           if (sharedTab) {
             setActiveTab(sharedTab);
           }
+        } else if (sharedTab) {
+          // Plain deep link to a tab, e.g. /?tab=videos from the /join page.
+          setActiveTab(sharedTab);
         }
       }
     });
