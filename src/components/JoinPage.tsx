@@ -134,6 +134,13 @@ export default function JoinPage() {
         @media (prefers-reduced-motion: reduce) { .jp-float, .jp-blob, .jp-shine::after, .jp-ring, .jp-marquee, .jp-pan { animation: none } .jp-pop { opacity: 1; animation: none } }
       `}</style>
 
+      {/* stays on screen while scrolling */}
+      <div className="fixed inset-x-0 top-0 z-30 border-b border-emerald-300/20 bg-gradient-to-r from-emerald-700/95 via-emerald-600/95 to-teal-700/95 backdrop-blur shadow-lg shadow-black/30">
+        <p className="mx-auto max-w-6xl px-4 py-2 sm:py-2.5 text-center text-[13px] sm:text-base font-black tracking-tight text-white">
+          Everything is <span lang="he" dir="rtl" className="ml-1 text-[1.15em] font-bold text-emerald-50" style={{ fontFamily: HE_FONT }}>לְשֵׁם שָׁמַיִם</span>. Everything is free.
+        </p>
+      </div>
+
       {/* background glow */}
       <div aria-hidden className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="jp-blob absolute -top-40 -left-32 w-[520px] h-[520px] rounded-full bg-indigo-600/25 blur-[120px]" />
@@ -141,7 +148,7 @@ export default function JoinPage() {
         <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '44px 44px' }} />
       </div>
 
-      <div className="relative max-w-6xl mx-auto px-5 pt-6 sm:pt-10">
+      <div className="relative max-w-6xl mx-auto px-5 pt-16 sm:pt-20">
         <a href="/" className="inline-flex items-center gap-2 text-sm font-black tracking-tight text-slate-300 hover:text-white"><span className="w-7 h-7 rounded-lg bg-indigo-600 flex items-center justify-center"><BookOpen className="w-4 h-4 text-white" /></span>AI Sefarim</a>
 
         <div className="mt-6 sm:mt-10 grid lg:grid-cols-[0.9fr_1.1fr] gap-8 lg:gap-12 items-center">
@@ -271,28 +278,6 @@ export default function JoinPage() {
                 <img src="/join/daf-phone.jpg" alt="Super Daf on a phone" width={578} height={1100} loading="lazy" decoding="async" className="block w-full rounded-[1.4rem]" />
               </div>
             </a>
-          </div>
-        </section>
-
-        {/* ===== everything is free ===== */}
-        <section className="mt-24 sm:mt-28 relative overflow-hidden rounded-[2rem] border border-emerald-400/25 bg-gradient-to-br from-emerald-500/15 via-emerald-500/[0.04] to-transparent px-6 sm:px-10 py-9 sm:py-12">
-          <div aria-hidden className="pointer-events-none absolute -right-6 -top-10 text-[160px] sm:text-[240px] font-black leading-none text-emerald-400/[0.07] select-none">$0</div>
-          <p className="relative text-xs font-black uppercase tracking-[0.2em] text-emerald-300">No catch</p>
-          <h2 className="relative mt-3 text-4xl sm:text-6xl font-black tracking-tight leading-[1.02]">Everything here is <span className="text-emerald-300">free.</span><br className="hidden sm:block" /> Forever.</h2>
-          <p className="relative mt-4 max-w-2xl text-lg text-slate-300 leading-relaxed">AI Sefarim is a labor of love, done l'shem Shamayim. No subscriptions, no ads, no paywalls, nothing to buy. Just Torah.</p>
-          <div className="relative mt-7 grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { k: '95+ sefarim', v: 'Read & download', href: '/' },
-              { k: '500+ shiurim', v: 'Videos & podcasts', href: '/?tab=videos' },
-              { k: 'Super Daf', v: 'A new daf every day', href: '/daf' },
-              { k: 'Super Agent', v: 'Ask any question', href: '/chat' },
-            ].map(({ k, v, href }) => (
-              <a key={k} href={href} className="group rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] ring-1 ring-white/10 p-4 transition-colors">
-                <p className="text-3xl font-black text-emerald-300">$0</p>
-                <p className="mt-1 font-black">{k}</p>
-                <p className="text-sm text-slate-400">{v}</p>
-              </a>
-            ))}
           </div>
         </section>
 
