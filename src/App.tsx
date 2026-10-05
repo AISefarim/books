@@ -982,9 +982,12 @@ export default function App() {
       {/* On /chat, the full navbar (several rows tall) is only shown at
           the top on desktop - on mobile it moves to the bottom instead of
           eating the whole first screen. Unchanged on every other tab. */}
-      <div className={activeTab === 'chat' || activeTab === 'daf' ? 'hidden sm:block' : ''}>
-        <Navbar {...navbarProps} />
-      </div>
+      {/* Super Daf is a full-screen reader and renders its own chrome. */}
+      {activeTab !== 'daf' && (
+        <div className={activeTab === 'chat' ? 'hidden sm:block' : ''}>
+          <Navbar {...navbarProps} />
+        </div>
+      )}
 
       {/* Welcome Video Section (Disappears for people who have been on our website over 25 times) */}
       {activeTab !== 'chat' && activeTab !== 'daf' && !deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
@@ -1912,7 +1915,7 @@ export default function App() {
       )}
 
       {/* Mobile-only footer nav for /chat - kept as the absolute last element on the page */}
-      {(activeTab === 'chat' || activeTab === 'daf') && (
+      {activeTab === 'chat' && (
         <div className="sm:hidden">
           <Navbar {...navbarProps} variant="footer" />
         </div>
