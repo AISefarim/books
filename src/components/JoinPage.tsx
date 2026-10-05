@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { doc, getDoc } from 'firebase/firestore';
-import { BookOpen, PlayCircle, ScrollText, Sparkles, ArrowRight, Check, CheckCheck } from 'lucide-react';
+import { BookOpen, PlayCircle, ScrollText, Sparkles, ArrowRight, Check, CheckCheck, Play } from 'lucide-react';
 import { db } from '../lib/firebase';
 import { DAF_API } from '../lib/daf';
 
@@ -16,6 +16,19 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
 );
 
 type Today = { ref: string; heRef?: string; preview?: string[] };
+
+// Real covers and series art from the library, resized into /public/join so
+// the page stays fast for visitors arriving from an ad.
+const COVERS = [
+  ['book01', 'Zohar Hakadosh, Volume 1'], ['book05', 'Etz Chaim, Volume 1'], ['book08', 'Orchard of Tehillim'], ['book02', 'Zohar Hakadosh, Volume 13'],
+  ['book06', 'Pardes Rimonim, Volume 1'], ['book10', 'Reshit Chochmah'], ['book03', 'Zohar Hakadosh, Volume 26'], ['book07', "Sha'ar HaKavanot"],
+  ['book13', 'The Depths of Yonah'], ['book04', 'Zohar Hakadosh, Volume 36'], ['book09', 'Torah Ohr'], ['book12', 'Siddur Rabbenu HaAri'],
+  ['book11', 'Likkutei Torah'], ['book14', 'Orchard of Esther'],
+];
+const SERIES = [
+  { img: 'art-daf', name: 'AI Daf', count: 95 }, { img: 'art-tanach', name: 'AI Tanach', count: 83 }, { img: 'art-rambam', name: 'AI Rambam', count: 81 },
+  { img: 'art-parasha', name: 'AI Parasha', count: 65 }, { img: 'art-zohar', name: 'AI Zohar', count: 40 }, { img: 'art-etz', name: 'AI Etz Chaim', count: 35 },
+];
 
 export default function JoinPage() {
   const [url, setUrl] = useState(FALLBACK_URL);
@@ -63,13 +76,15 @@ export default function JoinPage() {
         @keyframes jp-drift { 0%,100% { transform: translate(0,0) scale(1) } 50% { transform: translate(30px,-20px) scale(1.08) } }
         @keyframes jp-pop { from { opacity: 0; transform: translateY(14px) scale(.97) } to { opacity: 1; transform: none } }
         @keyframes jp-sheen { 0% { transform: translateX(-120%) skewX(-20deg) } 60%,100% { transform: translateX(260%) skewX(-20deg) } }
+        @keyframes jp-marquee { from { transform: translateX(0) } to { transform: translateX(-50%) } }
         @keyframes jp-ring { 0% { box-shadow: 0 0 0 0 rgba(16,185,129,.55) } 100% { box-shadow: 0 0 0 18px rgba(16,185,129,0) } }
         .jp-float { animation: jp-float 6s ease-in-out infinite }
         .jp-blob { animation: jp-drift 14s ease-in-out infinite }
         .jp-pop { opacity: 0; animation: jp-pop .55s cubic-bezier(.2,.8,.2,1) forwards }
         .jp-shine::after { content: ''; position: absolute; inset: 0 auto 0 0; width: 35%; background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent); animation: jp-sheen 3.2s ease-in-out infinite }
         .jp-ring { animation: jp-ring 1.8s ease-out infinite }
-        @media (prefers-reduced-motion: reduce) { .jp-float, .jp-blob, .jp-shine::after, .jp-ring { animation: none } .jp-pop { opacity: 1; animation: none } }
+        .jp-marquee { animation: jp-marquee 60s linear infinite } .jp-shelf:hover .jp-marquee { animation-play-state: paused }
+        @media (prefers-reduced-motion: reduce) { .jp-float, .jp-blob, .jp-shine::after, .jp-ring, .jp-marquee { animation: none } .jp-pop { opacity: 1; animation: none } }
       `}</style>
 
       {/* background glow */}
@@ -143,26 +158,91 @@ export default function JoinPage() {
           </div>
         </div>
 
-        {/* ===== today's daf ===== */}
-        {today && (
-          <a href="/daf" className="jp-pop group mt-16 block rounded-3xl border border-indigo-400/25 bg-gradient-to-br from-indigo-600/25 via-indigo-900/20 to-transparent p-6 sm:p-8 hover:border-indigo-300/40 transition-colors" style={{ animationDelay: '.5s' }}>
-            <div className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
-              <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-300">Today's Daf Yomi</p>
-              <p className="text-2xl sm:text-3xl font-black">{today.ref}{today.heRef ? <span className="ml-3 text-indigo-200 font-bold" lang="he" style={{ fontFamily: "'Frank Ruhl Libre', 'David', serif" }}>{today.heRef}</span> : null}</p>
-            </div>
-            {today.preview?.length ? (
-              <ol className="mt-4 grid sm:grid-cols-3 gap-3">
-                {today.preview.map((p, i) => (
-                  <li key={i} className="rounded-2xl bg-white/[0.05] border border-white/10 p-4 text-sm text-slate-200 leading-snug"><span className="mb-2 flex w-7 h-7 rounded-full bg-indigo-500 text-white text-xs font-black items-center justify-center">{i + 1}</span>{p}</li>
+        {/* ===== Super Daf showcase ===== */}
+        <section className="mt-24 sm:mt-32">
+          <div className="grid lg:grid-cols-[0.85fr_1.15fr] gap-10 lg:gap-14 items-center">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-indigo-300">Super Daf</p>
+              <h2 className="mt-3 text-4xl sm:text-5xl font-black tracking-tight leading-[1.05]">The daf, finally clear.</h2>
+              <p className="mt-4 text-lg text-slate-300 leading-relaxed">Every day's daf, sugya by sugya: the Gemara phrase by phrase, Rashi and Tosafot right where they comment, the Rambam with his commentators, and the halacha under the paragraph it comes from.</p>
+              <ul className="mt-5 space-y-2 text-slate-300">
+                {['3 points before each daf, 3 takeaways after', '"Catch me up" if you fall behind mid-shiur', 'Ask any question on the sugya', 'Works on phone, iPad and computer, even offline'].map((x) => (
+                  <li key={x} className="flex gap-2.5"><Check className="w-5 h-5 shrink-0 text-indigo-300 mt-0.5" />{x}</li>
                 ))}
-              </ol>
-            ) : null}
-            <span className="mt-5 inline-flex items-center gap-2 font-black text-indigo-200 group-hover:gap-3 transition-all">Learn it in Super Daf <ArrowRight className="w-4 h-4" /></span>
-          </a>
-        )}
+              </ul>
+              {today && (
+                <div className="mt-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.16em] text-slate-400">Today · <span className="text-slate-100">{today.ref}</span>{today.heRef ? <span className="ml-2 text-indigo-200 normal-case tracking-normal" lang="he" style={{ fontFamily: "'Frank Ruhl Libre', 'David', serif" }}>{today.heRef}</span> : null}</p>
+                  {today.preview?.[0] && <p className="mt-1.5 text-sm text-slate-300 leading-snug">We'll learn: {today.preview[0]}</p>}
+                </div>
+              )}
+              <a href="/daf" className="mt-6 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 hover:bg-indigo-500 px-6 py-3.5 font-black shadow-lg shadow-indigo-600/30 transition-all hover:gap-3">Open today's daf <ArrowRight className="w-5 h-5" /></a>
+            </div>
+
+            <div className="relative pb-10 sm:pb-14 pr-0 sm:pr-16">
+              {/* laptop */}
+              <div className="rounded-t-2xl border border-white/15 bg-[#1b1f2e] p-2 sm:p-2.5 shadow-[0_50px_120px_-30px_rgba(79,70,229,0.55)]">
+                <img src="/join/daf-desktop.jpg" alt="Super Daf on a computer: the Gemara with inline Rashi on the left, numbered notes on the right" width={1800} height={1125} loading="lazy" decoding="async" className="block w-full rounded-lg" />
+              </div>
+              <div className="mx-auto h-3 sm:h-4 w-[106%] -ml-[3%] rounded-b-2xl bg-gradient-to-b from-[#2a2f42] to-[#151926] border border-t-0 border-white/10" />
+              {/* phone */}
+              <div className="jp-float absolute -bottom-2 right-0 w-[30%] min-w-[118px] max-w-[210px] rounded-[1.8rem] border border-white/20 bg-black p-1.5 shadow-2xl shadow-black/60">
+                <img src="/join/daf-phone.jpg" alt="Super Daf on a phone" width={578} height={1100} loading="lazy" decoding="async" className="block w-full rounded-[1.4rem]" />
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ===== book covers ===== */}
+        <section className="mt-24 sm:mt-32">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-amber-300">Sefarim</p>
+              <h2 className="mt-3 text-4xl sm:text-5xl font-black tracking-tight leading-[1.05]">The whole Zohar. And then some.</h2>
+              <p className="mt-3 text-lg text-slate-300">All 42 volumes of the Zohar, the Arizal, the Ramak, Chassidut and Tanach. 95+ sefarim, free to read and download.</p>
+            </div>
+            <a href="/" className="inline-flex items-center gap-2 font-black text-amber-300 hover:gap-3 transition-all">Browse the library <ArrowRight className="w-5 h-5" /></a>
+          </div>
+          <div className="jp-shelf relative mt-8 -mx-5 overflow-hidden" style={{ maskImage: 'linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent)', WebkitMaskImage: 'linear-gradient(90deg, transparent, #000 6%, #000 94%, transparent)' }}>
+            <div className="jp-marquee flex w-max gap-5 py-4 px-5">
+              {[...COVERS, ...COVERS].map(([img, title], i) => (
+                <a key={i} href="/" aria-hidden={i >= COVERS.length ? true : undefined} tabIndex={i >= COVERS.length ? -1 : undefined} className="group shrink-0 w-[130px] sm:w-[160px]">
+                  <img src={`/join/${img}.jpg`} alt={title} loading="lazy" decoding="async" className="block w-full aspect-[2/3] object-cover rounded-lg shadow-[0_20px_40px_-15px_rgba(0,0,0,0.8)] ring-1 ring-white/10 transition-transform duration-300 group-hover:-translate-y-2 group-hover:rotate-[-1.5deg]" />
+                  <p className="mt-2 text-xs font-semibold text-slate-400 line-clamp-1">{title}</p>
+                </a>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== series art ===== */}
+        <section className="mt-24 sm:mt-32">
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.18em] text-rose-300">Watch &amp; listen</p>
+              <h2 className="mt-3 text-4xl sm:text-5xl font-black tracking-tight leading-[1.05]">500+ shiurim, one tap away.</h2>
+              <p className="mt-3 text-lg text-slate-300">Short, clear videos and podcasts on the daf, Tanach, the Rambam, the parasha and the Zohar.</p>
+            </div>
+            <a href="/?tab=videos" className="inline-flex items-center gap-2 font-black text-rose-300 hover:gap-3 transition-all">All videos &amp; podcasts <ArrowRight className="w-5 h-5" /></a>
+          </div>
+          <div className="mt-8 grid grid-cols-2 sm:grid-cols-3 gap-4 sm:gap-5">
+            {SERIES.map(({ img, name, count }) => (
+              <a key={name} href="/?tab=videos" className="group block">
+                <span className="relative block overflow-hidden rounded-2xl ring-1 ring-white/10 shadow-xl shadow-black/40">
+                  <img src={`/join/${img}.jpg`} alt={`${name} series art`} loading="lazy" decoding="async" className="block w-full aspect-square object-cover transition-transform duration-500 group-hover:scale-105" />
+                  <span className="absolute top-3 right-3 flex w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/90 text-slate-900 items-center justify-center opacity-0 scale-75 transition-all group-hover:opacity-100 group-hover:scale-100"><Play className="w-5 h-5 ml-0.5" fill="currentColor" /></span>
+                </span>
+                <span className="mt-2.5 flex items-baseline justify-between gap-2 px-0.5">
+                  <span className="font-black text-sm sm:text-base">{name}</span>
+                  <span className="text-xs sm:text-sm text-slate-400">{count} episodes</span>
+                </span>
+              </a>
+            ))}
+          </div>
+        </section>
 
         {/* ===== final call ===== */}
-        <div className="mt-16 text-center">
+        <div className="mt-24 sm:mt-32 text-center">
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight">Learn something new every day.</h2>
           <p className="mt-3 text-slate-400">Join learners in the free AI Sefarim community.</p>
           <div className="mt-6 mx-auto max-w-sm"><JoinButton big /></div>
