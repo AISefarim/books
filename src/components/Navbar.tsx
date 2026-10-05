@@ -86,7 +86,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
     <nav
       className="bg-slate-900/85 backdrop-blur-xl shadow-sm border-b border-slate-700/50 sticky top-0 z-40"
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-col md:flex-row md:flex-wrap justify-between items-center gap-3 md:gap-4">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2.5 sm:py-3 flex flex-col md:flex-row justify-between items-center gap-3 md:gap-4">
         {/* Logo Section */}
         <div 
           className="flex items-center gap-3 cursor-pointer group self-start md:self-auto pr-24 md:pr-0 shrink-0"
@@ -118,6 +118,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 <span className="hidden sm:inline">Videos & Podcasts</span>
               </div>
             </div>
+            <p className="mt-0.5 text-[10px] sm:text-[11px] italic text-amber-200/80 leading-tight">Dedicated to Carol Serouya, the best mother and wife</p>
           </div>
         </div>
 
@@ -129,7 +130,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 onTabChange('sefarim');
                 onHome();
               }}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 md:px-5 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 lg:px-4 py-2 rounded-full text-[11px] sm:text-xs lg:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
                 activeTab === 'sefarim' 
                   ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40' 
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
@@ -145,21 +146,21 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 onTabChange('daf');
                 window.scrollTo(0, 0);
               }}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 md:px-5 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 lg:px-4 py-2 rounded-full text-[11px] sm:text-xs lg:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
                 activeTab === 'daf'
                   ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
               }`}
             >
               <ScrollText className="w-4 h-4 shrink-0" />
-              <span>Super Daf</span>
+              <span className="hidden sm:inline">Super Daf</span><span className="sm:hidden">Daf</span>
             </button>
             <button
               onClick={() => {
                 onTabChange('media');
                 onHome();
               }}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2.5 px-3 sm:px-4 md:px-5 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2.5 px-2.5 sm:px-3.5 lg:px-4 py-2 rounded-full text-[11px] sm:text-xs lg:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
                 activeTab === 'media' || activeTab === 'videos' || activeTab === 'podcasts' || activeTab === 'audio'
                   ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
@@ -176,14 +177,14 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 onTabChange('chat');
                 onHome();
               }}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 md:px-5 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 lg:px-4 py-2 rounded-full text-[11px] sm:text-xs lg:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
                 activeTab === 'chat'
                   ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
               }`}
             >
               <Sparkles className="w-4 h-4 shrink-0" />
-              <span>Super Agent</span>
+              <span className="hidden sm:inline">Super Agent</span><span className="sm:hidden">Agent</span>
             </button>
           </div>
 
@@ -198,7 +199,6 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
               className="flex items-center gap-1.5 sm:gap-2 px-3 py-0.5 rounded-full bg-slate-900/90 hover:bg-slate-800 border border-emerald-500/40 hover:border-emerald-400/60 text-[11px] font-bold text-slate-200 transition-all shadow-sm active:scale-95 group animate-in fade-in duration-300"
               title={`Your learning level: Level ${userStats.level} of ${userStats.maxLevel || 50} - ${userStats.rankTitle} (${userStats.rankHebrew}) · Click to view in My Library`}
             >
-              <span className="text-slate-400 font-semibold">Your learning level:</span>
               <span className="text-sm select-none shrink-0" role="img" aria-label={userStats.rankTitle}>
                 {userStats.rankIcon}
               </span>
@@ -215,7 +215,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
 
         {/* Action Buttons Section */}
         {/* Wraps under the nav on narrower desktops instead of pushing the page wider than the viewport */}
-        <div className="hidden md:flex items-center justify-end flex-wrap gap-2.5 min-w-0">
+        <div className="hidden md:flex items-center justify-end gap-2 shrink-0">
           {whatsappUrl && (
             <>
               <div className="relative group">
@@ -224,10 +224,11 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                   href={whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="relative px-4 py-2 bg-[#25D366] text-white hover:bg-[#1fa14b] rounded-xl font-bold transition-all text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-[#25D366]/30 hover:shadow-[#25D366]/50 hover:-translate-y-0.5 active:scale-95 uppercase tracking-wide border border-white/20"
+                  title="Join our WhatsApp community"
+                  className="relative px-3 2xl:px-4 py-2 bg-[#25D366] text-white hover:bg-[#1fa14b] rounded-xl font-bold transition-all text-xs sm:text-sm flex items-center gap-2 shadow-lg shadow-[#25D366]/30 hover:shadow-[#25D366]/50 hover:-translate-y-0.5 active:scale-95 uppercase tracking-wide border border-white/20"
                 >
                   <MessageCircle className="w-4 h-4 sm:w-5 sm:h-5 fill-current" />
-                  Join WhatsApp
+                  <span className="hidden 2xl:inline">Join WhatsApp</span>
                 </a>
               </div>
 
@@ -235,11 +236,11 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 <button
                   type="button"
                   onClick={onOpenWhatsAppShare}
-                  className="px-3.5 py-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-xl font-bold transition-all text-xs sm:text-sm flex items-center gap-1.5 border border-emerald-500/30 hover:border-emerald-500/50 hover:-translate-y-0.5 active:scale-95 uppercase tracking-wide"
+                  className="px-2.5 2xl:px-3.5 py-2 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-xl font-bold transition-all text-xs sm:text-sm flex items-center gap-1.5 border border-emerald-500/30 hover:border-emerald-500/50 hover:-translate-y-0.5 active:scale-95 uppercase tracking-wide"
                   title="Share WhatsApp Community with friends"
                 >
                   <Share2 className="w-4 h-4" />
-                  Invite Friends
+                  <span className="hidden 2xl:inline">Invite Friends</span>
                 </button>
               )}
             </>
@@ -258,7 +259,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
             >
               <Eye className="w-3.5 h-3.5 text-emerald-400 group-hover:scale-110 transition-transform" />
               <span className="text-white font-black bg-emerald-500/25 px-1.5 py-0.5 rounded-md text-[11px]">{totalViewed}</span>
-              <span className="hidden lg:inline text-emerald-300 font-bold uppercase tracking-wider text-[10px]">Viewing Total</span>
+              <span className="hidden 2xl:inline text-emerald-300 font-bold uppercase tracking-wider text-[10px]">Viewing Total</span>
             </button>
           )}
 
@@ -289,7 +290,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 title="Optional: Save your library and reading progress across devices"
               >
                 <Cloud className="w-3.5 h-3.5 text-indigo-400" />
-                <span>Sync</span>
+                <span className="hidden 2xl:inline">Sync</span>
               </button>
             )
           )}

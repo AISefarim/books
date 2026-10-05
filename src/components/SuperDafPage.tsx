@@ -7,6 +7,7 @@ import {
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
 import { DAF_API, dafPath, sefariaUrl, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
+import { useReadyDafs } from '../lib/useReadyDafs';
 
 // ----------------------------------------------------------------------
 // Types mirroring the worker's /daf/get response
@@ -302,6 +303,8 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const onDragEnd = () => { dragging.current = false; };
 
   const isCurrent = !!(daf && current && daf.ref === current.ref);
+  const readyDafs = useReadyDafs();
+  const canGo = (r?: string | null) => !!r && (readyDafs.has(r) || r === current?.ref);
   const podcasts = useMemo(() => {
     if (!daf) return [] as MediaItem[];
     const pin = media.filter((m) => m.id === pinnedPodcastId);
@@ -328,9 +331,10 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     } catch { setSofar((s) => ({ ...s, [segRef]: { error: 'Could not reach Super Daf.' } })); }
   };
 
-  const ask = async () => {
-    if (!daf || !chatInput.trim() || chatBusy || !panelSugya) return;
-    const sg = panelSugya; const q = chatInput.trim(); const history = chats[sg.index] || [];
+  const ask = async (preset?: string) => {
+    const text = (typeof preset === 'string' ? preset : chatInput).trim();
+    if (!daf || !text || chatBusy || !panelSugya) return;
+    const sg = panelSugya; const q = text; const history = chats[sg.index] || [];
     setChats((c) => ({ ...c, [sg.index]: [...history, { role: 'user', content: q }] })); setChatInput(''); setChatBusy(true);
     try {
       const res = await fetch(`${DAF_API}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: daf.ref, sugya: sg.index, question: q, history }) });
@@ -366,7 +370,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
   const t = surface === 'paper'
     ? { shell: 'bg-[#efe7d6]', page: 'bg-[#f7f2e7] text-stone-900', card: 'bg-white/70 border-[#e3d8c1]', soft: 'bg-[#efe6d3]', muted: 'text-stone-500', faint: 'text-stone-400', rule: 'border-[#e3d8c1]', accent: 'text-indigo-700', chip: 'bg-white/80 border-[#e3d8c1] text-stone-700', hover: 'hover:bg-white/70', sel: 'ring-2 ring-indigo-400/50' }
-    : { shell: 'bg-slate-950', page: 'bg-slate-900 text-slate-100', card: 'bg-slate-800/60 border-slate-700/60', soft: 'bg-slate-800/60', muted: 'text-slate-400', faint: 'text-slate-500', rule: 'border-slate-800', accent: 'text-indigo-300', chip: 'bg-slate-800 border-slate-700 text-slate-200', hover: 'hover:bg-slate-800/60', sel: 'ring-2 ring-indigo-400/50' };
+    : { shell: 'bg-[#0f0e0b]', page: 'bg-[#1a1814] text-[#ebe4d3]', card: 'bg-[#24211b] border-[#3a352b]', soft: 'bg-[#2a261f]', muted: 'text-[#b3aa96]', faint: 'text-[#857c6a]', rule: 'border-[#3a352b]', accent: 'text-[#e3b866]', chip: 'bg-[#2a261f] border-[#3f392e] text-[#e2dac7]', hover: 'hover:bg-[#2a261f]', sel: 'ring-2 ring-[#e3b866]/50' };
   const showHe = lang !== 'en', showEn = lang !== 'he';
   const dateLabel = current?.date ? new Date(current.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
   const upperPct = lowerCollapsed ? 100 : Math.round(split * 100);
@@ -392,7 +396,22 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd .sd-divider.cursor-col-resize { cursor: col-resize; }
         /* Lower half on paper: a deeper shade of the same paper, not a dark slab. */
         .sd-lowp { background:#ece4d3; color:#292524; }
-        .sd-lowd { background:#0d1526; color:#e2e8f0; }
+        .sd-lowd { background:#14120f; color:#ebe4d3; }
+        .sd-lowd .text-slate-100, .sd-lowd .text-slate-200 { color:#ebe4d3; }
+        .sd-lowd .text-slate-300 { color:#cfc6b2; }
+        .sd-lowd .text-slate-400 { color:#a39a87; }
+        .sd-lowd .text-slate-500 { color:#7d7563; }
+        .sd-lowd .text-indigo-300, .sd-lowd .text-indigo-200 { color:#e3b866; }
+        .sd-lowd .bg-slate-800, .sd-lowd .bg-slate-900, .sd-lowd .bg-slate-800\\/60, .sd-lowd .bg-slate-800\\/50, .sd-lowd .bg-slate-800\\/70 { background:#221f19; }
+        .sd-lowd .hover\\:bg-slate-800:hover, .sd-lowd .hover\\:bg-slate-700:hover { background:#2b271f; }
+        .sd-lowd .border-slate-700, .sd-lowd .border-slate-700\\/60, .sd-lowd .border-slate-800 { border-color:#3a352b; }
+        .sd-lowd .bg-indigo-600 { background:#b8862f; color:#14120f; }
+        .sd-lowd .bg-indigo-500\\/10 { background:rgba(227,184,102,.08); }
+        .sd-lowd .border-indigo-400\\/60 { border-color:rgba(227,184,102,.5); }
+        .sd-lowd textarea { background:#221f19; color:#ebe4d3; }
+        .sd-dark .sd-ref { color:#e3b866; border-bottom-color:rgba(227,184,102,.45); }
+        .sd-dark .sd-note { background:rgba(227,184,102,.18); color:#f0d9a8; }
+        .sd-dark .sd-note:hover, .sd-dark .sd-note.on { background:#b8862f; color:#14120f; }
         .sd-lowp .text-slate-100, .sd-lowp .text-slate-200 { color:#292524; }
         .sd-lowp .text-slate-300 { color:#44403c; }
         .sd-lowp .text-slate-400 { color:#78716c; }
@@ -412,7 +431,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       <header className="shrink-0 h-12 sm:h-14 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 bg-slate-950 text-slate-100 border-b border-slate-800">
         <button onClick={onExit} className="p-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>
         <button onClick={() => setMapOpen((m) => !m)} className={`hidden md:inline-flex p-2 rounded-full border ${mapOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}`} aria-label="Pin the daf map" title={mapOpen ? 'Unpin the daf map (it will show only while you scroll)' : 'Pin the daf map open'}><MapIcon className="w-4 h-4" /></button>
-        <button disabled={!daf?.prev} onClick={() => daf?.prev && setRef(daf.prev)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Previous daf"><ChevronLeft className="w-5 h-5" /></button>
+        <button disabled={!canGo(daf?.prev)} onClick={() => daf?.prev && canGo(daf.prev) && setRef(daf.prev)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Previous daf"><ChevronLeft className="w-5 h-5" /></button>
         <div className="min-w-0 flex-1 text-center leading-tight">
           <div className="truncate font-black text-[15px] sm:text-lg">{daf ? <><span lang="he" dir="rtl" style={{ fontFamily: HE_FONT }}>{daf.heRef}</span><span className="text-slate-600 mx-2">·</span>{daf.ref}</> : ref || 'Super Daf'}</div>
           <div className="text-[10px] sm:text-[11px] text-slate-500 font-semibold truncate">
@@ -421,7 +440,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
             {daf && daf.status !== 'ready' && <span className="ml-2 inline-flex items-center gap-1 text-indigo-300"><Loader2 className="w-3 h-3 animate-spin" /> preparing {daf.done}/{daf.total}</span>}
           </div>
         </div>
-        <button disabled={!daf?.next || isCurrent} onClick={() => daf?.next && !isCurrent && setRef(daf.next)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Next daf" title={isCurrent ? 'Tomorrow’s daf opens tonight' : 'Next daf'}>{isCurrent ? <Lock className="w-4 h-4" /> : <ChevronRight className="w-5 h-5" />}</button>
+        <button disabled={!canGo(daf?.next)} onClick={() => daf?.next && canGo(daf.next) && setRef(daf.next)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Next daf" title={canGo(daf?.next) ? `Next daf · ${daf?.next}` : 'The next daf opens the evening before'}>{canGo(daf?.next) ? <ChevronRight className="w-5 h-5" /> : <Lock className="w-4 h-4" />}</button>
         <button onClick={() => setSheet(sheet?.kind === 'settings' ? null : { kind: 'settings' })} className={`p-2 rounded-full border ${sheet?.kind === 'settings' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="Reading settings" title="Reading settings"><Type className="w-4 h-4" /></button>
         <button onClick={toggleFullscreen} className="hidden sm:inline-flex p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white" aria-label="Full screen" title={isFull ? 'Exit full screen' : 'Full screen'}>{isFull ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</button>
       </header>
@@ -460,7 +479,8 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
             )}
             {daf && (
               <Reader daf={daf} t={t} showHe={showHe} showEn={showEn} fontScale={fontScale} panelIdx={pinned} noteN={noteN}
-                isBookmarked={isBookmarked} toggleBookmark={toggleBookmark} onShare={shareSeg} openOn={openOn} openSugya={openSugya} />
+                isBookmarked={isBookmarked} toggleBookmark={toggleBookmark} onShare={shareSeg} openOn={openOn} openSugya={openSugya}
+                canGo={canGo} onGo={(r) => { setRef(r); scrollRef.current?.scrollTo({ top: 0 }); }} />
             )}
             {daf && <footer className={`px-6 py-6 text-[11px] ${t.faint} leading-relaxed max-w-3xl mx-auto`}>{daf.attribution} · <a className="sd-ref" href={sefariaUrl(daf.ref)} target="_blank" rel="noopener noreferrer">open on Sefaria</a></footer>}
           </div>
@@ -468,7 +488,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
         {daf && (
           <div
-            className={`sd-divider shrink-0 flex items-center justify-between select-none ${wide ? 'w-3 flex-col border-x py-3 px-0 cursor-col-resize' : 'h-7 border-y px-3'} ${surface === 'paper' ? 'bg-[#e2d7c0] border-[#d3c6aa]' : 'bg-slate-950 border-slate-800'}`}
+            className={`sd-divider shrink-0 flex items-center justify-between select-none ${wide ? 'w-3 flex-col border-x py-3 px-0 cursor-col-resize' : 'h-7 border-y px-3'} ${surface === 'paper' ? 'bg-[#e2d7c0] border-[#d3c6aa]' : 'bg-[#0f0e0b] border-[#3a352b]'}`}
             onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd} onDoubleClick={() => { setSplit(0.62); setLowerCollapsed(false); }}
           >
             {!wide && <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 inline-flex items-center gap-1.5"><NotebookPen className="w-3 h-3" /> Notes {daf.segments[panelIdx] && sugyaScope === null ? `· ${short(daf.segments[panelIdx].ref, daf.book)}` : ''}</span>}
@@ -564,15 +584,21 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 // ----------------------------------------------------------------------
 // Upper half: the daf. Hebrew, interlinear, Rashi & Tosafot inline, halacha standalone.
 
-function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmarked, toggleBookmark, onShare, openOn, openSugya }: {
+function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmarked, toggleBookmark, onShare, openOn, openSugya, canGo, onGo }: {
   daf: Daf; t: any; showHe: boolean; showEn: boolean; fontScale: number; panelIdx: number | null; noteN: number | null;
   isBookmarked: (r: string) => boolean; toggleBookmark: (i: number) => void; onShare: (i: number) => void; openOn: (i: number, tab?: Tab, n?: number | null) => void; openSugya: (s: number, tab: Tab) => void;
+  canGo: (r?: string | null) => boolean; onGo: (r: string) => void;
 }) {
   const heStyle: CSSProperties = { fontFamily: HE_FONT, fontSize: `${1.45 * fontScale}rem`, lineHeight: 1.8 };
   const [words, setWords] = useState<Record<string, boolean>>({});
   return (
     <div className={`${t.page} min-h-full`}>
       <div className="max-w-3xl mx-auto px-3 sm:px-8 pt-3 pb-8">
+        {daf.prev && canGo(daf.prev) && (
+          <div className="mb-3 text-center">
+            <button onClick={() => onGo(daf.prev!)} className={`inline-flex items-center gap-1.5 text-[12px] font-bold ${t.accent}`}><ChevronLeft className="w-3.5 h-3.5" /> Previous daf · {daf.prev}</button>
+          </div>
+        )}
         {daf.summary?.preview?.length ? (
           <div className={`rounded-2xl border ${t.card} px-4 py-3 mb-4 shadow-sm`}>
             <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${t.accent} mb-1.5`}>On this daf we'll learn</p>
@@ -589,6 +615,13 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
           const btn = (label: ReactNode, onClick: () => void, icon: any, dim = false) => { const Icon = icon; return <button onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors ${t.chip} ${t.hover} ${dim ? 'opacity-45' : ''}`}><Icon className={`w-3.5 h-3.5 ${t.accent}`} />{label}</button>; };
           return (
             <section key={sugya.index} className="mb-8">
+              {sugya.index > 0 && (
+                <div className="flex items-center gap-3 my-6" aria-hidden="true">
+                  <div className={`flex-1 border-t-2 ${t.rule}`} />
+                  <span className={`text-[11px] font-black ${t.faint}`} style={{ fontFamily: HE_FONT, fontSize: '0.95rem' }}>❖ {KIND_LABEL[sugya.kind].he}</span>
+                  <div className={`flex-1 border-t-2 ${t.rule}`} />
+                </div>
+              )}
               <div className={`rounded-2xl border ${t.card} px-4 py-2.5 mb-3 shadow-sm`}>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <span className={`inline-flex items-center gap-2 rounded-full px-2.5 py-0.5 text-[11px] font-black ${sugya.kind === 'mishnah' ? 'bg-amber-500/15 text-amber-800 border border-amber-500/30' : 'bg-indigo-500/10 border border-indigo-500/30 ' + t.accent}`}>
@@ -718,6 +751,23 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
             <ul className="space-y-1">{daf.summary.takeaways.slice(0, 3).map((x, i) => <li key={i} className="flex gap-2 text-[15px] leading-snug" style={{ fontFamily: EN_FONT }}><span className="font-black text-emerald-700">✓</span><span>{x}</span></li>)}</ul>
           </div>
         ) : null}
+        {daf.next && (
+          canGo(daf.next) ? (
+            <button onClick={() => onGo(daf.next!)} className="group mt-6 w-full rounded-2xl bg-indigo-600 hover:bg-indigo-500 text-white px-5 py-4 flex items-center gap-4 shadow-lg shadow-indigo-600/25 transition-colors text-left">
+              <span className="min-w-0 flex-1">
+                <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-indigo-200">Continue learning</span>
+                <span className="block text-lg font-black">Next daf · {daf.next}</span>
+                {daf.sugyot[daf.sugyot.length - 1]?.continuesOn && <span className="block text-xs text-indigo-100 mt-0.5">The last sugya carries on there.</span>}
+              </span>
+              <ChevronRight className="w-6 h-6 group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          ) : (
+            <div className={`mt-6 rounded-2xl border ${t.card} px-5 py-4 flex items-center gap-3`}>
+              <Lock className={`w-4 h-4 ${t.faint}`} />
+              <span className={`text-sm ${t.muted}`}>{daf.next} opens the evening before it is learned.</span>
+            </div>
+          )
+        )}
       </div>
     </div>
   );
@@ -728,7 +778,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
 
 function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToParagraph, chats, chatInput, setChatInput, chatBusy, onAsk, onCatchUp }: {
   daf: Daf; sugya: Sugya; segIdx: number | null; tab: Tab; setTab: (t: Tab) => void; noteN: number | null;
-  sugyaScoped: boolean; onBackToParagraph: () => void; chats: Record<number, ChatMsg[]>; chatInput: string; setChatInput: (s: string) => void; chatBusy: boolean; onAsk: () => void; onCatchUp: () => void;
+  sugyaScoped: boolean; onBackToParagraph: () => void; chats: Record<number, ChatMsg[]>; chatInput: string; setChatInput: (s: string) => void; chatBusy: boolean; onAsk: (q?: string) => void; onCatchUp: () => void;
 }) {
   const built = sugya.built;
   const syn = built?.synthesis && !built.synthesis._error ? built.synthesis : null;
@@ -936,7 +986,7 @@ function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focu
   const core = daf.sugyot.flatMap((s) => s.built?.core || []);
   const count = (segRef: string, title: string) => core.filter((c) => c.anchor === segRef && c.title === title).length;
   const marked = new Set(bookmarks.filter((b) => b.ref === daf.ref).map((b) => b.segRef));
-  const fill = surface === 'paper' ? { page: '#fbf7ee', stroke: '#d9cdb3', block: '#cfc3a9', mishnah: '#e8c279', side: '#ddd3bd', focus: '#4f46e5', text: '#8a7f6a', bg: '#efe7d6' } : { page: '#0f172a', stroke: '#334155', block: '#475569', mishnah: '#b45309', side: '#334155', focus: '#818cf8', text: '#94a3b8', bg: '#020617' };
+  const fill = surface === 'paper' ? { page: '#fbf7ee', stroke: '#d9cdb3', block: '#cfc3a9', mishnah: '#e8c279', side: '#ddd3bd', focus: '#4f46e5', text: '#8a7f6a', bg: '#efe7d6' } : { page: '#1a1814', stroke: '#3a352b', block: '#4a4438', mishnah: '#8a5a1c', side: '#3a352b', focus: '#e3b866', text: '#a39a87', bg: '#0f0e0b' };
   return (
     <aside className="flex h-full shrink-0 w-[128px] flex-col items-center gap-3 py-3 overflow-y-auto sd-scroll border-r border-black/5" style={{ background: fill.bg }} aria-label="Where you are on the daf">
       <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider" style={{ color: fill.text }}><MapIcon className="w-3 h-3" /> The daf</div>
@@ -1010,14 +1060,50 @@ function CatchUp({ data, segRef }: { data?: TldrSoFar | 'loading' | { error: str
   );
 }
 
-function AskThread({ messages, busy, input, setInput, onSend }: { messages: ChatMsg[]; busy: boolean; input: string; setInput: (s: string) => void; onSend: () => void }) {
+// Light markdown for chat answers: paragraphs, bold/italic, bullet lists, [ref] links.
+function AskMarkdown({ text }: { text: string }) {
+  const blocks = String(text || '').trim().split(/\n{2,}/);
+  const inline = (line: string, key: number) => {
+    const parts = line.split(/(\*\*[^*]+\*\*|_[^_]+_|\*[^*]+\*)/g);
+    return <span key={key}>{parts.map((p, i) => {
+      if (/^\*\*[^*]+\*\*$/.test(p)) return <strong key={i}><RefText text={p.slice(2, -2)} /></strong>;
+      if (/^(_[^_]+_|\*[^*]+\*)$/.test(p)) return <em key={i}><RefText text={p.slice(1, -1)} /></em>;
+      return <RefText key={i} text={p} />;
+    })}</span>;
+  };
+  return (
+    <div className="space-y-2">
+      {blocks.map((b, i) => {
+        const lines = b.split('\n').filter(Boolean);
+        if (lines.every((l) => /^\s*([-*•]|\d+\.)\s+/.test(l))) {
+          return <ul key={i} className="space-y-1 pl-1">{lines.map((l, j) => <li key={j} className="flex gap-2"><span className="text-indigo-300">•</span><span>{inline(l.replace(/^\s*([-*•]|\d+\.)\s+/, ''), j)}</span></li>)}</ul>;
+        }
+        if (/^#{1,4}\s/.test(lines[0])) return <p key={i} className="font-black">{inline(lines.join(' ').replace(/^#{1,4}\s/, ''), i)}</p>;
+        return <p key={i}>{inline(lines.join(' '), i)}</p>;
+      })}
+    </div>
+  );
+}
+
+function AskThread({ messages, busy, input, setInput, onSend }: { messages: ChatMsg[]; busy: boolean; input: string; setInput: (s: string) => void; onSend: (q?: string) => void }) {
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length, busy]);
   return (
     <div className="flex flex-col h-full -mx-3 sm:-mx-4 -my-3">
       <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3 sd-scroll">
         {messages.length === 0 && <p className="text-sm text-slate-400">Ask anything about this sugya — a term, a step you lost, why Rashi says what he says. Answers draw only on the texts on this daf and cite them.</p>}
-        {messages.map((m, i) => <div key={i} className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === 'user' ? 'bg-indigo-600 text-white ml-8' : 'bg-slate-800/70 border border-slate-700/60 mr-4'}`}>{m.role === 'user' ? m.content : <RefText text={m.content} />}</div>)}
+        {messages.map((m, i) => {
+          const last = i === messages.length - 1;
+          const offersMore = m.role === 'assistant' && /want more detail\?/i.test(m.content);
+          return (
+            <div key={i} className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === 'user' ? 'bg-indigo-600 text-white ml-8' : 'bg-slate-800/70 border border-slate-700/60 mr-4'}`}>
+              {m.role === 'user' ? m.content : <AskMarkdown text={offersMore ? m.content.replace(/_?\*?want more detail\?\*?_?\s*$/i, '').trim() : m.content} />}
+              {offersMore && last && !busy && (
+                <button onClick={() => onSend('Yes, give me the full answer.')} className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-indigo-600 text-white px-3 py-1.5 text-[11px] font-black">More detail →</button>
+              )}
+            </div>
+          );
+        })}
         {busy && <p className="text-sm text-slate-400 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Reading the sources…</p>}
         <div ref={endRef} />
       </div>
