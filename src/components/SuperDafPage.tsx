@@ -594,6 +594,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
   return (
     <div className={`${t.page} min-h-full`}>
       <div className="max-w-3xl mx-auto px-3 sm:px-8 pt-3 pb-8">
+        <p className={`mb-3 text-center text-[12px] italic ${t.faint}`} style={{ fontFamily: EN_FONT }}>Super Daf is dedicated to Carol Serouya, the best mother and wife</p>
         {daf.prev && canGo(daf.prev) && (
           <div className="mb-3 text-center">
             <button onClick={() => onGo(daf.prev!)} className={`inline-flex items-center gap-1.5 text-[12px] font-bold ${t.accent}`}><ChevronLeft className="w-3.5 h-3.5" /> Previous daf · {daf.prev}</button>
