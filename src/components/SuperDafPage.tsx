@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo, useRef, useCallback, type CSSProperties, type ReactNode } from 'react';
 import {
-  ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, Headphones, X, ExternalLink, Clock, Loader2, Scale, Landmark,
-  Send, MessageSquareText, Minus, Plus, Lock, Bookmark, BookmarkCheck, Maximize2, Minimize2, Type, Sun, Moon,
-  Map as MapIcon, ListTree, Check, Library, Quote, Sparkles,
+  ArrowLeft, ChevronLeft, ChevronRight, Headphones, X, ExternalLink, Clock, Loader2, Scale, Landmark, Send, MessageSquareText,
+  Minus, Plus, Lock, Bookmark, BookmarkCheck, Maximize2, Minimize2, Type, Sun, Moon, Map as MapIcon, ListTree, Check, Library,
+  Quote, Sparkles, NotebookPen, Pin, PinOff, PanelRightOpen,
 } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
@@ -24,7 +24,11 @@ interface Synthesis {
 }
 interface HalachaItem { issue: string; refs?: string[]; rambam?: { ref: string; ruling: string } | null; shulchanArukh?: { ref: string; ruling: string } | null; rema?: { ref: string; ruling: string } | null; note?: string }
 interface Halacha { available?: boolean; note?: string; items?: HalachaItem[]; caveat?: string; _error?: string }
-interface Built { partial?: boolean; core: Comm[]; rishonim: Comm[]; acharonim: Comm[]; other: Comm[]; rambamSources: Comm[]; halachaSources: Comm[]; synthesis: Synthesis | null; halacha: Halacha | null }
+interface MUnit { he: string; en?: string; literal?: string; elucidation?: string; notes?: number[] }
+interface MNote { n: number; source: string; point: string; ref: string }
+interface MesivtaSeg { ref: string; units: MUnit[]; notes: MNote[] }
+interface Mesivta { segments?: MesivtaSeg[]; _error?: string }
+interface Built { partial?: boolean; core: Comm[]; rishonim: Comm[]; acharonim: Comm[]; other: Comm[]; rambamSources: Comm[]; halachaSources: Comm[]; synthesis: Synthesis | null; halacha: Halacha | null; mesivta: Mesivta | null }
 interface Sugya {
   index: number; kind: 'mishnah' | 'gemara' | 'topic' | 'continued'; heading: string; from: string; to: string; segments: number[];
   prelude?: { from: string; to: string; segments: Seg[] }; continuation?: { from: string; to: string; segments: Seg[] }; continuesOn?: string;
@@ -39,14 +43,10 @@ interface TldrSoFar { upto: string; sofar: string; nowWeAre: string; keepInMind:
 interface ChatMsg { role: 'user' | 'assistant'; content: string }
 interface BookmarkItem { ref: string; segRef: string; heRef: string; snippet: string; at: number }
 
-type View = 'study' | 'daf';
-type Level = 'basic' | 'intensive';
 type Surface = 'paper' | 'dark';
 type Lang = 'both' | 'he' | 'en';
-type Sheet =
-  | { kind: 'sugyot' } | { kind: 'catchup' } | { kind: 'bookmarks' } | { kind: 'ask' } | { kind: 'listen' } | { kind: 'settings' }
-  | { kind: 'bigpicture'; sugya: number } | { kind: 'sources'; sugya: number; work?: string } | { kind: 'rambam'; sugya: number }
-  | { kind: 'disputes'; sugya: number } | { kind: 'halacha'; sugya: number } | { kind: 'words'; sugya: number; segRef: string } | null;
+type Tab = 'notes' | 'halacha' | 'sources' | 'rambam' | 'big' | 'disputes' | 'ask';
+type Sheet = { kind: 'sugyot' } | { kind: 'catchup' } | { kind: 'bookmarks' } | { kind: 'listen' } | { kind: 'settings' } | null;
 
 const HE_FONT = "'Frank Ruhl Libre', 'David Libre', 'Noto Serif Hebrew', serif";
 const RASHI_FONT = "'Noto Rashi Hebrew', 'Frank Ruhl Libre', serif";
@@ -89,15 +89,21 @@ function Rich({ text, className, style }: { text: string; className?: string; st
   return (
     <p className={className} style={style}>
       {parts.map((p, i) => {
-        if (p.startsWith('**') && p.endsWith('**')) return <strong key={i} className="sd-dh">{p.slice(2, -2)}</strong>;
-        if (p.startsWith('<b>') && p.endsWith('</b>')) return <strong key={i} className="sd-dh">{p.slice(3, -4)}</strong>;
+        if (p.startsWith('**') && p.endsWith('**')) return <strong key={i}>{p.slice(2, -2)}</strong>;
+        if (p.startsWith('<b>') && p.endsWith('</b>')) return <strong key={i}>{p.slice(3, -4)}</strong>;
         return <span key={i}>{p}</span>;
       })}
     </p>
   );
 }
+// Davidson text carrying **bold** marks: bold = the Gemara's words, plain = elucidation.
+function Marked({ text }: { text: string }) {
+  const parts = String(text || '').replace(/<[^>]+>/g, '').split(/(\*\*[^*]+\*\*)/g);
+  return <>{parts.map((p, i) => (p.startsWith('**') && p.endsWith('**') ? <strong key={i}>{p.slice(2, -2)}</strong> : <span key={i} className="sd-eluc">{p}</span>))}</>;
+}
+
 // Davidson English keeps its typography: bold = the Gemara's words, regular = elucidation.
-function Davidson({ html, text, literal, className, style, dir }: { html?: string; text: string; literal: boolean; className?: string; style?: CSSProperties; dir?: 'ltr' | 'rtl' }) {
+function Davidson({ html, text, className, style }: { html?: string; text: string; className?: string; style?: CSSProperties }) {
   const src = html && /<b>/i.test(html) ? html : `<b>${text}</b>`;
   const tokens = src.replace(/<br\s*\/?>/gi, ' ').split(/(<\/?b>|<\/?i>|<\/?strong>|<\/?em>)/gi);
   const nodes: ReactNode[] = [];
@@ -110,45 +116,31 @@ function Davidson({ html, text, literal, className, style, dir }: { html?: strin
     if (low === '</i>' || low === '</em>') { ital = false; continue; }
     const t = tk.replace(/<[^>]+>/g, '').replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
     if (!t) continue;
-    if (literal && !bold) continue;
     nodes.push(bold ? <strong key={key++} className={ital ? 'italic' : ''}>{t}</strong> : <span key={key++} className={`sd-eluc ${ital ? 'italic' : ''}`}>{t}</span>);
   }
-  return <p className={className} style={style} dir={dir}>{nodes}</p>;
-}
-
-// A row that opens. The whole page is built from these, so "what happens
-// when I tap" always has the same answer: it opens.
-function Row({ title, hint, open, onToggle, children, t, accent, icon: Icon }: { title: ReactNode; hint?: ReactNode; open: boolean; onToggle: () => void; children?: ReactNode; t: any; accent?: boolean; icon?: any }) {
-  return (
-    <div className={`rounded-xl border ${open ? t.card : 'border-transparent'} transition-colors`}>
-      <button onClick={onToggle} className={`w-full flex items-center gap-2 text-left px-2.5 py-2 rounded-xl ${t.hover}`}>
-        <ChevronDown className={`w-4 h-4 shrink-0 transition-transform ${open ? '' : '-rotate-90'} ${accent ? t.accent : t.faint}`} />
-        {Icon && <Icon className={`w-3.5 h-3.5 shrink-0 ${t.accent}`} />}
-        <span className={`min-w-0 flex-1 text-sm ${accent ? 'font-bold' : 'font-semibold'}`}>{title}</span>
-        {hint && <span className={`shrink-0 text-[11px] ${t.faint}`}>{hint}</span>}
-      </button>
-      {open && <div className="px-3 pb-3 pt-0.5 animate-in fade-in duration-200">{children}</div>}
-    </div>
-  );
+  return <p className={className} style={style}>{nodes}</p>;
 }
 
 // ----------------------------------------------------------------------
 
 export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { initialRef?: string | null; pinnedPodcastId?: string | null; media: MediaItem[]; onExit: () => void }) {
   const prefs = useMemo(() => readJson<any>(PREFS_KEY, {}), []);
-  const [view, setView] = useState<View>(prefs.view === 'daf' ? 'daf' : 'study');
-  const [level, setLevel] = useState<Level>(prefs.level === 'intensive' ? 'intensive' : 'basic');
   const [surface, setSurface] = useState<Surface>(prefs.surface || 'paper');
   const [lang, setLang] = useState<Lang>(prefs.lang || 'both');
-  const [literal, setLiteral] = useState<boolean>(!!prefs.literal);
   const [fontScale, setFontScale] = useState<number>(prefs.fontScale || 1);
+  const [mapOpen, setMapOpen] = useState<boolean>(prefs.mapOpen !== false);
+  const [mapPeek, setMapPeek] = useState(false);
   const [current, setCurrent] = useState<{ ref: string; date: string } | null>(null);
   const [ref, setRef] = useState<string | null>(initialRef || null);
   const [daf, setDaf] = useState<Daf | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [sheet, setSheet] = useState<Sheet>(null);
   const [focusIdx, setFocusIdx] = useState(0);
-  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [pinned, setPinned] = useState<number | null>(null);     // paragraph pinned in the panel (else it follows the scroll)
+  const [tab, setTab] = useState<Tab>('notes');
+  const [sugyaScope, setSugyaScope] = useState<number | null>(null); // panel shows a sugya-level tab
+  const [noteN, setNoteN] = useState<number | null>(null);
+  const [panelOpen, setPanelOpen] = useState(false);               // small screens: panel as a sheet
+  const [sheet, setSheet] = useState<Sheet>(null);
   const [sofar, setSofar] = useState<Record<string, TldrSoFar | 'loading' | { error: string }>>({});
   const [chats, setChats] = useState<Record<number, ChatMsg[]>>({});
   const [chatInput, setChatInput] = useState('');
@@ -159,23 +151,39 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const scrollRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<number | null>(null);
-  const toggle = (id: string) => setOpen((o) => ({ ...o, [id]: !(id in o ? o[id] : false) }));
-  const toggleFrom = (id: string, dflt: boolean) => setOpen((o) => ({ ...o, [id]: !(id in o ? o[id] : dflt) }));
 
   useEffect(() => {
     if (!document.querySelector(`link[href="${FONTS_HREF}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = FONTS_HREF; document.head.appendChild(l); }
   }, []);
-  useEffect(() => { writeJson(PREFS_KEY, { view, level, surface, lang, literal, fontScale }); }, [view, level, surface, lang, literal, fontScale]);
+  useEffect(() => { writeJson(PREFS_KEY, { surface, lang, fontScale, mapOpen }); }, [surface, lang, fontScale, mapOpen]);
   useEffect(() => { writeJson(BOOKMARKS_KEY, bookmarks); }, [bookmarks]);
 
-  // Own the viewport: no document scroll, no overscroll escaping the reader.
+  // Own the viewport. On touch devices, swallow the pull-down at the top of
+  // the reader (and the push-up at the bottom) so the gesture never reaches
+  // the browser - that is what was escaping full screen.
   useEffect(() => {
     const html = document.documentElement, body = document.body;
     const prev = { bo: body.style.overflow, ho: html.style.overflow, bos: body.style.overscrollBehavior, hos: html.style.overscrollBehavior };
     body.style.overflow = 'hidden'; html.style.overflow = 'hidden'; body.style.overscrollBehavior = 'none'; html.style.overscrollBehavior = 'none';
     const onFs = () => setIsFull(!!document.fullscreenElement);
     document.addEventListener('fullscreenchange', onFs);
-    return () => { body.style.overflow = prev.bo; html.style.overflow = prev.ho; body.style.overscrollBehavior = prev.bos; html.style.overscrollBehavior = prev.hos; document.removeEventListener('fullscreenchange', onFs); };
+    let startY = 0;
+    const onStart = (e: TouchEvent) => { startY = e.touches[0]?.clientY || 0; };
+    const onMove = (e: TouchEvent) => {
+      const el = (e.target as HTMLElement)?.closest?.('.sd-scroll') as HTMLElement | null;
+      const dy = (e.touches[0]?.clientY || 0) - startY;
+      if (!el) { e.preventDefault(); return; }
+      const atTop = el.scrollTop <= 0, atBottom = Math.ceil(el.scrollTop + el.clientHeight) >= el.scrollHeight;
+      if ((atTop && dy > 0) || (atBottom && dy < 0)) e.preventDefault();
+    };
+    const root = rootRef.current;
+    root?.addEventListener('touchstart', onStart, { passive: true });
+    root?.addEventListener('touchmove', onMove, { passive: false });
+    return () => {
+      body.style.overflow = prev.bo; html.style.overflow = prev.ho; body.style.overscrollBehavior = prev.bos; html.style.overscrollBehavior = prev.hos;
+      document.removeEventListener('fullscreenchange', onFs);
+      root?.removeEventListener('touchstart', onStart); root?.removeEventListener('touchmove', onMove);
+    };
   }, []);
 
   useEffect(() => {
@@ -196,7 +204,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   useEffect(() => {
     if (!ref) return;
     let cancelled = false;
-    setError(null); setDaf(null); setSheet(null); setSofar({}); setOpen({});
+    setError(null); setDaf(null); setSheet(null); setSofar({}); setPinned(null); setSugyaScope(null); setNoteN(null); setPanelOpen(false);
     window.history.replaceState({}, '', dafPath(ref) + window.location.search);
     const last = readJson<{ ref: string; segRef: string } | null>(LAST_KEY, null);
     setResume(last && last.ref === ref ? { segRef: last.segRef } : null);
@@ -231,18 +239,25 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     }, { root, threshold: [0, 0.25, 0.5, 0.75, 1] });
     els.forEach((el) => obs.observe(el));
     return () => obs.disconnect();
-  }, [daf, view]);
+  }, [daf]);
 
   const isCurrent = !!(daf && current && daf.ref === current.ref);
   const podcasts = useMemo(() => {
     if (!daf) return [] as MediaItem[];
-    const pinned = media.filter((m) => m.id === pinnedPodcastId);
-    return [...pinned, ...media.filter((m) => m.type === 'audio' && m.id !== pinnedPodcastId && titleMatchesDaf(m.title, daf.book, daf.daf))];
+    const pin = media.filter((m) => m.id === pinnedPodcastId);
+    return [...pin, ...media.filter((m) => m.type === 'audio' && m.id !== pinnedPodcastId && titleMatchesDaf(m.title, daf.book, daf.daf))];
   }, [media, daf, pinnedPodcastId]);
   const sugyaOf = useCallback((segIdx: number) => daf ? daf.sugyot.find((s) => s.segments.includes(segIdx)) || daf.sugyot[0] : null, [daf]);
-  const focusSugya = sugyaOf(focusIdx);
+  const panelIdx = pinned ?? focusIdx;
+  const panelSugya = sugyaScope !== null && daf ? daf.sugyot[sugyaScope] : sugyaOf(panelIdx);
 
   const scrollToSeg = (idx: number) => scrollRef.current?.querySelector<HTMLElement>(`[data-seg="${idx}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  // Open the panel on a paragraph (tap on the text, a note number, a pill).
+  const openOn = (segIdx: number, t: Tab = 'notes', n: number | null = null) => {
+    setPinned(segIdx); setSugyaScope(null); setTab(t); setNoteN(n); setPanelOpen(true);
+  };
+  const openSugya = (sIdx: number, t: Tab) => { setSugyaScope(sIdx); setPinned(null); setTab(t); setNoteN(null); setPanelOpen(true); };
 
   const requestSofar = async (segIdx: number) => {
     if (!daf) return;
@@ -255,12 +270,10 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       setSofar((s) => ({ ...s, [segRef]: d.error ? { error: d.error } : d }));
     } catch { setSofar((s) => ({ ...s, [segRef]: { error: 'Could not reach Super Daf.' } })); }
   };
-  const catchUp = (segIdx: number) => { setFocusIdx(segIdx); requestSofar(segIdx); setSheet({ kind: 'catchup' }); };
 
   const ask = async () => {
-    if (!daf || !chatInput.trim() || chatBusy) return;
-    const sg = focusSugya; if (!sg) return;
-    const q = chatInput.trim(); const history = chats[sg.index] || [];
+    if (!daf || !chatInput.trim() || chatBusy || !panelSugya) return;
+    const sg = panelSugya; const q = chatInput.trim(); const history = chats[sg.index] || [];
     setChats((c) => ({ ...c, [sg.index]: [...history, { role: 'user', content: q }] })); setChatInput(''); setChatBusy(true);
     try {
       const res = await fetch(`${DAF_API}/chat`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref: daf.ref, sugya: sg.index, question: q, history }) });
@@ -282,50 +295,33 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   };
 
   const t = surface === 'paper'
-    ? { shell: 'bg-[#efe7d6]', page: 'bg-[#f7f2e7] text-stone-900', card: 'bg-white/70 border-[#e3d8c1]', soft: 'bg-[#efe6d3]', muted: 'text-stone-500', faint: 'text-stone-400', rule: 'border-[#e3d8c1]', accent: 'text-indigo-700', chip: 'bg-white/80 border-[#e3d8c1] text-stone-700', hover: 'hover:bg-white/60' }
-    : { shell: 'bg-slate-950', page: 'bg-slate-900 text-slate-100', card: 'bg-slate-800/60 border-slate-700/60', soft: 'bg-slate-800/60', muted: 'text-slate-400', faint: 'text-slate-500', rule: 'border-slate-800', accent: 'text-indigo-300', chip: 'bg-slate-800 border-slate-700 text-slate-200', hover: 'hover:bg-slate-800/60' };
+    ? { shell: 'bg-[#efe7d6]', page: 'bg-[#f7f2e7] text-stone-900', card: 'bg-white/70 border-[#e3d8c1]', soft: 'bg-[#efe6d3]', muted: 'text-stone-500', faint: 'text-stone-400', rule: 'border-[#e3d8c1]', accent: 'text-indigo-700', chip: 'bg-white/80 border-[#e3d8c1] text-stone-700', hover: 'hover:bg-white/70', sel: 'ring-2 ring-indigo-400/50 bg-white/50' }
+    : { shell: 'bg-slate-950', page: 'bg-slate-900 text-slate-100', card: 'bg-slate-800/60 border-slate-700/60', soft: 'bg-slate-800/60', muted: 'text-slate-400', faint: 'text-slate-500', rule: 'border-slate-800', accent: 'text-indigo-300', chip: 'bg-slate-800 border-slate-700 text-slate-200', hover: 'hover:bg-slate-800/60', sel: 'ring-2 ring-indigo-400/50 bg-slate-800/40' };
   const showHe = lang !== 'en', showEn = lang !== 'he';
-  const heStyle: CSSProperties = { fontFamily: HE_FONT, fontSize: `${1.5 * fontScale}rem`, lineHeight: 1.85 };
-  const enStyle: CSSProperties = { fontFamily: EN_FONT, fontSize: `${1.04 * fontScale}rem`, lineHeight: 1.7 };
   const dateLabel = current?.date ? new Date(current.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
-
-  const sheetTitle = (s: Exclude<Sheet, null>) => {
-    if (!daf) return '';
-    const sg = 'sugya' in s ? daf.sugyot[s.sugya] : null;
-    const tag = sg ? `${KIND_LABEL[sg.kind].en} · ${short(sg.from, daf.book)}–${short(sg.to, daf.book)}` : '';
-    switch (s.kind) {
-      case 'sugyot': return 'Sugyot on this daf';
-      case 'catchup': return `Catch me up · through ${short(daf.segments[focusIdx].ref, daf.book)}`;
-      case 'bookmarks': return 'Bookmarks';
-      case 'ask': return `Ask · ${focusSugya ? KIND_LABEL[focusSugya.kind].en + ' ' + short(focusSugya.from, daf.book) : 'this sugya'}`;
-      case 'listen': return 'Listen to the daf';
-      case 'settings': return 'Reading settings';
-      case 'bigpicture': return `Big picture · ${tag}`;
-      case 'sources': return s.work ? `${s.work} on this sugya` : `Sources · ${tag}`;
-      case 'rambam': return `The Rambam · ${tag}`;
-      case 'disputes': return `Disputes & questions · ${tag}`;
-      case 'halacha': return `Halacha in practice · ${tag}`;
-      case 'words': return `Commentaries on ${short(s.segRef, daf.book)}`;
-    }
-  };
+  const focusSugya = sugyaOf(focusIdx);
 
   return (
-    <div ref={rootRef} className={`sd fixed inset-0 z-[60] flex flex-col ${t.shell} ${surface === 'dark' ? 'sd-dark' : ''}`} style={{ overscrollBehavior: 'none' }}>
+    <div ref={rootRef} className={`sd fixed inset-0 z-[60] flex flex-col ${t.shell} ${surface === 'dark' ? 'sd-dark' : ''}`} style={{ overscrollBehavior: 'none', touchAction: 'pan-y' }}>
       <style>{`
         .sd .sd-ref { color: #4f46e5; text-decoration: none; border-bottom: 1px dotted rgba(79,70,229,.5); font-size: .78em; font-weight: 600; }
         .sd .sd-ref:hover { border-bottom-style: solid; }
         .sd-dark .sd-ref { color: #a5b4fc; border-bottom-color: rgba(165,180,252,.5); }
-        .sd .sd-eluc { opacity: .72; font-weight: 400; }
-        .sd .sd-dh { font-weight: 700; }
-        .sd .sd-scroll { scrollbar-width: thin; overscroll-behavior: contain; }
+        .sd .sd-eluc { opacity: .68; font-weight: 400; }
+        .sd .sd-scroll { scrollbar-width: thin; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
         .sd .sd-para { scroll-margin-top: 5rem; }
         .sd .sd-rashi { font-family: ${RASHI_FONT}; }
-        .sd .sd-hl { background: rgba(99,102,241,.14); border-radius: .35rem; }
+        .sd .sd-note { display:inline-flex; align-items:center; justify-content:center; min-width:1.15rem; height:1.15rem; padding:0 .3rem; margin:0 .1rem; border-radius:.4rem; font-size:.62rem; font-weight:800; vertical-align:super; line-height:1; background:rgba(99,102,241,.14); color:#4f46e5; cursor:pointer; }
+        .sd-dark .sd-note { background:rgba(129,140,248,.2); color:#c7d2fe; }
+        .sd .sd-note:hover, .sd .sd-note.on { background:#4f46e5; color:#fff; }
+        .sd .sd-unit:nth-child(even) { background: rgba(0,0,0,.025); }
+        .sd-dark .sd-unit:nth-child(even) { background: rgba(255,255,255,.03); }
       `}</style>
 
       {/* ============ top bar ============ */}
       <header className="shrink-0 h-12 sm:h-14 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 bg-slate-950 text-slate-100 border-b border-slate-800">
         <button onClick={onExit} className="p-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>
+        <button onClick={() => setMapOpen((m) => !m)} className={`hidden md:inline-flex p-2 rounded-full border ${mapOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}`} aria-label="Show the daf map" title={mapOpen ? 'Hide the daf map' : 'Show the daf map'}><MapIcon className="w-4 h-4" /></button>
         <button disabled={!daf?.prev} onClick={() => daf?.prev && setRef(daf.prev)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Previous daf"><ChevronLeft className="w-5 h-5" /></button>
         <div className="min-w-0 flex-1 text-center leading-tight">
           <div className="truncate font-black text-[15px] sm:text-lg">{daf ? <><span lang="he" dir="rtl" style={{ fontFamily: HE_FONT }}>{daf.heRef}</span><span className="text-slate-600 mx-2">·</span>{daf.ref}</> : ref || 'Super Daf'}</div>
@@ -336,16 +332,21 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
           </div>
         </div>
         <button disabled={!daf?.next || isCurrent} onClick={() => daf?.next && !isCurrent && setRef(daf.next)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Next daf" title={isCurrent ? 'Tomorrow’s daf opens tonight' : 'Next daf'}>{isCurrent ? <Lock className="w-4 h-4" /> : <ChevronRight className="w-5 h-5" />}</button>
-        <div className="hidden sm:flex rounded-full bg-slate-800 p-0.5 border border-slate-700 ml-1" title="Basic: the Gemara with one line per step. Intensive: the full understanding opens under each paragraph.">
-          {(['basic', 'intensive'] as Level[]).map((l) => <button key={l} onClick={() => { setLevel(l); setOpen({}); }} className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider transition-all ${level === l ? 'bg-indigo-600 text-white' : 'text-slate-400 hover:text-slate-200'}`}>{l}</button>)}
-        </div>
+        <button onClick={() => setPanelOpen((o) => !o)} className="lg:hidden p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200" aria-label="Open the study panel" title="Study panel"><PanelRightOpen className="w-4 h-4" /></button>
         <button onClick={() => setSheet(sheet?.kind === 'settings' ? null : { kind: 'settings' })} className={`p-2 rounded-full border ${sheet?.kind === 'settings' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="Reading settings" title="Reading settings"><Type className="w-4 h-4" /></button>
         <button onClick={toggleFullscreen} className="hidden sm:inline-flex p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white" aria-label="Full screen" title={isFull ? 'Exit full screen' : 'Full screen'}>{isFull ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</button>
       </header>
 
       {/* ============ body ============ */}
-      <div className="flex-1 min-h-0 flex">
-        {daf && <Minimap daf={daf} focusIdx={focusIdx} onJump={scrollToSeg} bookmarks={bookmarks} surface={surface} />}
+      <div className="flex-1 min-h-0 flex relative">
+        {/* daf map: docked when open; otherwise a hover/peek edge */}
+        {daf && (mapOpen || mapPeek) && (
+          <div className={`${mapOpen ? 'relative' : 'absolute inset-y-0 left-0 z-30 shadow-2xl'} hidden md:block`} onMouseLeave={() => setMapPeek(false)}>
+            <Minimap daf={daf} focusIdx={focusIdx} onJump={scrollToSeg} bookmarks={bookmarks} surface={surface} />
+          </div>
+        )}
+        {daf && !mapOpen && <div className="hidden md:block absolute inset-y-0 left-0 w-3 z-20 cursor-ew-resize" onMouseEnter={() => setMapPeek(true)} title="The daf map" />}
+
         <div ref={scrollRef} className="sd-scroll flex-1 min-w-0 overflow-y-auto">
           {error && (
             <div className="max-w-xl mx-auto mt-16 px-4 text-center">
@@ -364,13 +365,33 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               </button>
             </div>
           )}
-          {daf && view === 'study' && (
-            <StudyView daf={daf} t={t} level={level} showHe={showHe} showEn={showEn} literal={literal} heStyle={heStyle} enStyle={enStyle} fontScale={fontScale}
-              open={open} toggle={toggle} toggleFrom={toggleFrom} isBookmarked={isBookmarked} toggleBookmark={toggleBookmark} onCatchUp={catchUp} openSheet={setSheet} />
+          {daf && (
+            <Reader daf={daf} t={t} showHe={showHe} showEn={showEn} fontScale={fontScale} panelIdx={pinned} noteN={noteN}
+              isBookmarked={isBookmarked} toggleBookmark={toggleBookmark} openOn={openOn} openSugya={openSugya} />
           )}
-          {daf && view === 'daf' && <DafView daf={daf} t={t} showEn={showEn} literal={literal} fontScale={fontScale} onSelect={(i) => { setView('study'); setTimeout(() => scrollToSeg(i), 60); }} />}
           {daf && <footer className={`px-6 py-8 text-[11px] ${t.faint} leading-relaxed max-w-3xl mx-auto`}>{daf.attribution} · <a className="sd-ref" href={sefariaUrl(daf.ref)} target="_blank" rel="noopener noreferrer">open on Sefaria</a></footer>}
         </div>
+
+        {/* context panel: column on wide screens, sheet on small */}
+        {daf && panelSugya && (
+          <>
+            <div className="hidden lg:flex w-[400px] xl:w-[440px] shrink-0 border-l border-slate-800 bg-slate-900 text-slate-200 flex-col min-h-0">
+              <Panel daf={daf} sugya={panelSugya} segIdx={sugyaScope !== null ? null : panelIdx} tab={tab} setTab={setTab} noteN={noteN} pinned={pinned !== null} onUnpin={() => { setPinned(null); setSugyaScope(null); }}
+                sugyaScoped={sugyaScope !== null} onBackToParagraph={() => { setSugyaScope(null); }} chats={chats} chatInput={chatInput} setChatInput={setChatInput} chatBusy={chatBusy} onAsk={ask}
+                onCatchUp={() => { requestSofar(panelIdx); setSheet({ kind: 'catchup' }); }} />
+            </div>
+            {panelOpen && (
+              <div className="lg:hidden fixed inset-0 z-50 flex items-end">
+                <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]" onClick={() => setPanelOpen(false)} />
+                <div className="relative w-full h-[85vh] bg-slate-900 text-slate-200 border-t border-slate-800 rounded-t-[1.5rem] shadow-2xl flex flex-col animate-in slide-in-from-bottom-6 duration-200">
+                  <Panel daf={daf} sugya={panelSugya} segIdx={sugyaScope !== null ? null : panelIdx} tab={tab} setTab={setTab} noteN={noteN} pinned={pinned !== null} onUnpin={() => { setPinned(null); setSugyaScope(null); }}
+                    sugyaScoped={sugyaScope !== null} onBackToParagraph={() => setSugyaScope(null)} onClose={() => setPanelOpen(false)} chats={chats} chatInput={chatInput} setChatInput={setChatInput} chatBusy={chatBusy} onAsk={ask}
+                    onCatchUp={() => { requestSofar(panelIdx); setPanelOpen(false); setSheet({ kind: 'catchup' }); }} />
+                </div>
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* ============ dock ============ */}
@@ -380,11 +401,15 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
             {([
               { id: 'sugyot', label: 'Sugyot', icon: ListTree }, { id: 'catchup', label: 'Catch me up', icon: Clock }, { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
               { id: 'ask', label: 'Ask', icon: MessageSquareText }, { id: 'listen', label: 'Listen', icon: Headphones },
-            ] as { id: 'sugyot' | 'catchup' | 'bookmarks' | 'ask' | 'listen'; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
+            ] as { id: string; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
               const disabled = id === 'listen' && podcasts.length === 0;
-              const active = sheet?.kind === id;
+              const active = sheet?.kind === id || (id === 'ask' && tab === 'ask' && (panelOpen || window.innerWidth >= 1024));
               return (
-                <button key={id} disabled={disabled} onClick={() => { if (id === 'catchup') requestSofar(focusIdx); setSheet(active ? null : { kind: id }); }} className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
+                <button key={id} disabled={disabled} onClick={() => {
+                  if (id === 'ask') { setTab('ask'); setPanelOpen(true); setSheet(null); return; }
+                  if (id === 'catchup') requestSofar(focusIdx);
+                  setSheet(sheet?.kind === id ? null : { kind: id } as Sheet);
+                }} className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
                   <Icon className="w-5 h-5" />{label}
                 </button>
               );
@@ -395,7 +420,9 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
       {/* ============ sheets ============ */}
       {daf && sheet && (
-        <SheetFrame onClose={() => setSheet(null)} title={sheetTitle(sheet)} tall={sheet.kind === 'ask' || sheet.kind === 'sugyot' || sheet.kind === 'sources'} back={('work' in sheet && sheet.work) ? () => setSheet({ kind: 'sources', sugya: (sheet as any).sugya }) : undefined}>
+        <SheetFrame onClose={() => setSheet(null)} title={
+          sheet.kind === 'sugyot' ? 'Sugyot on this daf' : sheet.kind === 'catchup' ? `Catch me up · through ${short(daf.segments[focusIdx].ref, daf.book)}` : sheet.kind === 'bookmarks' ? 'Bookmarks' : sheet.kind === 'listen' ? 'Listen to the daf' : 'Reading settings'
+        } tall={sheet.kind === 'sugyot'}>
           {sheet.kind === 'sugyot' && (
             <div className="space-y-2">
               {daf.sugyot.map((s) => (
@@ -421,19 +448,16 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               ))}
             </div>
           ))}
-          {sheet.kind === 'ask' && focusSugya && <AskThread messages={chats[focusSugya.index] || []} busy={chatBusy} input={chatInput} setInput={setChatInput} onSend={ask} />}
           {sheet.kind === 'listen' && <div className="space-y-3">{podcasts.map((p) => <div key={p.id} className="rounded-2xl bg-slate-800/60 border border-slate-700/60 p-3"><p className="text-sm font-black text-slate-100 mb-2">{p.title}</p><AudioPlayer url={p.url} title={p.title} /></div>)}</div>}
           {sheet.kind === 'settings' && (
             <div className="space-y-5">
-              <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Level</p><Segmented value={level} onChange={(v) => { setLevel(v as Level); setOpen({}); }} options={[{ v: 'basic', l: 'Basic' }, { v: 'intensive', l: 'Intensive' }]} /><p className="text-[11px] text-slate-500 mt-1.5">Basic: the Gemara with one line per step; everything else a tap away. Intensive: the full understanding opens under each paragraph.</p></div>
-              <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">View</p><Segmented value={view} onChange={(v) => setView(v as View)} options={[{ v: 'study', l: 'Study' }, { v: 'daf', l: 'Page (tzurat hadaf)' }]} /></div>
               <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Language</p><Segmented value={lang} onChange={(v) => setLang(v as Lang)} options={[{ v: 'both', l: 'Hebrew + English' }, { v: 'he', l: 'Hebrew' }, { v: 'en', l: 'English' }]} /></div>
-              <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Translation</p><Segmented value={literal ? 'literal' : 'full'} onChange={(v) => setLiteral(v === 'literal')} options={[{ v: 'full', l: 'Full (with elucidation)' }, { v: 'literal', l: 'Literal words only' }]} /><p className="text-[11px] text-slate-500 mt-1.5"><strong className="text-slate-300">Bold</strong> is the Gemara’s own words; lighter text is the Davidson elucidation.</p></div>
               <div className="flex items-center justify-between"><p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Text size</p><div className="flex items-center rounded-full bg-slate-800 border border-slate-700"><button onClick={() => setFontScale((f) => Math.max(0.8, +(f - 0.1).toFixed(2)))} className="p-2 text-slate-300 hover:text-white" aria-label="Smaller"><Minus className="w-4 h-4" /></button><span className="text-xs font-black text-slate-200 w-10 text-center tabular-nums">{Math.round(fontScale * 100)}%</span><button onClick={() => setFontScale((f) => Math.min(1.7, +(f + 0.1).toFixed(2)))} className="p-2 text-slate-300 hover:text-white" aria-label="Larger"><Plus className="w-4 h-4" /></button></div></div>
               <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Page</p><Segmented value={surface} onChange={(v) => setSurface(v as Surface)} options={[{ v: 'paper', l: 'Paper', icon: Sun }, { v: 'dark', l: 'Dark', icon: Moon }]} /></div>
+              <div className="hidden md:block"><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Daf map</p><Segmented value={mapOpen ? 'open' : 'closed'} onChange={(v) => setMapOpen(v === 'open')} options={[{ v: 'open', l: 'Docked' }, { v: 'closed', l: 'Hidden (hover the left edge to peek)' }]} /></div>
+              <p className="text-[11px] text-slate-500">How to read the translation: <strong className="text-slate-300">bold</strong> is the Gemara’s own words, lighter text is the Davidson elucidation, and the small numbers are notes — analysis from the commentaries, opened in the study panel.</p>
             </div>
           )}
-          {'sugya' in sheet && <SugyaSheet sheet={sheet} daf={daf} sugya={daf.sugyot[sheet.sugya]} openSheet={setSheet} />}
         </SheetFrame>
       )}
     </div>
@@ -441,17 +465,18 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 }
 
 // ----------------------------------------------------------------------
-// Study view (Daf HQ): calm by default, everything one tap away.
+// The reader: one integrated mode. Hebrew, then the Mesivta interlinear
+// (phrase · literal · elucidation · note numbers), with pills for what this
+// paragraph carries. Tapping anything opens the study panel on it.
 
-function StudyView({ daf, t, level, showHe, showEn, literal, heStyle, enStyle, fontScale, open, toggle, toggleFrom, isBookmarked, toggleBookmark, onCatchUp, openSheet }: {
-  daf: Daf; t: any; level: Level; showHe: boolean; showEn: boolean; literal: boolean; heStyle: CSSProperties; enStyle: CSSProperties; fontScale: number;
-  open: Record<string, boolean>; toggle: (id: string) => void; toggleFrom: (id: string, dflt: boolean) => void; isBookmarked: (r: string) => boolean; toggleBookmark: (i: number) => void; onCatchUp: (i: number) => void; openSheet: (s: Sheet) => void;
+function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmarked, toggleBookmark, openOn, openSugya }: {
+  daf: Daf; t: any; showHe: boolean; showEn: boolean; fontScale: number; panelIdx: number | null; noteN: number | null;
+  isBookmarked: (r: string) => boolean; toggleBookmark: (i: number) => void; openOn: (i: number, tab?: Tab, n?: number | null) => void; openSugya: (s: number, tab: Tab) => void;
 }) {
-  const isOpen = (id: string, dflt = false) => (id in open ? open[id] : dflt);
+  const heStyle: CSSProperties = { fontFamily: HE_FONT, fontSize: `${1.5 * fontScale}rem`, lineHeight: 1.85 };
   return (
     <div className={`${t.page} min-h-full`}>
       <div className="max-w-3xl mx-auto px-3 sm:px-8 pt-4 pb-10">
-        <p className={`text-[11px] ${t.faint} mb-4 text-center`}>Every <ChevronDown className="inline w-3 h-3 -rotate-90" /> row opens. Nothing here is more than two taps deep.</p>
         {daf.sugyot.map((sugya) => {
           const built = sugya.built;
           const syn = built?.synthesis && !built.synthesis._error ? built.synthesis : null;
@@ -460,112 +485,80 @@ function StudyView({ daf, t, level, showHe, showEn, literal, heStyle, enStyle, f
           const allComm = built ? [...built.core, ...built.rishonim, ...built.acharonim, ...built.other] : [];
           const works = Array.from(new Set(allComm.map((c) => c.title)));
           const halItems = (built?.halacha?.items || []) as HalachaItem[];
-          const hasRambam = !!syn?.rambam;
-          const hasDisputes = !!(syn && ((syn.machlokes && syn.machlokes.length) || (syn.questions && syn.questions.length)));
-          const hasHalacha = !!(built?.halacha?.available && halItems.length);
-          const chip = (label: ReactNode, onClick: () => void, icon: any, dim = false) => {
-            const Icon = icon;
-            return <button onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold ${t.chip} ${t.hover} ${dim ? 'opacity-50' : ''}`}><Icon className={`w-3.5 h-3.5 ${t.accent}`} />{label}</button>;
-          };
+          const mes = built?.mesivta && !built.mesivta._error ? built.mesivta : null;
+          const btn = (label: ReactNode, onClick: () => void, icon: any, dim = false) => { const Icon = icon; return <button onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[11px] font-bold transition-colors ${t.chip} ${t.hover} ${dim ? 'opacity-45' : ''}`}><Icon className={`w-3.5 h-3.5 ${t.accent}`} />{label}</button>; };
           return (
             <section key={sugya.index} className="mb-10">
-              {/* ---- sugya HQ card ---- */}
+              {/* sugya card */}
               <div className={`rounded-2xl border ${t.card} px-4 py-3 mb-3 shadow-sm`}>
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
                   <span className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-black ${sugya.kind === 'mishnah' ? 'bg-amber-500/15 text-amber-800 border border-amber-500/30' : 'bg-indigo-500/10 border border-indigo-500/30 ' + t.accent}`}>
                     <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '1rem' }}>{KIND_LABEL[sugya.kind].he}</span><span className="uppercase tracking-wider">{KIND_LABEL[sugya.kind].en}</span>
                   </span>
                   <span className={`text-xs font-bold ${t.muted}`}>{short(sugya.from, daf.book)} – {short(sugya.to, daf.book)}</span>
-                  {sugya.prelude && <button onClick={() => toggle(`pre-${sugya.index}`)} className={`text-[11px] font-bold ${t.accent}`}>began on {short(sugya.prelude.from, daf.book)} · {isOpen(`pre-${sugya.index}`) ? 'hide' : 'read'}</button>}
+                  {sugya.prelude && <span className={`text-[11px] font-semibold ${t.faint}`}>began on {short(sugya.prelude.from, daf.book)}</span>}
                   {!built && <span className={`ml-auto text-[11px] ${t.faint} inline-flex items-center gap-1`}><Loader2 className="w-3 h-3 animate-spin" /> preparing</span>}
                 </div>
-                {isOpen(`pre-${sugya.index}`) && sugya.prelude && (
-                  <div className={`mt-3 rounded-xl border border-dashed ${t.rule} ${t.soft} px-3 py-3`}>
-                    {sugya.prelude.segments.map((s) => (<div key={s.ref} className="mb-2.5">{showHe && <p lang="he" dir="rtl" style={{ fontFamily: HE_FONT, fontSize: `${1.1 * fontScale}rem`, lineHeight: 1.75 }}>{s.he}</p>}{showEn && <Davidson text={s.en} html={s.enHtml} literal={literal} style={{ fontFamily: EN_FONT, fontSize: `${0.92 * fontScale}rem`, lineHeight: 1.6 }} className={t.muted} />}</div>))}
-                  </div>
-                )}
-                {syn?.tldr && <p className="mt-2.5" style={{ ...enStyle, fontSize: `${0.98 * fontScale}rem` }}><span className={`font-black text-[10px] uppercase tracking-wider mr-2 ${t.accent}`}>TL;DR</span>{syn.tldr}</p>}
+                {syn?.tldr && <p className="mt-2.5" style={{ fontFamily: EN_FONT, fontSize: `${0.98 * fontScale}rem`, lineHeight: 1.6 }}><span className={`font-black text-[10px] uppercase tracking-wider mr-2 ${t.accent}`}>TL;DR</span>{syn.tldr}</p>}
                 {built && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
-                    {syn?.bigPicture && chip('Big picture', () => openSheet({ kind: 'bigpicture', sugya: sugya.index }), Sparkles)}
-                    {works.length > 0 && chip(<>Sources <span className={t.faint}>{works.length}</span></>, () => openSheet({ kind: 'sources', sugya: sugya.index }), Library)}
-                    {chip('Rambam', () => openSheet({ kind: 'rambam', sugya: sugya.index }), Landmark, !hasRambam)}
-                    {chip('Disputes & questions', () => openSheet({ kind: 'disputes', sugya: sugya.index }), Quote, !hasDisputes)}
-                    {chip('Halacha', () => openSheet({ kind: 'halacha', sugya: sugya.index }), Scale, !hasHalacha)}
+                    {btn('Big picture', () => openSugya(sugya.index, 'big'), Sparkles, !syn?.bigPicture)}
+                    {btn(<>Halacha{halItems.length ? <span className={t.faint}> {halItems.length}</span> : null}</>, () => openSugya(sugya.index, 'halacha'), Scale, !halItems.length)}
+                    {btn('Rambam', () => openSugya(sugya.index, 'rambam'), Landmark, !syn?.rambam)}
+                    {btn(<>Sources{works.length ? <span className={t.faint}> {works.length}</span> : null}</>, () => openSugya(sugya.index, 'sources'), Library, !works.length)}
+                    {btn('Disputes', () => openSugya(sugya.index, 'disputes'), Quote, !(syn?.machlokes?.length || syn?.questions?.length))}
                   </div>
                 )}
               </div>
 
-              {/* ---- paragraphs ---- */}
+              {/* paragraphs */}
               {sugya.segments.map((idx) => {
                 const s = daf.segments[idx];
                 const step = stepFor(s.ref);
-                const stepId = step ? `step-${sugya.index}-${steps.indexOf(step)}` : `step-${s.ref}`;
-                const first = !step || step.refs[0] === s.ref;
-                const comm = allComm.filter((c) => c.anchor === s.ref);
+                const m = mes?.segments?.find((x) => x.ref === s.ref);
                 const hal = halItems.filter((h) => (h.refs || []).includes(s.ref));
-                const stepHal = step ? halItems.filter((h) => step.refs.some((r) => (h.refs || []).includes(r))) : hal;
-                const stepOpen = isOpen(stepId, level === 'intensive');
+                const nNotes = m?.notes?.length || 0;
+                const isPanel = panelIdx === idx;
                 return (
-                  <article key={s.ref} data-seg={idx} className="sd-para rounded-2xl px-2 sm:px-3 py-3 mb-1">
-                    <div className="flex items-start gap-2">
-                      <div className="min-w-0 flex-1">
-                        {s.startsMishnah && <p className={`text-[10px] font-black uppercase tracking-widest ${t.accent} mb-1`}>Mishnah</p>}
-                        {s.startsGemara && <p className={`text-[10px] font-black uppercase tracking-widest ${t.accent} mb-1`}>Gemara</p>}
-                        {showHe && <p lang="he" dir="rtl" style={heStyle}>{s.he}</p>}
-                        {showEn && <Davidson text={s.en} html={s.enHtml} literal={literal} style={enStyle} className={showHe ? 'mt-2' : ''} />}
-                      </div>
-                      <div className="shrink-0 flex flex-col items-center gap-1">
-                        <span className={`text-[10px] ${t.faint} font-bold tabular-nums`}>{s.amud}:{s.n}</span>
-                        <button onClick={() => toggleBookmark(idx)} className={`p-1 rounded-md ${isBookmarked(s.ref) ? 'text-amber-500' : t.faint + ' hover:text-amber-500'}`} aria-label="Bookmark this paragraph">{isBookmarked(s.ref) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}</button>
-                      </div>
+                  <article key={s.ref} data-seg={idx} className={`sd-para rounded-2xl px-3 sm:px-4 py-3 mb-2 transition-shadow ${isPanel ? t.sel : ''}`}>
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <span className={`text-[10px] font-black tabular-nums ${t.faint}`}>{s.amud}:{s.n}</span>
+                      {s.startsMishnah && <span className={`text-[10px] font-black uppercase tracking-widest ${t.accent}`}>Mishnah</span>}
+                      {s.startsGemara && <span className={`text-[10px] font-black uppercase tracking-widest ${t.accent}`}>Gemara</span>}
+                      {s.startsTopic && <span className={`text-[10px] font-black ${t.accent}`}>§ new topic</span>}
+                      <span className="flex-1" />
+                      {hal.length > 0 && <button onClick={() => openOn(idx, 'halacha')} className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/40 text-amber-800 px-2.5 py-0.5 text-[10px] font-black"><Scale className="w-3 h-3" /> Halacha</button>}
+                      {nNotes > 0 && <button onClick={() => openOn(idx, 'notes')} className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-black ${t.chip} ${t.hover}`}><NotebookPen className="w-3 h-3" /> {nNotes} notes</button>}
+                      <button onClick={() => toggleBookmark(idx)} className={`p-1 rounded-md ${isBookmarked(s.ref) ? 'text-amber-500' : t.faint + ' hover:text-amber-500'}`} aria-label="Bookmark this paragraph">{isBookmarked(s.ref) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}</button>
                     </div>
 
-                    {/* ---- the understanding: one row, layered ---- */}
-                    <div className="mt-2">
-                      {!built ? (
-                        <p className={`px-2.5 text-[11px] ${t.faint} inline-flex items-center gap-1.5`}><Loader2 className="w-3 h-3 animate-spin" /> understanding on its way</p>
-                      ) : step && first ? (
-                        <Row t={t} accent open={stepOpen} onToggle={() => toggleFrom(stepId, level === 'intensive')} title={step.headline} hint={step.refs.length > 1 ? `${step.refs.length} paragraphs` : undefined}>
-                          <p className="text-sm leading-relaxed" style={{ fontFamily: EN_FONT, fontSize: `${0.98 * fontScale}rem` }}><RefText text={step.explanation} /></p>
-                          <div className="mt-2 space-y-1">
-                            {(step.layers || []).map((ly, li) => (
-                              <Row key={li} t={t} open={isOpen(`${stepId}-l${li}`)} onToggle={() => toggle(`${stepId}-l${li}`)} title={ly.title}>
-                                <p className="text-sm leading-relaxed"><RefText text={ly.body} /></p>
-                                {ly.refs?.length ? <p className="mt-1.5 flex flex-wrap gap-x-2 gap-y-1">{ly.refs.map((r) => <SourceLink key={r} r={r} />)}</p> : null}
-                              </Row>
-                            ))}
-                            {step.refs.map((r) => {
-                              const cs = allComm.filter((c) => c.anchor === r);
-                              if (!cs.length) return null;
-                              return (
-                                <Row key={r} t={t} open={isOpen(`${stepId}-w-${r}`)} onToggle={() => toggle(`${stepId}-w-${r}`)} title={<>The commentaries{step.refs.length > 1 ? ` on ${short(r, daf.book)}` : ''}</>} hint={`${cs.length}`}>
-                                  <Words comms={cs} t={t} showHe={showHe} showEn={showEn} fontScale={fontScale} open={open} toggle={toggle} />
-                                </Row>
-                              );
-                            })}
-                            {stepHal.length > 0 && (
-                              <Row t={t} icon={Scale} open={isOpen(`${stepId}-hal`)} onToggle={() => toggle(`${stepId}-hal`)} title="Halacha here · Rambam, Shulchan Arukh, Rema">
-                                <HalachaItems items={stepHal} t={t} />
-                              </Row>
-                            )}
-                            {step.deeper && (
-                              <Row t={t} open={isOpen(`${stepId}-deep`)} onToggle={() => toggle(`${stepId}-deep`)} title="Go deeper">
-                                <p className="text-sm leading-relaxed"><RefText text={step.deeper} /></p>
-                              </Row>
-                            )}
+                    {showHe && <p lang="he" dir="rtl" style={heStyle} className="cursor-pointer" onClick={() => openOn(idx, 'notes')}>{s.he}</p>}
+
+                    {/* interlinear */}
+                    {showEn && (m && m.units?.length ? (
+                      <div className={`mt-2 rounded-xl overflow-hidden border ${t.rule}`}>
+                        {m.units.map((u, k) => (
+                          <div key={k} className="sd-unit grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-x-4 gap-y-0.5 px-3 py-1.5 cursor-pointer" onClick={() => openOn(idx, 'notes', u.notes?.[0] ?? null)}>
+                            {showHe && <p lang="he" dir="rtl" className="text-right" style={{ fontFamily: HE_FONT, fontSize: `${1.08 * fontScale}rem`, lineHeight: 1.6 }}>{u.he}</p>}
+                            <p style={{ fontFamily: EN_FONT, fontSize: `${0.96 * fontScale}rem`, lineHeight: 1.55 }}>
+                              {u.en ? <Marked text={u.en} /> : <><strong>{u.literal}</strong>{u.elucidation ? <span className="sd-eluc"> {u.elucidation}</span> : null}</>}
+                              {(u.notes || []).map((n) => <span key={n} className={`sd-note ${isPanel && noteN === n ? 'on' : ''}`} onClick={(e) => { e.stopPropagation(); openOn(idx, 'notes', n); }} title="Note">{n}</span>)}
+                            </p>
                           </div>
-                          <div className="mt-2 flex flex-wrap gap-1.5">
-                            <button onClick={() => onCatchUp(idx)} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${t.chip} ${t.hover}`}><Clock className="w-3 h-3" /> Catch me up to here</button>
-                            <button onClick={() => openSheet({ kind: 'ask' })} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold ${t.chip} ${t.hover}`}><MessageSquareText className="w-3 h-3" /> Ask</button>
-                          </div>
-                        </Row>
-                      ) : step ? (
-                        <p className={`px-2.5 text-[11px] ${t.faint}`}>↑ part of “{step.headline}”{comm.length ? <> · <button onClick={() => openSheet({ kind: 'words', sugya: sugya.index, segRef: s.ref })} className={`font-bold ${t.accent}`}>{comm.length} commentar{comm.length === 1 ? 'y' : 'ies'} here</button></> : null}{hal.length ? <> · <button onClick={() => openSheet({ kind: 'halacha', sugya: sugya.index })} className={`font-bold ${t.accent}`}>halacha here</button></> : null}</p>
-                      ) : (
-                        comm.length ? <button onClick={() => openSheet({ kind: 'words', sugya: sugya.index, segRef: s.ref })} className={`px-2.5 text-[11px] font-bold ${t.accent}`}>{comm.length} commentar{comm.length === 1 ? 'y' : 'ies'} on this paragraph</button> : null
-                      )}
-                    </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="mt-2 cursor-pointer" onClick={() => openOn(idx, 'notes')}>
+                        <Davidson text={s.en} html={s.enHtml} style={{ fontFamily: EN_FONT, fontSize: `${1.02 * fontScale}rem`, lineHeight: 1.7 }} />
+                        {built && !mes && <p className={`mt-1 text-[11px] ${t.faint} inline-flex items-center gap-1`}><Loader2 className="w-3 h-3 animate-spin" /> interlinear notes on their way</p>}
+                      </div>
+                    ))}
+
+                    {step && step.refs[0] === s.ref && (
+                      <button onClick={() => openOn(idx, 'notes')} className={`mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold ${t.accent}`}>
+                        <ChevronRight className="w-3.5 h-3.5" /> {step.headline}
+                      </button>
+                    )}
                   </article>
                 );
               })}
@@ -578,21 +571,184 @@ function StudyView({ daf, t, level, showHe, showEn, literal, heStyle, enStyle, f
   );
 }
 
-// Each commentary as a one-line gist; the words open underneath it.
-function Words({ comms, t, showHe, showEn, fontScale, open, toggle }: { comms: Comm[]; t: any; showHe: boolean; showEn: boolean; fontScale: number; open: Record<string, boolean>; toggle: (id: string) => void }) {
+// ----------------------------------------------------------------------
+// The study panel (HQ): buttons, not dropdowns. Follows the paragraph on
+// screen unless pinned by a tap.
+
+function Panel({ daf, sugya, segIdx, tab, setTab, noteN, pinned, onUnpin, sugyaScoped, onBackToParagraph, onClose, chats, chatInput, setChatInput, chatBusy, onAsk, onCatchUp }: {
+  daf: Daf; sugya: Sugya; segIdx: number | null; tab: Tab; setTab: (t: Tab) => void; noteN: number | null; pinned: boolean; onUnpin: () => void;
+  sugyaScoped: boolean; onBackToParagraph: () => void; onClose?: () => void; chats: Record<number, ChatMsg[]>; chatInput: string; setChatInput: (s: string) => void; chatBusy: boolean; onAsk: () => void; onCatchUp: () => void;
+}) {
+  const built = sugya.built;
+  const syn = built?.synthesis && !built.synthesis._error ? built.synthesis : null;
+  const seg = segIdx !== null ? daf.segments[segIdx] : null;
+  const step = seg ? syn?.steps?.find((st) => (st.refs || []).includes(seg.ref)) : null;
+  const mes = seg ? built?.mesivta?.segments?.find((x) => x.ref === seg.ref) : null;
+  const all = built ? [...built.core, ...built.rishonim, ...built.acharonim, ...built.other] : [];
+  const halAll = (built?.halacha?.items || []) as HalachaItem[];
+  const hal = seg ? halAll.filter((h) => (h.refs || []).includes(seg.ref)) : halAll;
+  const srcs = seg ? all.filter((c) => c.anchor === seg.ref) : all;
+  const [work, setWork] = useState<string | null>(null);
+  const [words, setWords] = useState<Record<string, boolean>>({});
+  const noteRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { noteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, [noteN, tab, segIdx]);
+  useEffect(() => { setWork(null); }, [segIdx, sugya.index]);
+
+  const tabs: { id: Tab; label: string; icon: any; count?: number; dim?: boolean }[] = [
+    { id: 'notes', label: 'Notes', icon: NotebookPen, count: mes?.notes?.length || 0 },
+    { id: 'halacha', label: 'Halacha', icon: Scale, count: hal.length, dim: !hal.length },
+    { id: 'sources', label: 'Sources', icon: Library, count: new Set(srcs.map((c) => c.title)).size, dim: !srcs.length },
+    { id: 'rambam', label: 'Rambam', icon: Landmark, dim: !syn?.rambam },
+    { id: 'big', label: 'Big picture', icon: Sparkles, dim: !syn?.bigPicture },
+    { id: 'disputes', label: 'Disputes', icon: Quote, dim: !(syn?.machlokes?.length || syn?.questions?.length) },
+    { id: 'ask', label: 'Ask', icon: MessageSquareText },
+  ];
+  const dark = { soft: 'bg-slate-800/60', faint: 'text-slate-500', muted: 'text-slate-400', accent: 'text-indigo-300', chip: 'bg-slate-800 border-slate-700 text-slate-200', hover: 'hover:bg-slate-800' };
+
   return (
-    <div className="space-y-1.5">
+    <>
+      <div className="px-4 pt-3 pb-2 border-b border-slate-800 shrink-0">
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-indigo-300">{KIND_LABEL[sugya.kind].en} · {short(sugya.from, daf.book)}–{short(sugya.to, daf.book)}{seg ? ` · ${short(seg.ref, daf.book)}` : ' · whole sugya'}</p>
+            {seg ? <p lang="he" dir="rtl" className="text-sm text-slate-200 line-clamp-2 mt-0.5" style={{ fontFamily: HE_FONT }}>{seg.he}</p> : <p className="text-sm text-slate-300 mt-0.5">{syn?.tldr || ''}</p>}
+          </div>
+          {sugyaScoped ? <button onClick={onBackToParagraph} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" title="Back to the paragraph on screen"><PinOff className="w-4 h-4" /></button>
+            : pinned ? <button onClick={onUnpin} className="p-1.5 rounded-lg text-indigo-300 hover:text-white hover:bg-slate-800" title="Pinned to this paragraph - tap to follow the scroll again"><Pin className="w-4 h-4" /></button>
+            : <span className="p-1.5 text-slate-600" title="Following the paragraph on screen"><PinOff className="w-4 h-4" /></span>}
+          {onClose && <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" aria-label="Close"><X className="w-5 h-5" /></button>}
+        </div>
+        <div className="mt-2 flex flex-wrap gap-1">
+          {tabs.map(({ id, label, icon: Icon, count, dim }) => (
+            <button key={id} onClick={() => setTab(id)} className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1.5 text-[11px] font-bold transition-all ${tab === id ? 'bg-indigo-600 text-white' : dim ? 'text-slate-500 hover:text-slate-300 hover:bg-slate-800' : 'text-slate-300 hover:text-white hover:bg-slate-800'}`}>
+              <Icon className="w-3.5 h-3.5" />{label}{count ? <span className={`${tab === id ? 'text-indigo-200' : 'text-slate-500'}`}>{count}</span> : null}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto sd-scroll px-4 py-4 text-sm">
+        {!built && tab !== 'ask' && <p className="text-slate-400 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Preparing this sugya - the Gemara is readable meanwhile.</p>}
+
+        {tab === 'notes' && built && (
+          <div className="space-y-4">
+            {step && (
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-indigo-300 mb-1">What this step is doing</p>
+                <p className="font-bold text-slate-100 mb-1.5">{step.headline}</p>
+                <p className="leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.98rem' }}><RefText text={step.explanation} /></p>
+              </div>
+            )}
+            {mes?.notes?.length ? (
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-indigo-300 mb-1.5">Notes on this paragraph</p>
+                <div className="space-y-2">
+                  {mes.notes.map((n) => (
+                    <div key={n.n} ref={noteN === n.n ? noteRef : undefined} className={`rounded-xl border px-3 py-2.5 ${noteN === n.n ? 'border-indigo-400/60 bg-indigo-500/10' : 'border-slate-700/60 bg-slate-800/50'}`}>
+                      <p className="flex items-center gap-2 mb-1"><span className="sd-note on" style={{ verticalAlign: 'baseline' }}>{n.n}</span><span className="text-[11px] font-black text-indigo-200">{n.source}</span></p>
+                      <p className="leading-relaxed text-slate-200"><RefText text={n.point} /></p>
+                      <p className="mt-1"><SourceLink r={n.ref} /></p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : seg && built.mesivta ? <p className="text-slate-500">No commentary on Sefaria is anchored to this paragraph.</p> : seg ? <p className="text-slate-500 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Notes on their way.</p> : null}
+            {step?.layers?.length ? (
+              <div>
+                <p className="text-[10px] font-black uppercase tracking-wider text-indigo-300 mb-1.5">In more depth</p>
+                <div className="space-y-3">
+                  {step.layers.map((ly, i) => (
+                    <div key={i}>
+                      <p className="font-bold text-slate-100">{ly.title}</p>
+                      <p className="leading-relaxed text-slate-300"><RefText text={ly.body} /></p>
+                      {ly.refs?.length ? <p className="mt-1 flex flex-wrap gap-x-2 gap-y-1">{ly.refs.map((r) => <SourceLink key={r} r={r} />)}</p> : null}
+                    </div>
+                  ))}
+                  {step.deeper && <div><p className="font-bold text-slate-100">Go deeper</p><p className="leading-relaxed text-slate-300"><RefText text={step.deeper} /></p></div>}
+                </div>
+              </div>
+            ) : null}
+            {!step && !seg && syn?.bigPicture && <p className="leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT }}><RefText text={syn.bigPicture} /></p>}
+            <button onClick={onCatchUp} className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5 text-[11px] font-bold text-slate-200 hover:bg-slate-700"><Clock className="w-3.5 h-3.5" /> Catch me up to here</button>
+          </div>
+        )}
+
+        {tab === 'halacha' && built && (hal.length ? <HalachaItems items={hal} t={dark} /> : <p className="text-slate-400">{built.halacha?.available === false ? built.halacha.note : seg ? 'No ruling is anchored to this paragraph. Use the Halacha button on the sugya card for the whole sugya.' : 'No halachic codes are linked to this sugya on Sefaria.'}</p>)}
+
+        {tab === 'sources' && built && (
+          work ? (
+            <div>
+              <button onClick={() => setWork(null)} className="mb-3 inline-flex items-center gap-1 text-[11px] font-bold text-indigo-300"><ArrowLeft className="w-3.5 h-3.5" /> All sources</button>
+              <Words comms={srcs.filter((c) => c.title === work)} words={words} setWords={setWords} />
+            </div>
+          ) : srcs.length ? (
+            <div className="space-y-4">
+              {(['core', 'rishonim', 'acharonim', 'other'] as const).map((layer) => {
+                const ws = Array.from(new Set(srcs.filter((c) => c.layer === layer).map((c) => c.title)));
+                if (!ws.length) return null;
+                const label = { core: 'Rashi & Tosafot', rishonim: 'Rishonim', acharonim: 'Acharonim', other: 'Other commentaries' }[layer];
+                return (
+                  <div key={layer}>
+                    <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">{label}</p>
+                    <div className="flex flex-wrap gap-1.5">{ws.map((w) => <button key={w} onClick={() => setWork(w)} className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-700">{w} <span className="text-slate-500">{srcs.filter((c) => c.title === w).length}</span></button>)}</div>
+                  </div>
+                );
+              })}
+              <p className="text-[11px] text-slate-500">Everything Sefaria links {seg ? 'to this paragraph' : 'to this sugya'}. A work not listed (Rashba, Ritva, Meiri on some tractates) is not on Sefaria for this passage; nothing is reconstructed from memory.</p>
+            </div>
+          ) : <p className="text-slate-400">No commentary on Sefaria is anchored {seg ? 'to this paragraph' : 'to this sugya'}.</p>
+        )}
+
+        {tab === 'rambam' && built && (
+          !syn?.rambam ? <p className="text-slate-400">Sefaria links no Mishneh Torah or Rambam commentary to this sugya, so there is no sourced Rambam section here.</p> : (
+            <div className="space-y-3">
+              <p className="leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.98rem' }}><RefText text={syn.rambam.reading} /></p>
+              {syn.rambam.rulings?.length ? <div className="space-y-2">{syn.rambam.rulings.map((x, i) => <div key={i} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2"><p className="text-[11px] font-black"><SourceLink r={x.ref} /></p><p className="mt-0.5 text-slate-200"><RefText text={x.ruling} /></p></div>)}</div> : null}
+              {syn.rambam.commentators?.length ? <ul className="space-y-1.5">{syn.rambam.commentators.map((c, i) => <li key={i} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-slate-700 bg-slate-800">{c.source}</span><span className="text-slate-200"><RefText text={c.point} /> <SourceLink r={c.ref} /></span></li>)}</ul> : null}
+              {built.rambamSources.length > 0 && <div><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">The texts</p><Words comms={built.rambamSources} words={words} setWords={setWords} /></div>}
+            </div>
+          )
+        )}
+
+        {tab === 'big' && built && (
+          <div className="space-y-3">
+            <p className="leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '1rem' }}><RefText text={syn?.bigPicture || 'Not available yet.'} /></p>
+            {syn?.continuesOn && <p className="text-slate-400 italic">{syn.continuesOn}</p>}
+            {syn?.sourcesUsed?.length ? <p className="text-[11px] text-slate-500">Drawn from: {syn.sourcesUsed.join(', ')}.</p> : null}
+          </div>
+        )}
+
+        {tab === 'disputes' && built && (
+          <div className="space-y-4">
+            {syn?.machlokes?.length ? <div><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Where the commentaries part ways</p><div className="space-y-3">{syn.machlokes.map((m, i) => <div key={i} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2.5"><p className="font-bold text-slate-100"><RefText text={m.issue} /></p><ul className="mt-1.5 space-y-1">{m.positions.map((p, j) => <li key={j} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-slate-700 bg-slate-800">{p.who}</span><span className="text-slate-200"><RefText text={p.view} /> {p.refs?.map((r) => <span key={r} className="ml-1"><SourceLink r={r} /></span>)}</span></li>)}</ul></div>)}</div></div> : null}
+            {syn?.questions?.length ? <div><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Questions the commentaries ask</p><div className="space-y-3">{syn.questions.map((q, i) => <div key={i}><p className="font-bold text-slate-100"><RefText text={q.question} /></p><p className="mt-0.5 text-slate-300"><RefText text={q.answer} /> {q.refs?.map((r) => <span key={r} className="ml-1"><SourceLink r={r} /></span>)}</p></div>)}</div></div> : null}
+            {!syn?.machlokes?.length && !syn?.questions?.length && <p className="text-slate-400">No disputes or classic questions were found in the sources linked to this sugya.</p>}
+          </div>
+        )}
+
+        {tab === 'ask' && <AskThread messages={chats[sugya.index] || []} busy={chatBusy} input={chatInput} setInput={setChatInput} onSend={onAsk} />}
+      </div>
+    </>
+  );
+}
+
+function Words({ comms, words, setWords }: { comms: Comm[]; words: Record<string, boolean>; setWords: (f: (o: Record<string, boolean>) => Record<string, boolean>) => void }) {
+  return (
+    <div className="space-y-2">
       {comms.map((c) => {
-        const id = `w-${c.ref}`;
+        const on = !!words[c.ref];
         return (
-          <div key={c.ref} className={`rounded-xl ${t.soft} px-3 py-2`}>
-            <p className="text-sm"><span className={`font-black ${t.accent}`}>{c.title}</span>{c.gist ? <> — {c.gist}</> : null}</p>
-            <button onClick={() => toggle(id)} className={`mt-1 inline-flex items-center gap-1 text-[11px] font-bold ${t.accent}`}><ChevronDown className={`w-3 h-3 transition-transform ${open[id] ? '' : '-rotate-90'}`} /> {open[id] ? 'Hide the words' : 'Read the words'}</button>
-            {open[id] && (
-              <div className="mt-1.5 animate-in fade-in duration-200">
-                {showHe && <p lang="he" dir="rtl" className="sd-rashi" style={{ fontSize: `${1.12 * fontScale}rem`, lineHeight: 1.7 }}>{c.he}</p>}
-                {showEn && (c.en ? <Rich text={c.en} style={{ fontFamily: EN_FONT, fontSize: `${0.9 * fontScale}rem`, lineHeight: 1.6 }} className={`${t.muted} mt-1`} /> : <p className={`text-xs italic ${t.faint} mt-1`}>No translation yet.</p>)}
-                <p className={`text-[10px] ${t.faint} mt-1`}><SourceLink r={c.ref} />{c.enSource === 'ai' && showEn && <span className="ml-1.5 italic">AI translation</span>}</p>
+          <div key={c.ref} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2.5">
+            <p className="text-slate-200"><span className="font-black text-indigo-300">{c.title}</span>{c.gist ? <> — {c.gist}</> : null}</p>
+            <div className="mt-1.5 flex gap-2">
+              <button onClick={() => setWords((o) => ({ ...o, [c.ref]: !o[c.ref] }))} className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-slate-200 hover:bg-slate-700">{on ? 'Hide the words' : 'Read the words'}</button>
+              <a href={sefariaUrl(c.ref)} target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-slate-400 hover:text-white inline-flex items-center gap-1">Sefaria <ExternalLink className="w-3 h-3" /></a>
+            </div>
+            {on && (
+              <div className="mt-2 animate-in fade-in duration-200">
+                <p lang="he" dir="rtl" className="sd-rashi text-slate-100" style={{ fontSize: '1.15rem', lineHeight: 1.7 }}>{c.he}</p>
+                {c.en ? <Rich text={c.en} style={{ fontFamily: EN_FONT, fontSize: '.92rem', lineHeight: 1.6 }} className="text-slate-300 mt-1.5" /> : <p className="text-xs italic text-slate-500 mt-1">No translation yet.</p>}
+                {c.enSource === 'ai' && <p className="text-[10px] text-slate-500 italic mt-1">AI translation</p>}
               </div>
             )}
           </div>
@@ -606,88 +762,21 @@ function HalachaItems({ items, t }: { items: HalachaItem[]; t: any }) {
   const cell = (x: any, label: string) => (
     <div className={`rounded-xl ${t.soft} px-3 py-2 min-w-0`}>
       <p className={`text-[10px] font-black uppercase tracking-wider ${t.faint}`}>{label}</p>
-      {x ? <><p className="text-sm mt-0.5"><RefText text={x.ruling} /></p><p className="mt-1"><SourceLink r={x.ref} /></p></> : <p className={`text-xs mt-0.5 ${t.faint} italic`}>not linked here</p>}
+      {x ? <><p className="text-sm mt-0.5 text-slate-200"><RefText text={x.ruling} /></p><p className="mt-1"><SourceLink r={x.ref} /></p></> : <p className={`text-xs mt-0.5 ${t.faint} italic`}>not linked here</p>}
     </div>
   );
   return (
     <div className="space-y-3">
       {items.map((it, i) => (
         <div key={i}>
-          <p className="text-sm font-bold mb-1.5"><RefText text={it.issue} /></p>
-          <div className="grid gap-2 sm:grid-cols-3">{cell(it.rambam, 'Rambam')}{cell(it.shulchanArukh, 'Shulchan Arukh')}{cell(it.rema, 'Rema')}</div>
+          <p className="text-sm font-bold text-slate-100 mb-1.5"><RefText text={it.issue} /></p>
+          <div className="grid gap-2">{cell(it.rambam, 'Rambam')}{cell(it.shulchanArukh, 'Shulchan Arukh')}{cell(it.rema, 'Rema')}</div>
           {it.note && <p className={`mt-1.5 text-xs ${t.muted} italic`}><RefText text={it.note} /></p>}
         </div>
       ))}
       <p className={`text-[11px] ${t.faint}`}>For practice, confirm with your rav.</p>
     </div>
   );
-}
-
-// Sheets that belong to one sugya: big picture, sources, Rambam, disputes, halacha, words on a paragraph.
-function SugyaSheet({ sheet, daf, sugya, openSheet }: { sheet: Exclude<Sheet, null> & { sugya: number }; daf: Daf; sugya: Sugya; openSheet: (s: Sheet) => void }) {
-  const dark = { card: 'bg-slate-800/60 border-slate-700/60', soft: 'bg-slate-800/60', muted: 'text-slate-400', faint: 'text-slate-500', accent: 'text-indigo-300', chip: 'bg-slate-800 border-slate-700 text-slate-200', hover: 'hover:bg-slate-800' };
-  const [open, setOpen] = useState<Record<string, boolean>>({});
-  const toggle = (id: string) => setOpen((o) => ({ ...o, [id]: !o[id] }));
-  const built = sugya.built; const syn = built?.synthesis && !built.synthesis._error ? built.synthesis : null;
-  const all = built ? [...built.core, ...built.rishonim, ...built.acharonim, ...built.other] : [];
-  if (!built) return <p className="text-sm text-slate-400 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Still preparing this sugya.</p>;
-  if (sheet.kind === 'bigpicture') return (
-    <div className="space-y-3 text-sm leading-relaxed" style={{ fontFamily: EN_FONT, fontSize: '1rem' }}>
-      <RefText text={syn?.bigPicture || 'Not available yet.'} className="block" />
-      {syn?.continuesOn && <p className="text-slate-400 italic">{syn.continuesOn}</p>}
-      {syn?.sourcesUsed?.length ? <p className="text-[11px] text-slate-500">Drawn from: {syn.sourcesUsed.join(', ')}.</p> : null}
-    </div>
-  );
-  if (sheet.kind === 'sources') {
-    if (sheet.work) return <Words comms={all.filter((c) => c.title === sheet.work)} t={dark} showHe showEn fontScale={1} open={open} toggle={toggle} />;
-    const works = Array.from(new Set(all.map((c) => c.title))).map((w) => ({ w, n: all.filter((c) => c.title === w).length, layer: all.find((c) => c.title === w)!.layer }));
-    const order = ['core', 'rishonim', 'acharonim', 'other'];
-    works.sort((a, b) => order.indexOf(a.layer) - order.indexOf(b.layer) || b.n - a.n);
-    const label: Record<string, string> = { core: 'Rashi & Tosafot', rishonim: 'Rishonim', acharonim: 'Acharonim', other: 'Other commentaries' };
-    return (
-      <div className="space-y-4">
-        <p className="text-[11px] text-slate-500">Everything Sefaria links to this sugya. A work missing here (Rashba, Ritva, Meiri on some tractates) is not available on Sefaria for this passage; nothing is reconstructed from memory.</p>
-        {order.filter((l) => works.some((w) => w.layer === l)).map((l) => (
-          <div key={l}>
-            <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">{label[l]}</p>
-            <div className="flex flex-wrap gap-1.5">{works.filter((w) => w.layer === l).map((w) => <button key={w.w} onClick={() => openSheet({ kind: 'sources', sugya: sheet.sugya, work: w.w })} className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-700">{w.w} <span className="text-slate-500">{w.n}</span></button>)}</div>
-          </div>
-        ))}
-        {built.rambamSources.length > 0 && <div><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Rambam & his commentators</p><div className="flex flex-wrap gap-1.5">{Array.from(new Set(built.rambamSources.map((c) => c.title))).map((w) => <button key={w} onClick={() => openSheet({ kind: 'rambam', sugya: sheet.sugya })} className="rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-bold text-slate-200 hover:bg-slate-700">{w}</button>)}</div></div>}
-      </div>
-    );
-  }
-  if (sheet.kind === 'rambam') {
-    const r = syn?.rambam;
-    return (
-      <div className="space-y-3 text-sm">
-        {!r ? <p className="text-slate-400">Sefaria links no Mishneh Torah or Rambam commentary to this sugya, so there is no sourced Rambam section here.</p> : (
-          <>
-            <p className="leading-relaxed" style={{ fontFamily: EN_FONT, fontSize: '1rem' }}><RefText text={r.reading} /></p>
-            {r.rulings?.length ? <div className="space-y-2">{r.rulings.map((x, i) => <div key={i} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2"><p className="text-[11px] font-black"><SourceLink r={x.ref} /></p><p className="mt-0.5"><RefText text={x.ruling} /></p></div>)}</div> : null}
-            {r.commentators?.length ? <ul className="space-y-1.5">{r.commentators.map((c, i) => <li key={i} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-slate-700 bg-slate-800">{c.source}</span><span><RefText text={c.point} /> <SourceLink r={c.ref} /></span></li>)}</ul> : null}
-          </>
-        )}
-        {built.rambamSources.length > 0 && <Row t={dark} open={!!open.rsrc} onToggle={() => toggle('rsrc')} title="Read the Rambam texts" hint={`${built.rambamSources.length}`}><Words comms={built.rambamSources} t={dark} showHe showEn fontScale={1} open={open} toggle={toggle} /></Row>}
-      </div>
-    );
-  }
-  if (sheet.kind === 'disputes') return (
-    <div className="space-y-4 text-sm">
-      {syn?.machlokes?.length ? <div><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Where the commentaries part ways</p><div className="space-y-3">{syn.machlokes.map((m, i) => <div key={i} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2.5"><p className="font-bold"><RefText text={m.issue} /></p><ul className="mt-1.5 space-y-1">{m.positions.map((p, j) => <li key={j} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-slate-700 bg-slate-800">{p.who}</span><span><RefText text={p.view} /> {p.refs?.map((r) => <span key={r} className="ml-1"><SourceLink r={r} /></span>)}</span></li>)}</ul></div>)}</div></div> : null}
-      {syn?.questions?.length ? <div><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-2">Questions the commentaries ask</p><div className="space-y-3">{syn.questions.map((q, i) => <div key={i}><p className="font-bold"><RefText text={q.question} /></p><p className="mt-0.5 text-slate-300"><RefText text={q.answer} /> {q.refs?.map((r) => <span key={r} className="ml-1"><SourceLink r={r} /></span>)}</p></div>)}</div></div> : null}
-      {!syn?.machlokes?.length && !syn?.questions?.length && <p className="text-slate-400">No disputes or classic questions were found in the sources linked to this sugya.</p>}
-    </div>
-  );
-  if (sheet.kind === 'halacha') {
-    const h = built.halacha;
-    return !h || !h.available ? <p className="text-sm text-slate-400">{h?.note || 'No halachic codes are linked to this sugya on Sefaria.'}</p> : <div className="space-y-3"><HalachaItems items={h.items || []} t={dark} />{h.caveat && <p className="text-[11px] text-slate-500">{h.caveat}</p>}</div>;
-  }
-  if (sheet.kind === 'words') {
-    const cs = all.filter((c) => c.anchor === sheet.segRef);
-    return cs.length ? <Words comms={cs} t={dark} showHe showEn fontScale={1} open={open} toggle={toggle} /> : <p className="text-sm text-slate-400">No commentary on Sefaria is anchored to this paragraph.</p>;
-  }
-  return null;
 }
 
 // ----------------------------------------------------------------------
@@ -699,9 +788,9 @@ function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focu
   const core = daf.sugyot.flatMap((s) => s.built?.core || []);
   const count = (segRef: string, title: string) => core.filter((c) => c.anchor === segRef && c.title === title).length;
   const marked = new Set(bookmarks.filter((b) => b.ref === daf.ref).map((b) => b.segRef));
-  const fill = surface === 'paper' ? { page: '#fbf7ee', stroke: '#d9cdb3', block: '#cfc3a9', mishnah: '#e8c279', side: '#ddd3bd', focus: '#4f46e5', text: '#8a7f6a' } : { page: '#0f172a', stroke: '#334155', block: '#475569', mishnah: '#b45309', side: '#334155', focus: '#818cf8', text: '#94a3b8' };
+  const fill = surface === 'paper' ? { page: '#fbf7ee', stroke: '#d9cdb3', block: '#cfc3a9', mishnah: '#e8c279', side: '#ddd3bd', focus: '#4f46e5', text: '#8a7f6a', bg: '#efe7d6' } : { page: '#0f172a', stroke: '#334155', block: '#475569', mishnah: '#b45309', side: '#334155', focus: '#818cf8', text: '#94a3b8', bg: '#020617' };
   return (
-    <aside className="hidden md:flex shrink-0 w-[128px] flex-col items-center gap-3 py-3 overflow-y-auto sd-scroll border-r border-black/5" aria-label="Where you are on the daf">
+    <aside className="flex h-full shrink-0 w-[128px] flex-col items-center gap-3 py-3 overflow-y-auto sd-scroll border-r border-black/5" style={{ background: fill.bg }} aria-label="Where you are on the daf">
       <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider" style={{ color: fill.text }}><MapIcon className="w-3 h-3" /> The daf</div>
       {amudim.map(([amud, idxs]) => {
         const total = idxs.reduce((a, i) => a + Math.max(40, daf.segments[i].he.length), 0);
@@ -735,62 +824,14 @@ function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focu
 }
 
 // ----------------------------------------------------------------------
-// Page view: each amud in the form of the printed daf (columns from iPad width up).
-
-function DafView({ daf, t, showEn, literal, fontScale, onSelect }: { daf: Daf; t: any; showEn: boolean; literal: boolean; fontScale: number; onSelect: (i: number) => void }) {
-  const amudim = useMemo(() => { const g: Record<string, number[]> = {}; daf.segments.forEach((s, i) => { (g[s.amud] = g[s.amud] || []).push(i); }); return Object.entries(g); }, [daf]);
-  const core = daf.sugyot.flatMap((s) => s.built?.core || []);
-  const [hover, setHover] = useState<string | null>(null);
-  const lemma = (he: string) => { const m = he.match(/^(.{2,60}?)(\s[-–—]\s|\.\s)/); return m ? [m[1], he.slice(m[0].length)] : [he.split(' ').slice(0, 3).join(' '), he.split(' ').slice(3).join(' ')]; };
-  const Col = ({ items, empty }: { items: Comm[]; empty: string }) => (
-    <div className={`sd-rashi ${t.muted}`} dir="rtl" style={{ fontSize: `${0.95 * fontScale}rem`, lineHeight: 1.6 }}>
-      {items.length === 0 && <p className={`text-[11px] ${t.faint}`} style={{ fontFamily: EN_FONT }} dir="ltr">{empty}</p>}
-      {items.map((c) => { const [dh, rest] = lemma(c.he); const on = hover === c.anchor; return (
-        <p key={c.ref} className={`mb-1.5 ${on ? 'sd-hl px-1 -mx-1' : ''}`} onMouseEnter={() => setHover(c.anchor)} onMouseLeave={() => setHover(null)} onClick={() => onSelect(daf.segments.findIndex((s) => s.ref === c.anchor))}><span className="font-bold">{dh}</span> {rest}</p>
-      ); })}
-    </div>
-  );
-  return (
-    <div className="px-2 sm:px-4 py-4 space-y-8">
-      <p className={`text-[11px] ${t.faint} text-center`}>The printed form of the page. Hover or tap a paragraph to light its Rashi and Tosafot; tap to study it.</p>
-      {amudim.map(([amud, idxs]) => {
-        const rashi = core.filter((c) => c.title === 'Rashi' && idxs.some((i) => daf.segments[i].ref === c.anchor));
-        const tos = core.filter((c) => c.title === 'Tosafot' && idxs.some((i) => daf.segments[i].ref === c.anchor));
-        return (
-          <div key={amud} className={`${t.page} mx-auto max-w-6xl rounded-[1.25rem] shadow-[0_30px_60px_-30px_rgba(0,0,0,.5)] border ${t.rule} px-3 sm:px-6 py-5`}>
-            <div className="flex items-baseline justify-between mb-4">
-              <span className={`text-xs font-black uppercase tracking-[0.2em] ${t.faint}`}>{daf.book} {amud}</span>
-              <span lang="he" dir="rtl" className="font-black text-xl" style={{ fontFamily: HE_FONT }}>{daf.heTitle} · דף {daf.heRef.split(' ').pop()} {amud.endsWith('a') ? 'ע״א' : 'ע״ב'}</span>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_minmax(0,1fr)] gap-4 md:gap-6">
-              <div className="order-2 md:order-1"><p className={`text-[10px] font-black uppercase tracking-wider ${t.faint} mb-1`}>תוספות</p><Col items={tos} empty="No Tosafot on Sefaria for this amud" /></div>
-              <div className="order-1 md:order-2" dir="rtl">
-                {idxs.map((i) => { const s = daf.segments[i]; const on = hover === s.ref; return (
-                  <div key={s.ref} data-seg={i} className={`sd-para mb-2 cursor-pointer rounded-lg px-1 -mx-1 ${on ? 'sd-hl' : ''}`} onMouseEnter={() => setHover(s.ref)} onMouseLeave={() => setHover(null)} onClick={() => onSelect(i)}>
-                    <p lang="he" style={{ fontFamily: HE_FONT, fontSize: `${1.35 * fontScale}rem`, lineHeight: 1.8 }}>{s.startsMishnah && <span className="font-black ml-1">מתני׳</span>}{s.startsGemara && <span className="font-black ml-1">גמ׳</span>}{s.startsTopic && <span className={`ml-1 ${t.accent}`}>§</span>}{s.he}</p>
-                    {showEn && <Davidson text={s.en} html={s.enHtml} literal={literal} dir="ltr" style={{ fontFamily: EN_FONT, fontSize: `${0.88 * fontScale}rem`, lineHeight: 1.55 }} className={`${t.muted} mt-0.5 text-left`} />}
-                  </div>
-                ); })}
-              </div>
-              <div className="order-3"><p className={`text-[10px] font-black uppercase tracking-wider ${t.faint} mb-1`}>רש״י</p><Col items={rashi} empty="No Rashi on Sefaria for this amud" /></div>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
-// ----------------------------------------------------------------------
 // Sheet frame and small widgets
 
-function SheetFrame({ title, children, onClose, tall, back }: { title: string; children: ReactNode; onClose: () => void; tall?: boolean; back?: () => void }) {
+function SheetFrame({ title, children, onClose, tall }: { title: string; children: ReactNode; onClose: () => void; tall?: boolean }) {
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center sm:justify-center">
       <div className="absolute inset-0 bg-slate-950/60 backdrop-blur-[2px]" onClick={onClose} />
       <div className={`relative w-full sm:max-w-lg ${tall ? 'max-h-[85vh] sm:h-[80vh]' : 'max-h-[80vh]'} bg-slate-900 text-slate-200 border border-slate-800 rounded-t-[1.5rem] sm:rounded-[1.5rem] shadow-2xl flex flex-col animate-in slide-in-from-bottom-6 sm:zoom-in-95 duration-200`}>
         <div className="flex items-center gap-2 px-4 pt-4 pb-3 border-b border-slate-800 shrink-0">
-          {back && <button onClick={back} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" aria-label="Back"><ArrowLeft className="w-4 h-4" /></button>}
           <h3 className="font-black text-slate-100 text-sm truncate flex-1">{title}</h3>
           <button onClick={onClose} className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800" aria-label="Close"><X className="w-5 h-5" /></button>
         </div>
@@ -825,8 +866,8 @@ function AskThread({ messages, busy, input, setInput, onSend }: { messages: Chat
   const endRef = useRef<HTMLDivElement>(null);
   useEffect(() => { endRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages.length, busy]);
   return (
-    <div className="flex flex-col h-full -mx-5 -my-4">
-      <div className="flex-1 overflow-y-auto px-5 py-4 space-y-3 sd-scroll">
+    <div className="flex flex-col h-full -mx-4 -my-4">
+      <div className="flex-1 overflow-y-auto px-4 py-4 space-y-3 sd-scroll">
         {messages.length === 0 && <p className="text-sm text-slate-400">Ask anything about this sugya — a term, a step you lost, why Rashi says what he says. Answers draw only on the texts on this daf and cite them.</p>}
         {messages.map((m, i) => <div key={i} className={`rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${m.role === 'user' ? 'bg-indigo-600 text-white ml-8' : 'bg-slate-800/70 border border-slate-700/60 mr-4'}`}>{m.role === 'user' ? m.content : <RefText text={m.content} />}</div>)}
         {busy && <p className="text-sm text-slate-400 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Reading the sources…</p>}
