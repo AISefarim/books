@@ -16,6 +16,37 @@ const WhatsAppIcon = ({ className }: { className?: string }) => (
 );
 
 type Today = { ref: string; heRef?: string; preview?: string[] };
+type Teaser = {
+  ref: string; heRef?: string; headline?: string | null;
+  units: { he: string; en: string }[];
+  comment?: { title: string; gist: string } | null;
+  halacha?: { issue?: string; who: string; text: string; ref?: string } | null;
+};
+
+// Shown instantly (and if the live call fails); replaced by today's daf
+// from /daf/teaser as soon as it loads.
+const FALLBACK_TEASER: Teaser = {
+  ref: 'Bekhorot 17', heRef: 'בכורות י״ז',
+  headline: "Resolving Rabban Shimon ben Gamliel's challenge to Rav Huna",
+  units: [
+    { he: 'הַיְינוּ דַּאֲמַר לֵיהּ רַבָּן שִׁמְעוֹן בֶּן גַּמְלִיאֵל:', en: '**this is what Rabban Shimon ben Gamliel said to him:**' },
+    { he: 'אֲפִילּוּ עַד עֲשָׂרָה דּוֹרוֹת', en: '**Even until ten generations,**' },
+    { he: 'פְּטוּרִין.', en: 'the offspring **are exempt.**' },
+  ],
+  comment: { title: 'Rashi', gist: 'Rashi explains why Rabban Shimon ben Gamliel said "up to ten generations" (meaning indefinitely) rather than only exempting grandchildren.' },
+  halacha: { who: 'Rambam', text: "An offspring resembling another species is exempt from bekhorah unless it possesses some of its mother's physical characteristics.", ref: 'Mishneh Torah, Firstlings 2:6' },
+};
+
+// "Rashi explains why..." under a "Rashi" label -> "Explains why..."
+const cleanGist = (title: string, gist: string) => {
+  const g = gist.replace(new RegExp(`^${title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s+`), '');
+  return g.charAt(0).toUpperCase() + g.slice(1);
+};
+
+// **bold** = the Gemara's own words, plain = the explanation (as in Super Daf).
+const Marked = ({ text }: { text: string }) => (
+  <>{text.split(/(\*\*[^*]+\*\*)/g).map((part, i) => part.startsWith('**') ? <strong key={i} className="font-bold text-stone-900">{part.slice(2, -2)}</strong> : <span key={i} className="text-stone-500">{part}</span>)}</>
+);
 
 // Real covers and series art from the library, resized into /public/join so
 // the page stays fast for visitors arriving from an ad. Each links to the
@@ -46,6 +77,7 @@ const HE_FONT = "'Frank Ruhl Libre', 'David', serif";
 export default function JoinPage() {
   const [url, setUrl] = useState(FALLBACK_URL);
   const [today, setToday] = useState<Today | null>(null);
+  const [teaser, setTeaser] = useState<Teaser>(FALLBACK_TEASER);
 
   useEffect(() => {
     document.title = 'Join AI Sefarim on WhatsApp - free Torah learning';
@@ -58,6 +90,7 @@ export default function JoinPage() {
         if (!cur?.ref) return;
         const meta = (idx?.items || []).find((i: any) => i.ref === cur.ref);
         setToday({ ref: cur.ref, heRef: meta?.heRef || cur.heRef, preview: meta?.preview });
+        return fetch(`${DAF_API}/teaser?ref=${encodeURIComponent(cur.ref)}`).then((r) => r.json()).then((t) => { if (t && t.available !== false && t.units?.length) setTeaser(t); });
       })
       .catch(() => {});
   }, []);
@@ -116,7 +149,7 @@ export default function JoinPage() {
           <div>
             <p className="jp-pop inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-500/10 px-3.5 py-1.5 text-xs font-black uppercase tracking-[0.16em] text-emerald-300">
               <span className="relative flex w-2 h-2"><span className="jp-ring absolute inset-0 rounded-full" /><span className="relative w-2 h-2 rounded-full bg-emerald-400" /></span>
-              Free Torah community
+              100% free · Torah community
             </p>
             <h1 className="jp-pop mt-4 text-[2.4rem] leading-[1.02] sm:text-6xl font-black tracking-tight" style={{ animationDelay: '.08s' }}>
               Torah learning, straight to your <span className="bg-gradient-to-r from-emerald-300 via-emerald-400 to-teal-300 bg-clip-text text-transparent">WhatsApp</span>.
@@ -126,28 +159,50 @@ export default function JoinPage() {
             </p>
             <div className="jp-pop mt-6 sm:mt-8 max-w-md" style={{ animationDelay: '.24s' }}>
               <JoinButton big />
-              <p className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-slate-400">
-                <span className="inline-flex items-center gap-1.5"><Check className="w-4 h-4 text-emerald-400" /> Completely free</span>
-                <span className="inline-flex items-center gap-1.5"><Check className="w-4 h-4 text-emerald-400" /> Leave anytime</span>
+              <p className="mt-3 flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-sm text-slate-300">
+                <span className="inline-flex items-center gap-1.5"><Check className="w-4 h-4 text-emerald-400" /> Free forever</span>
+                <span className="inline-flex items-center gap-1.5"><Check className="w-4 h-4 text-emerald-400" /> No subscriptions</span>
+                <span className="inline-flex items-center gap-1.5"><Check className="w-4 h-4 text-emerald-400" /> No ads</span>
               </p>
             </div>
           </div>
 
           {/* ===== the juicy stuff, right up top: every card is a way in ===== */}
           <div className="grid grid-cols-2 gap-3 sm:gap-4">
-            {/* Super Daf: the real reader */}
-            <a href="/daf" className={`${card} jp-pop col-span-2 h-[210px] sm:h-[250px]`} style={{ animationDelay: '.2s' }}>
-              <img src="/join/daf-desktop.jpg" alt="The Super Daf reader" loading="eager" decoding="async" className="jp-pan absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-[1.03]" />
-              <div className="absolute inset-0 bg-gradient-to-t from-[#070a18] via-[#070a18]/70 to-transparent" />
-              <div className="absolute inset-x-0 bottom-0 p-4 sm:p-5">
-                <p className="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-300">Super Daf · Daf Yomi</p>
-                <p className="mt-1 text-xl sm:text-2xl font-black">{today ? <>Today: {today.ref}{today.heRef ? <span className="ml-2 text-indigo-200" lang="he" style={{ fontFamily: HE_FONT }}>{today.heRef}</span> : null}</> : "Today's daf, finally clear"}</p>
-                <p className="mt-0.5 flex items-center gap-1.5 text-sm text-slate-300">Sugya by sugya, with Rashi, Tosafot &amp; the Rambam <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" /></p>
+            {/* Super Daf: a live mini version of the reader, with today's real text */}
+            <a href="/daf" className={`${card} jp-pop col-span-2 !bg-[#f7f2e7] text-stone-900`} style={{ animationDelay: '.2s' }}>
+              <div className="flex items-center gap-2 bg-[#0c1022] px-3.5 py-2 text-slate-100">
+                <span className="flex gap-1.5" aria-hidden><span className="w-2.5 h-2.5 rounded-full bg-white/20" /><span className="w-2.5 h-2.5 rounded-full bg-white/20" /><span className="w-2.5 h-2.5 rounded-full bg-white/20" /></span>
+                <span className="mx-auto text-xs sm:text-sm font-black truncate">{teaser.heRef ? <span lang="he" className="mr-2 text-indigo-200" style={{ fontFamily: HE_FONT }}>{teaser.heRef}</span> : null}{teaser.ref}</span>
+                <span className="shrink-0 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">Free</span>
+              </div>
+              <div className="px-3.5 sm:px-5 pt-3 pb-3.5">
+                {teaser.headline && <p className="text-center text-[12px] sm:text-[13px] font-black text-indigo-700 truncate">› {teaser.headline}</p>}
+                <div className="mt-2 rounded-xl border border-[#e3d8c1] overflow-hidden bg-white/50">
+                  {teaser.units.slice(0, 3).map((u, i) => (
+                    <div key={i}>
+                      <div className={`grid grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)] gap-x-3 items-baseline px-3 py-1.5 ${i % 2 ? 'bg-black/[0.025]' : ''}`}>
+                        <p lang="he" dir="rtl" className="text-right text-[15px] sm:text-[17px] leading-snug text-stone-900" style={{ fontFamily: HE_FONT }}>{u.he}</p>
+                        <p className="text-[12.5px] sm:text-[14px] leading-snug" style={{ fontFamily: "'Source Serif 4', Georgia, serif" }}><Marked text={u.en} /></p>
+                      </div>
+                      {i === 0 && teaser.comment && (
+                        <div className="mx-2 mb-1.5 rounded-lg bg-[#efe6d3] px-2.5 py-1.5 text-[11.5px] sm:text-[12.5px] leading-snug text-stone-700"><p className="line-clamp-2"><span className="font-black text-indigo-700 mr-1">{teaser.comment.title}</span>{cleanGist(teaser.comment.title, teaser.comment.gist)}</p></div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {teaser.halacha && (
+                  <div className="mt-2 rounded-lg border-l-4 border-amber-500 bg-amber-100/70 px-2.5 py-1.5 text-[11.5px] sm:text-[12.5px] leading-snug text-stone-800"><p className="line-clamp-2"><span className="font-black text-amber-800 mr-1">Halacha · {teaser.halacha.who}</span>{teaser.halacha.text}</p></div>
+                )}
+                <p className="mt-2.5 flex items-center justify-between gap-2 text-[12px] sm:text-sm font-black text-indigo-700">
+                  <span>Super Daf{today?.ref === teaser.ref ? " · today's daf" : ''}, sugya by sugya</span>
+                  <span className="inline-flex items-center gap-1">Open <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" /></span>
+                </p>
               </div>
             </a>
 
             {/* Sefarim: a fan of real covers */}
-            <a href="/" className={`${card} jp-pop h-[200px] sm:h-[230px]`} style={{ animationDelay: '.28s' }}>
+            <a href="/" className={`${card} jp-pop h-[180px] sm:h-[200px]`} style={{ animationDelay: '.28s' }}>
               <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 via-transparent to-transparent" />
               <div className="jp-fan absolute inset-x-0 top-0 h-[64%]">
                 <img src="/join/book05.jpg" alt="" className="absolute left-1/2 top-1/2 w-[34%] rounded-md shadow-xl ring-1 ring-white/10" style={{ transform: 'translate(-82%, -46%) rotate(-11deg)' }} />
@@ -161,7 +216,7 @@ export default function JoinPage() {
             </a>
 
             {/* Media: a mosaic of series art */}
-            <a href="/?tab=videos" className={`${card} jp-pop h-[200px] sm:h-[230px]`} style={{ animationDelay: '.34s' }}>
+            <a href="/?tab=videos" className={`${card} jp-pop h-[180px] sm:h-[200px]`} style={{ animationDelay: '.34s' }}>
               <div className="absolute inset-x-0 top-0 grid grid-cols-2 grid-rows-2 gap-0.5 h-[64%]">
                 {['art-daf', 'art-zohar', 'art-tanach', 'art-etz'].map((a) => <img key={a} src={`/join/${a}.jpg`} alt="" className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />)}
               </div>
@@ -186,6 +241,28 @@ export default function JoinPage() {
             </a>
           </div>
         </div>
+
+        {/* ===== everything is free ===== */}
+        <section className="mt-16 sm:mt-24 relative overflow-hidden rounded-[2rem] border border-emerald-400/25 bg-gradient-to-br from-emerald-500/15 via-emerald-500/[0.04] to-transparent px-6 sm:px-10 py-9 sm:py-12">
+          <div aria-hidden className="pointer-events-none absolute -right-6 -top-10 text-[160px] sm:text-[240px] font-black leading-none text-emerald-400/[0.07] select-none">$0</div>
+          <p className="relative text-xs font-black uppercase tracking-[0.2em] text-emerald-300">No catch</p>
+          <h2 className="relative mt-3 text-4xl sm:text-6xl font-black tracking-tight leading-[1.02]">Everything here is <span className="text-emerald-300">free.</span><br className="hidden sm:block" /> Forever.</h2>
+          <p className="relative mt-4 max-w-2xl text-lg text-slate-300 leading-relaxed">AI Sefarim is a labor of love, done l'shem Shamayim. No subscriptions, no ads, no paywalls, nothing to buy. Just Torah.</p>
+          <div className="relative mt-7 grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { k: '95+ sefarim', v: 'Read & download', href: '/' },
+              { k: '500+ shiurim', v: 'Videos & podcasts', href: '/?tab=videos' },
+              { k: 'Super Daf', v: 'A new daf every day', href: '/daf' },
+              { k: 'Super Agent', v: 'Ask any question', href: '/chat' },
+            ].map(({ k, v, href }) => (
+              <a key={k} href={href} className="group rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] ring-1 ring-white/10 p-4 transition-colors">
+                <p className="text-3xl font-black text-emerald-300">$0</p>
+                <p className="mt-1 font-black">{k}</p>
+                <p className="text-sm text-slate-400">{v}</p>
+              </a>
+            ))}
+          </div>
+        </section>
 
         {/* ===== Super Daf showcase ===== */}
         <section className="mt-24 sm:mt-28">
@@ -271,7 +348,7 @@ export default function JoinPage() {
         <section className="mt-24 sm:mt-28 grid lg:grid-cols-2 gap-12 items-center">
           <div className="text-center lg:text-left">
             <h2 className="text-3xl sm:text-5xl font-black tracking-tight leading-[1.05]">Learn something new every day.</h2>
-            <p className="mt-4 text-lg text-slate-300">Join the free AI Sefarim community on WhatsApp. New sefarim, shiurim and today's daf, right on your phone.</p>
+            <p className="mt-4 text-lg text-slate-300">Join the free AI Sefarim community on WhatsApp. New sefarim, shiurim and today's daf, right on your phone. Free now, free forever.</p>
             <div className="mt-7 mx-auto lg:mx-0 max-w-sm"><JoinButton big /></div>
           </div>
           <div className="relative mx-auto w-full max-w-[360px]">
