@@ -10,6 +10,7 @@ import { DAF_API, pingDafOpen, gistText, dafPath, sefariaUrl, titleMatchesDaf, d
 import { useReadyDafs } from '../lib/useReadyDafs';
 import { downloadDaf } from '../lib/dafExport';
 import { recordDeviceDafRead } from '../lib/deviceTracker';
+import { GemaraOpening, takeOpeningFor } from './GemaraOpening';
 
 // ----------------------------------------------------------------------
 // Types mirroring the worker's /daf/get response
@@ -198,6 +199,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const [lowerCollapsed, setLowerCollapsed] = useState<boolean>(prefs.lowerCollapsed === true);
   const [current, setCurrent] = useState<{ ref: string; date: string } | null>(null);
   const [ref, setRef] = useState<string | null>(initialRef || null);
+  const [opening, setOpening] = useState<string | null>(() => takeOpeningFor(initialRef));
   const [daf, setDaf] = useState<Daf | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [focusIdx, setFocusIdx] = useState(0);
@@ -449,6 +451,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
   return (
     <div ref={rootRef} className={`sd fixed inset-0 z-[60] flex flex-col ${t.shell} ${surface === 'dark' ? 'sd-dark' : ''}`} style={{ overscrollBehavior: 'none', height: '100dvh' }}>
+      {opening && <GemaraOpening heRef={opening} onDone={() => setOpening(null)} />}
       <style>{`
         .sd .sd-ref { color: #4f46e5; text-decoration: none; border-bottom: 1px dotted rgba(79,70,229,.5); font-size: .78em; font-weight: 600; }
         .sd .sd-ref:hover { border-bottom-style: solid; }
@@ -696,6 +699,13 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
   return (
     <div className={`${t.page} min-h-full`}>
       <div className="max-w-3xl mx-auto px-3 sm:px-8 pt-3 pb-8">
+        <div dir="rtl" className={`mb-1 flex items-center gap-3 ${t.muted}`} style={{ fontFamily: HE_FONT }}>
+          <span className={`h-px flex-1 border-t ${t.rule}`} />
+          <span className="text-lg sm:text-xl font-bold">מסכת {daf.heTitle || daf.heRef.replace(/\s+\S+$/, '')}</span>
+          <span className="opacity-50">◆</span>
+          <span className="text-lg sm:text-xl font-bold">דף {daf.heRef.split(' ').pop()}</span>
+          <span className={`h-px flex-1 border-t ${t.rule}`} />
+        </div>
         <p className={`mb-3 text-center text-[12px] italic ${t.faint}`} style={{ fontFamily: EN_FONT }}>Super Daf is dedicated to Carol Serouya, the best mother and wife</p>
         {daf.prev && canGo(daf.prev) && (
           <div className="mb-3 text-center">

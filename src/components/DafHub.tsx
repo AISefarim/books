@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Search, X, ScrollText, Loader2, BookOpen, Monitor, Tablet, Smartphone, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { DAF_API, pingDafOpen, normalizeTractate } from '../lib/daf';
+import { noteOpening } from './GemaraOpening';
 
 // The Daf tab's front page: today's daf (huge), yesterday and tomorrow
 // beside it, then every finished daf by masechet, with a forgiving search
@@ -101,7 +102,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
   const DafCard = ({ it, hit }: { it: DafMeta; hit?: string | null }) => {
     const isToday = it.ref === today?.ref;
     return (
-      <button onClick={() => onOpen(it.ref)} className={`group text-left rounded-2xl border p-4 transition-all hover:-translate-y-0.5 ${isToday ? 'border-indigo-400/60 bg-indigo-500/10' : 'border-slate-800 bg-slate-900 hover:border-slate-600'}`}>
+      <button onClick={() => { noteOpening(it.ref, it.heRef); onOpen(it.ref); }} className={`group text-left rounded-2xl border p-4 transition-all hover:-translate-y-0.5 ${isToday ? 'border-indigo-400/60 bg-indigo-500/10' : 'border-slate-800 bg-slate-900 hover:border-slate-600'}`}>
         <div className="flex items-start gap-3">
           <div className="shrink-0 w-14 h-14 rounded-xl bg-slate-800 group-hover:bg-indigo-600 transition-colors flex flex-col items-center justify-center">
             <span className="text-lg font-black leading-none" lang="he" style={{ fontFamily: HE_FONT }}>{heDaf(it.heRef)}</span>
@@ -141,7 +142,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
     const inner = dir === 'prev' ? <>{arrow}{text}</> : <>{text}{arrow}</>;
     const cls = 'group w-full flex items-center gap-3 sm:gap-4 rounded-2xl border p-3.5 sm:p-5 text-left transition-all';
     return ready
-      ? <button onClick={() => onOpen(day!.ref)} aria-label={`${label}: ${day!.ref}`} className={`${cls} border-indigo-400/30 bg-indigo-500/[0.07] hover:bg-indigo-500/[0.14] hover:border-indigo-400/60 hover:-translate-y-0.5`}>{inner}</button>
+      ? <button onClick={() => { noteOpening(day!.ref, meta?.heRef || day!.heRef); onOpen(day!.ref); }} aria-label={`${label}: ${day!.ref}`} className={`${cls} border-indigo-400/30 bg-indigo-500/[0.07] hover:bg-indigo-500/[0.14] hover:border-indigo-400/60 hover:-translate-y-0.5`}>{inner}</button>
       : <div className={`${cls} border-slate-800 bg-slate-900/50`}>{inner}</div>;
   };
 
@@ -172,7 +173,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
         )}
 
         {/* ===== today's daf, extremely prominent ===== */}
-        <button onClick={() => today && onOpen(today.ref)} disabled={!today} className="group relative w-full overflow-hidden text-left rounded-[28px] border border-indigo-400/30 bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 shadow-[0_30px_80px_-30px_rgba(99,102,241,0.8)] px-5 sm:px-10 py-7 sm:py-10 transition-transform hover:-translate-y-0.5">
+        <button onClick={() => { if (!today) return; noteOpening(today.ref, todayHe); onOpen(today.ref); }} disabled={!today} className="group relative w-full overflow-hidden text-left rounded-[28px] border border-indigo-400/30 bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 shadow-[0_30px_80px_-30px_rgba(99,102,241,0.8)] px-5 sm:px-10 py-7 sm:py-10 transition-transform hover:-translate-y-0.5">
           <div className="pointer-events-none absolute -right-16 -top-16 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
           <div className="pointer-events-none absolute right-6 sm:right-10 top-1/2 -translate-y-1/2 text-[120px] sm:text-[200px] leading-none font-black text-white/[0.07] select-none" style={{ fontFamily: HE_FONT }} aria-hidden>{todayHe.split(' ').pop() || 'דף'}</div>
           <div className="relative">
