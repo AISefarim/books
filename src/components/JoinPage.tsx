@@ -242,28 +242,6 @@ export default function JoinPage() {
           </div>
         </div>
 
-        {/* ===== everything is free ===== */}
-        <section className="mt-16 sm:mt-24 relative overflow-hidden rounded-[2rem] border border-emerald-400/25 bg-gradient-to-br from-emerald-500/15 via-emerald-500/[0.04] to-transparent px-6 sm:px-10 py-9 sm:py-12">
-          <div aria-hidden className="pointer-events-none absolute -right-6 -top-10 text-[160px] sm:text-[240px] font-black leading-none text-emerald-400/[0.07] select-none">$0</div>
-          <p className="relative text-xs font-black uppercase tracking-[0.2em] text-emerald-300">No catch</p>
-          <h2 className="relative mt-3 text-4xl sm:text-6xl font-black tracking-tight leading-[1.02]">Everything here is <span className="text-emerald-300">free.</span><br className="hidden sm:block" /> Forever.</h2>
-          <p className="relative mt-4 max-w-2xl text-lg text-slate-300 leading-relaxed">AI Sefarim is a labor of love, done l'shem Shamayim. No subscriptions, no ads, no paywalls, nothing to buy. Just Torah.</p>
-          <div className="relative mt-7 grid grid-cols-2 lg:grid-cols-4 gap-3">
-            {[
-              { k: '95+ sefarim', v: 'Read & download', href: '/' },
-              { k: '500+ shiurim', v: 'Videos & podcasts', href: '/?tab=videos' },
-              { k: 'Super Daf', v: 'A new daf every day', href: '/daf' },
-              { k: 'Super Agent', v: 'Ask any question', href: '/chat' },
-            ].map(({ k, v, href }) => (
-              <a key={k} href={href} className="group rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] ring-1 ring-white/10 p-4 transition-colors">
-                <p className="text-3xl font-black text-emerald-300">$0</p>
-                <p className="mt-1 font-black">{k}</p>
-                <p className="text-sm text-slate-400">{v}</p>
-              </a>
-            ))}
-          </div>
-        </section>
-
         {/* ===== Super Daf showcase ===== */}
         <section className="mt-24 sm:mt-28">
           <div className="grid lg:grid-cols-[0.85fr_1.15fr] gap-10 lg:gap-14 items-center">
@@ -293,6 +271,28 @@ export default function JoinPage() {
                 <img src="/join/daf-phone.jpg" alt="Super Daf on a phone" width={578} height={1100} loading="lazy" decoding="async" className="block w-full rounded-[1.4rem]" />
               </div>
             </a>
+          </div>
+        </section>
+
+        {/* ===== everything is free ===== */}
+        <section className="mt-24 sm:mt-28 relative overflow-hidden rounded-[2rem] border border-emerald-400/25 bg-gradient-to-br from-emerald-500/15 via-emerald-500/[0.04] to-transparent px-6 sm:px-10 py-9 sm:py-12">
+          <div aria-hidden className="pointer-events-none absolute -right-6 -top-10 text-[160px] sm:text-[240px] font-black leading-none text-emerald-400/[0.07] select-none">$0</div>
+          <p className="relative text-xs font-black uppercase tracking-[0.2em] text-emerald-300">No catch</p>
+          <h2 className="relative mt-3 text-4xl sm:text-6xl font-black tracking-tight leading-[1.02]">Everything here is <span className="text-emerald-300">free.</span><br className="hidden sm:block" /> Forever.</h2>
+          <p className="relative mt-4 max-w-2xl text-lg text-slate-300 leading-relaxed">AI Sefarim is a labor of love, done l'shem Shamayim. No subscriptions, no ads, no paywalls, nothing to buy. Just Torah.</p>
+          <div className="relative mt-7 grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {[
+              { k: '95+ sefarim', v: 'Read & download', href: '/' },
+              { k: '500+ shiurim', v: 'Videos & podcasts', href: '/?tab=videos' },
+              { k: 'Super Daf', v: 'A new daf every day', href: '/daf' },
+              { k: 'Super Agent', v: 'Ask any question', href: '/chat' },
+            ].map(({ k, v, href }) => (
+              <a key={k} href={href} className="group rounded-2xl bg-white/[0.05] hover:bg-white/[0.09] ring-1 ring-white/10 p-4 transition-colors">
+                <p className="text-3xl font-black text-emerald-300">$0</p>
+                <p className="mt-1 font-black">{k}</p>
+                <p className="text-sm text-slate-400">{v}</p>
+              </a>
+            ))}
           </div>
         </section>
 
