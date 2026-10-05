@@ -1,4 +1,4 @@
-import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye, Sparkles } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye, Sparkles, ScrollText } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { GamificationStats } from '../lib/deviceTracker';
 
@@ -129,7 +129,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 onTabChange('sefarim');
                 onHome();
               }}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 md:px-5 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
                 activeTab === 'sefarim' 
                   ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40' 
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
@@ -140,10 +140,26 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
             </button>
             <button
               onClick={() => {
+                onHome();
+                window.history.pushState({}, '', '/superdaf');
+                onTabChange('daf');
+                window.scrollTo(0, 0);
+              }}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 md:px-5 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                activeTab === 'daf'
+                  ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+              }`}
+            >
+              <ScrollText className="w-4 h-4 shrink-0" />
+              <span>Super Daf</span>
+            </button>
+            <button
+              onClick={() => {
                 onTabChange('media');
                 onHome();
               }}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2.5 px-4 sm:px-5 md:px-6 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2.5 px-3 sm:px-4 md:px-5 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
                 activeTab === 'media' || activeTab === 'videos' || activeTab === 'podcasts' || activeTab === 'audio'
                   ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
@@ -153,15 +169,14 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 <Video className="w-4 h-4 shrink-0" />
                 <Headphones className="w-3.5 h-3.5 shrink-0 opacity-90" />
               </div>
-              <span className="hidden sm:inline">Videos & Podcasts</span>
-              <span className="sm:hidden">Media</span>
+              <span>Media</span>
             </button>
             <button
               onClick={() => {
                 onTabChange('chat');
                 onHome();
               }}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-3 sm:px-4 md:px-5 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
                 activeTab === 'chat'
                   ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40'
                   : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'

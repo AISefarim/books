@@ -47,7 +47,7 @@ interface BookmarkItem { ref: string; segRef: string; heRef: string; snippet: st
 
 type Surface = 'paper' | 'dark';
 type Lang = 'both' | 'he' | 'en';
-type Tab = 'notes' | 'halacha' | 'sources' | 'rambam' | 'big' | 'disputes' | 'ask';
+type Tab = 'notes' | 'halacha' | 'sources' | 'big' | 'disputes' | 'ask';
 type Sheet = { kind: 'sugyot' } | { kind: 'catchup' } | { kind: 'bookmarks' } | { kind: 'listen' } | { kind: 'settings' } | null;
 
 const HE_FONT = "'Frank Ruhl Libre', 'David Libre', 'Noto Serif Hebrew', serif";
@@ -135,7 +135,8 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const [mapPeek, setMapPeek] = useState(false);
   const [scrolling, setScrolling] = useState(false);
   const scrollIdle = useRef<number | null>(null);
-  const [split, setSplit] = useState<number>(typeof prefs.split === 'number' ? prefs.split : 0.62);
+  const [splitTall, setSplitTall] = useState<number>(typeof prefs.split === 'number' ? prefs.split : 0.62);
+  const [splitWide, setSplitWide] = useState<number>(typeof prefs.splitWide === 'number' ? prefs.splitWide : 0.6);
   const [lowerCollapsed, setLowerCollapsed] = useState<boolean>(prefs.lowerCollapsed === true);
   const [current, setCurrent] = useState<{ ref: string; date: string } | null>(null);
   const [ref, setRef] = useState<string | null>(initialRef || null);
@@ -160,11 +161,21 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const rootRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<number | null>(null);
   const dragging = useRef(false);
+  const wideQuery = '(pointer: fine) and (min-width: 1024px)';
+  const [wide, setWide] = useState<boolean>(() => typeof window !== 'undefined' && window.matchMedia(wideQuery).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(wideQuery);
+    const on = () => setWide(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  const split = wide ? splitWide : splitTall;
+  const setSplit = (v: number | ((x: number) => number)) => (wide ? setSplitWide : setSplitTall)(v as any);
 
   useEffect(() => {
     if (!document.querySelector(`link[href="${FONTS_HREF}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = FONTS_HREF; document.head.appendChild(l); }
   }, []);
-  useEffect(() => { writeJson(PREFS_KEY, { surface, lang, fontScale, mapOpen, split, lowerCollapsed }); }, [surface, lang, fontScale, mapOpen, split, lowerCollapsed]);
+  useEffect(() => { writeJson(PREFS_KEY, { surface, lang, fontScale, mapOpen, split: splitTall, splitWide, lowerCollapsed }); }, [surface, lang, fontScale, mapOpen, splitTall, splitWide, lowerCollapsed]);
   useEffect(() => { writeJson(BOOKMARKS_KEY, bookmarks); }, [bookmarks]);
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 1800); return () => window.clearTimeout(id); }, [toast]);
 
@@ -274,14 +285,15 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     }, { root, threshold: [0, 0.25, 0.5, 0.75, 1] });
     els.forEach((el) => obs.observe(el));
     return () => obs.disconnect();
-  }, [daf, split, lowerCollapsed]);
+  }, [daf, splitTall, splitWide, lowerCollapsed]);
 
   // Divider drag.
   const onDragStart = (e: React.PointerEvent) => { dragging.current = true; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); };
   const onDragMove = (e: React.PointerEvent) => {
     if (!dragging.current || !bodyRef.current) return;
     const r = bodyRef.current.getBoundingClientRect();
-    setSplit(Math.min(0.9, Math.max(0.22, (e.clientY - r.top) / r.height)));
+    const ratio = wide ? (e.clientX - r.left) / r.width : (e.clientY - r.top) / r.height;
+    setSplit(Math.min(0.9, Math.max(wide ? 0.35 : 0.22, ratio)));
     if (lowerCollapsed) setLowerCollapsed(false);
   };
   const onDragEnd = () => { dragging.current = false; };
@@ -373,6 +385,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd .sd-unit:nth-child(even) { background: rgba(0,0,0,.025); }
         .sd-dark .sd-unit:nth-child(even) { background: rgba(255,255,255,.03); }
         .sd .sd-divider { touch-action: none; cursor: row-resize; }
+        .sd .sd-divider.cursor-col-resize { cursor: col-resize; }
         /* Lower half on paper: a deeper shade of the same paper, not a dark slab. */
         .sd-lowp { background:#ece4d3; color:#292524; }
         .sd-lowd { background:#0d1526; color:#e2e8f0; }
@@ -387,6 +400,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd-lowp .border-slate-700, .sd-lowp .border-slate-700\\/60, .sd-lowp .border-slate-800 { border-color:#ddd1b8; }
         .sd-lowp .bg-indigo-500\\/10 { background:rgba(99,102,241,.08); }
         .sd-lowp .bg-indigo-600 { background:#4f46e5; color:#fff; }
+        .sd-lowd .text-amber-700, .sd-lowd .text-amber-800 { color:#fcd34d; }
         .sd-lowp textarea { background:#fffaf0; color:#292524; }
       `}</style>
 
@@ -409,10 +423,10 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       </header>
 
       {/* ============ body: upper (the daf) / divider / lower (the notes) ============ */}
-      <div ref={bodyRef} className="flex-1 min-h-0 flex flex-col relative">
-        <div className="relative flex min-h-0" style={{ height: `${upperPct}%` }}>
+      <div ref={bodyRef} className={`flex-1 min-h-0 flex relative ${wide ? 'flex-row' : 'flex-col'}`}>
+        <div className="relative flex min-h-0 min-w-0" style={wide ? { width: `${upperPct}%` } : { height: `${upperPct}%` }}>
           {daf && (mapOpen || mapPeek || scrolling) && (
-            <div className={`${mapOpen ? 'relative' : 'absolute inset-y-0 left-0 z-30 shadow-2xl animate-in fade-in slide-in-from-left-2 duration-200'} hidden md:block`} onMouseEnter={() => setMapPeek(true)} onMouseLeave={() => setMapPeek(false)}>
+            <div className={`${mapOpen ? 'relative' : `absolute inset-y-0 left-0 z-30 shadow-2xl animate-in fade-in slide-in-from-left-2 duration-200 transition-opacity ${mapPeek ? 'opacity-100' : 'opacity-50'}`} hidden md:block`} onMouseEnter={() => setMapPeek(true)} onMouseLeave={() => setMapPeek(false)}>
               <Minimap daf={daf} focusIdx={focusIdx} onJump={scrollToSeg} bookmarks={bookmarks} surface={surface} />
             </div>
           )}
@@ -450,12 +464,12 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
         {daf && (
           <div
-            className={`sd-divider shrink-0 h-7 border-y flex items-center justify-between px-3 select-none ${surface === 'paper' ? 'bg-[#e2d7c0] border-[#d3c6aa]' : 'bg-slate-950 border-slate-800'}`}
+            className={`sd-divider shrink-0 flex items-center justify-between select-none ${wide ? 'w-3 flex-col border-x py-3 px-0 cursor-col-resize' : 'h-7 border-y px-3'} ${surface === 'paper' ? 'bg-[#e2d7c0] border-[#d3c6aa]' : 'bg-slate-950 border-slate-800'}`}
             onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd} onDoubleClick={() => { setSplit(0.62); setLowerCollapsed(false); }}
           >
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 inline-flex items-center gap-1.5"><NotebookPen className="w-3 h-3" /> Notes {daf.segments[panelIdx] && sugyaScope === null ? `· ${short(daf.segments[panelIdx].ref, daf.book)}` : ''}</span>
-            <GripHorizontal className="w-5 h-5 text-slate-600" />
-            <div className="flex items-center gap-1">
+            {!wide && <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 inline-flex items-center gap-1.5"><NotebookPen className="w-3 h-3" /> Notes {daf.segments[panelIdx] && sugyaScope === null ? `· ${short(daf.segments[panelIdx].ref, daf.book)}` : ''}</span>}
+            <GripHorizontal className={`w-5 h-5 text-slate-600 ${wide ? 'rotate-90' : ''}`} />
+            <div className={`flex items-center gap-1 ${wide ? 'hidden' : ''}`}>
               <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { setLowerCollapsed(false); setSplit((s) => Math.max(0.22, s - 0.15)); }} className="p-1 rounded text-slate-400 hover:text-white" aria-label="More notes" title="More notes"><ChevronUp className="w-4 h-4" /></button>
               <button onPointerDown={(e) => e.stopPropagation()} onClick={() => { if (split >= 0.85) setLowerCollapsed(true); else setSplit((s) => Math.min(0.9, s + 0.15)); }} className="p-1 rounded text-slate-400 hover:text-white" aria-label="Less notes" title="Less notes"><ChevronDown className="w-4 h-4" /></button>
             </div>
@@ -582,7 +596,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                   {built && (
                     <span className="ml-auto flex flex-wrap gap-1">
                       {btn('Big picture', () => openSugya(sugya.index, 'big'), Sparkles, !syn?.bigPicture)}
-                      {btn('Rambam', () => openSugya(sugya.index, 'rambam'), Landmark, !syn?.rambam)}
+                      {btn('Rambam', () => openSugya(sugya.index, 'notes'), Landmark, !syn?.rambam)}
                       {btn('Sources', () => openSugya(sugya.index, 'sources'), Library)}
                       {btn('Disputes', () => openSugya(sugya.index, 'disputes'), Quote, !(syn?.machlokes?.length || syn?.questions?.length))}
                     </span>
@@ -613,7 +627,9 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                     </div>
 
                     {step && step.refs[0] === s.ref && (
-                      <button onClick={() => openOn(idx, 'notes')} className={`mb-1.5 inline-flex items-center gap-1.5 text-[13px] font-black ${t.accent}`}><ChevronRight className="w-3.5 h-3.5" /> {step.headline}</button>
+                      <div className="text-center mb-2">
+                        <button onClick={() => openOn(idx, 'notes')} className={`inline-flex items-center gap-1.5 text-[13px] font-black ${t.accent}`}><ChevronRight className="w-3.5 h-3.5" /> {step.headline}</button>
+                      </div>
                     )}
                     {showHe && <p lang="he" dir="rtl" style={heStyle} className="cursor-pointer" onClick={() => openOn(idx, 'notes')}>{s.he}</p>}
 
@@ -729,11 +745,10 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
   const tabs: { id: Tab; label: string; icon: any; count?: number; dim?: boolean }[] = [
     { id: 'notes', label: 'Notes', icon: NotebookPen, count: mes?.notes?.length || 0 },
     { id: 'halacha', label: 'Halacha', icon: Scale, count: hal.length, dim: !hal.length },
-    { id: 'sources', label: 'Sources', icon: Library, count: new Set(srcs.map((c) => c.title)).size, dim: !srcs.length },
-    { id: 'rambam', label: 'Rambam', icon: Landmark, dim: !syn?.rambam },
     { id: 'big', label: 'Big picture', icon: Sparkles, dim: !syn?.bigPicture },
     { id: 'disputes', label: 'Disputes', icon: Quote, dim: !(syn?.machlokes?.length || syn?.questions?.length) },
     { id: 'ask', label: 'Ask', icon: MessageSquareText },
+    { id: 'sources', label: 'Sources', icon: Library, count: new Set(srcs.map((c) => c.title)).size, dim: !srcs.length },
   ];
 
   return (
@@ -764,6 +779,21 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
                 ))}
               </div>
             ) : seg && built.mesivta ? <p className="text-slate-500">No commentary on Sefaria is anchored to this paragraph.</p> : seg ? <p className="text-slate-500 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Notes on their way.</p> : null}
+            {syn?.rambam && (
+              <div className="rounded-2xl border-2 border-amber-500/50 bg-amber-500/10 px-3.5 py-3">
+                <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-700"><Landmark className="w-4 h-4" /> The Rambam</p>
+                <p className="mt-1.5 leading-relaxed text-slate-100" style={{ fontFamily: EN_FONT, fontSize: '0.98rem' }}><RefText text={syn.rambam.reading} /></p>
+                {syn.rambam.commentators?.length ? (
+                  <ul className="mt-2 space-y-1.5">{syn.rambam.commentators.map((c, i) => <li key={i} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-amber-500/40 text-amber-800 bg-amber-500/10">{c.source}</span><span className="text-slate-200"><RefText text={c.point} /> <SourceLink r={c.ref} /></span></li>)}</ul>
+                ) : null}
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {syn.rambam.rulings?.length ? <button onClick={() => setWords((o) => ({ ...o, __rulings: !o.__rulings }))} className="rounded-full border border-amber-500/40 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-amber-800">{words.__rulings ? 'Hide' : 'Show'} his rulings ({syn.rambam.rulings.length})</button> : null}
+                  {built.rambamSources.length ? <button onClick={() => setWords((o) => ({ ...o, __rtexts: !o.__rtexts }))} className="rounded-full border border-amber-500/40 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-amber-800">{words.__rtexts ? 'Hide' : 'Read'} the texts & commentators ({built.rambamSources.length})</button> : null}
+                </div>
+                {words.__rulings && syn.rambam.rulings?.length ? <div className="mt-2 space-y-2">{syn.rambam.rulings.map((x, i) => <div key={i} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2"><p className="text-[11px] font-black"><SourceLink r={x.ref} /></p><p className="mt-0.5 text-slate-200"><RefText text={x.ruling} /></p></div>)}</div> : null}
+                {words.__rtexts ? <div className="mt-2"><Words comms={built.rambamSources} words={words} setWords={setWords} /></div> : null}
+              </div>
+            )}
             {step && (
               <div>
                 <p className="text-[10px] font-black uppercase tracking-wider text-indigo-300 mb-1">This step of the sugya</p>
@@ -833,17 +863,6 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
               <p className="text-[11px] text-slate-500">Everything Sefaria links {seg ? 'to this paragraph' : 'to this sugya'}. A work not listed is not on Sefaria for this passage; nothing is reconstructed from memory.</p>
             </div>
           ) : <p className="text-slate-400">No commentary on Sefaria is anchored {seg ? 'to this paragraph' : 'to this sugya'}.</p>
-        )}
-
-        {tab === 'rambam' && built && (
-          !syn?.rambam ? <p className="text-slate-400">Sefaria links no Mishneh Torah or Rambam commentary to this sugya, so there is no sourced Rambam section here.</p> : (
-            <div className="space-y-3">
-              <p className="leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.96rem' }}><RefText text={syn.rambam.reading} /></p>
-              {syn.rambam.rulings?.length ? <div className="space-y-2">{syn.rambam.rulings.map((x, i) => <div key={i} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2"><p className="text-[11px] font-black"><SourceLink r={x.ref} /></p><p className="mt-0.5 text-slate-200"><RefText text={x.ruling} /></p></div>)}</div> : null}
-              {syn.rambam.commentators?.length ? <ul className="space-y-1.5">{syn.rambam.commentators.map((c, i) => <li key={i} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-slate-700 bg-slate-800">{c.source}</span><span className="text-slate-200"><RefText text={c.point} /> <SourceLink r={c.ref} /></span></li>)}</ul> : null}
-              {built.rambamSources.length > 0 && <div><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">The texts</p><Words comms={built.rambamSources} words={words} setWords={setWords} /></div>}
-            </div>
-          )
         )}
 
         {tab === 'big' && built && (
