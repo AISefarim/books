@@ -1,3 +1,4 @@
+import { gistText } from './daf';
 // Builds a single self-contained HTML file of a Super Daf page: opens in any
 // browser offline, prints cleanly to PDF. Everything is inlined - no network.
 
@@ -46,7 +47,7 @@ export function buildDafHtml(daf: any): string {
       } else {
         parts.push(`<p class="en">${davidson(s.enHtml, esc(s.en))}</p>`);
       }
-      core.forEach((c: any) => parts.push(`<p class="comm"><b>${esc(c.title)}</b> — ${esc(c.gist || '')}</p><div class="rashi" lang="he" dir="rtl">${esc(c.he)}</div>${c.en ? `<div class="cen">${md(c.en)}</div>` : ''}`));
+      core.forEach((c: any) => parts.push(`<p class="comm"><b>${esc(c.title)}</b> — ${esc(gistText(c.title, c.gist))}</p><div class="rashi" lang="he" dir="rtl">${esc(c.he)}</div>${c.en ? `<div class="cen">${md(c.en)}</div>` : ''}`));
       h.forEach((x) => parts.push(`<div class="hal"><b>Halacha · ${esc(x.issue)}</b>${[['Rambam', x.rambam], ['Shulchan Arukh', x.shulchanArukh], ['Rema', x.rema]].filter(([, r]) => r).map(([w, r]: any) => `<p><b>${w}:</b> ${esc(r.short || r.ruling)} <span class="cite">${esc(r.ref)}</span></p>`).join('')}</div>`));
       if (m?.notes?.length) parts.push(`<div class="notes">${m.notes.map((n: any) => `<p><sup>${n.n}</sup> <b>${esc(n.source)}</b> — ${md(n.point)} <span class="cite">${esc(n.ref)}</span></p>`).join('')}</div>`);
       parts.push(`</article>`);
