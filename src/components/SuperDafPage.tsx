@@ -239,6 +239,9 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     const d = await res.json();
     if (!res.ok || d.error) throw new Error(d.error || `HTTP ${res.status}`);
     if (d.status === 'unavailable') throw new Error(d.note || 'This daf is not available yet.');
+    // Sefaria gives neighbours by amud ("Bekhorot 17a"); Super Daf works by daf.
+    const byDaf = (r?: string | null) => (r ? r.replace(/(\d+)[ab]$/, '$1') : r);
+    d.next = byDaf(d.next); d.prev = byDaf(d.prev);
     return d as Daf;
   }, []);
 
