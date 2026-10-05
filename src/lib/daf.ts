@@ -17,7 +17,7 @@ export function dafPath(ref: string): string {
 // "/daf/Bekhorot/17" -> "Bekhorot 17"
 export function refFromPath(pathname: string): string | null {
   const parts = pathname.split('/').filter(Boolean);
-  if (parts[0] !== 'daf' || !parts[1] || !parts[2]) return null;
+  if ((parts[0] !== 'daf' && parts[0] !== 'superdaf') || !parts[1] || !parts[2]) return null;
   return `${decodeURIComponent(parts[1]).replace(/_/g, ' ')} ${parts[2].replace(/[ab]$/, '')}`;
 }
 

@@ -38,6 +38,7 @@ interface Sugya {
 interface Daf {
   ref: string; heRef: string; book: string; daf: string; title: string; heTitle: string; next: string | null; prev: string | null;
   segments: Seg[]; sugyot: Sugya[]; status: 'ready' | 'building'; done: number; total: number; attribution: string;
+  summary?: { preview?: string[]; takeaways?: string[] } | null;
   versions: { he: { title: string; license: string }; en: { title: string; license: string } };
 }
 interface TldrSoFar { upto: string; sofar: string; nowWeAre: string; keepInMind: string[] }
@@ -132,6 +133,8 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const [fontScale, setFontScale] = useState<number>(prefs.fontScale || 1);
   const [mapOpen, setMapOpen] = useState<boolean>(prefs.mapOpen === true);
   const [mapPeek, setMapPeek] = useState(false);
+  const [scrolling, setScrolling] = useState(false);
+  const scrollIdle = useRef<number | null>(null);
   const [split, setSplit] = useState<number>(typeof prefs.split === 'number' ? prefs.split : 0.62);
   const [lowerCollapsed, setLowerCollapsed] = useState<boolean>(prefs.lowerCollapsed === true);
   const [current, setCurrent] = useState<{ ref: string; date: string } | null>(null);
@@ -173,8 +176,9 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     const prev = { bo: body.style.overflow, ho: html.style.overflow, bos: body.style.overscrollBehavior, hos: html.style.overscrollBehavior, pos: body.style.position, w: body.style.width };
     body.style.overflow = 'hidden'; html.style.overflow = 'hidden'; body.style.overscrollBehavior = 'none'; html.style.overscrollBehavior = 'none';
     body.style.position = 'fixed'; body.style.width = '100%';
-    const onFs = () => setIsFull(!!document.fullscreenElement);
+    const onFs = () => setIsFull(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
     document.addEventListener('fullscreenchange', onFs);
+    document.addEventListener('webkitfullscreenchange', onFs);
     let startY = 0;
     const onStart = (e: TouchEvent) => { startY = e.touches[0]?.clientY || 0; };
     const onMove = (e: TouchEvent) => {
@@ -190,6 +194,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     return () => {
       body.style.overflow = prev.bo; html.style.overflow = prev.ho; body.style.overscrollBehavior = prev.bos; html.style.overscrollBehavior = prev.hos; body.style.position = prev.pos; body.style.width = prev.w;
       document.removeEventListener('fullscreenchange', onFs);
+      document.removeEventListener('webkitfullscreenchange', onFs);
       root?.removeEventListener('touchstart', onStart); root?.removeEventListener('touchmove', onMove);
     };
   }, []);
@@ -322,9 +327,11 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     try { await navigator.clipboard.writeText(text); setToast('Copied - paste it into WhatsApp'); } catch { window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank'); }
   };
   const toggleFullscreen = () => {
-    const el: any = rootRef.current;
-    if (!document.fullscreenElement && el?.requestFullscreen) el.requestFullscreen().catch(() => {});
-    else if (document.exitFullscreen) document.exitFullscreen().catch(() => {});
+    const el: any = document.documentElement;
+    const d: any = document;
+    const inFs = d.fullscreenElement || d.webkitFullscreenElement;
+    if (!inFs) { (el.requestFullscreen?.({ navigationUI: 'hide' }) || el.webkitRequestFullscreen?.())?.catch?.(() => {}); }
+    else { (d.exitFullscreen?.() || d.webkitExitFullscreen?.())?.catch?.(() => {}); }
   };
 
   const t = surface === 'paper'
@@ -350,12 +357,27 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd .sd-unit:nth-child(even) { background: rgba(0,0,0,.025); }
         .sd-dark .sd-unit:nth-child(even) { background: rgba(255,255,255,.03); }
         .sd .sd-divider { touch-action: none; cursor: row-resize; }
+        /* Lower half on paper: a deeper shade of the same paper, not a dark slab. */
+        .sd-lowp { background:#ece4d3; color:#292524; }
+        .sd-lowd { background:#0d1526; color:#e2e8f0; }
+        .sd-lowp .text-slate-100, .sd-lowp .text-slate-200 { color:#292524; }
+        .sd-lowp .text-slate-300 { color:#44403c; }
+        .sd-lowp .text-slate-400 { color:#78716c; }
+        .sd-lowp .text-slate-500 { color:#a8a29e; }
+        .sd-lowp .text-indigo-300, .sd-lowp .text-indigo-200 { color:#4338ca; }
+        .sd-lowp .text-amber-300 { color:#b45309; }
+        .sd-lowp .bg-slate-800, .sd-lowp .bg-slate-900, .sd-lowp .bg-slate-800\\/60, .sd-lowp .bg-slate-800\\/50, .sd-lowp .bg-slate-800\\/70 { background:#f7f2e7; }
+        .sd-lowp .hover\\:bg-slate-800:hover, .sd-lowp .hover\\:bg-slate-700:hover { background:#fffaf0; }
+        .sd-lowp .border-slate-700, .sd-lowp .border-slate-700\\/60, .sd-lowp .border-slate-800 { border-color:#ddd1b8; }
+        .sd-lowp .bg-indigo-500\\/10 { background:rgba(99,102,241,.08); }
+        .sd-lowp .bg-indigo-600 { background:#4f46e5; color:#fff; }
+        .sd-lowp textarea { background:#fffaf0; color:#292524; }
       `}</style>
 
       {/* ============ top bar ============ */}
       <header className="shrink-0 h-12 sm:h-14 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 bg-slate-950 text-slate-100 border-b border-slate-800">
         <button onClick={onExit} className="p-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>
-        <button onClick={() => setMapOpen((m) => !m)} className={`hidden md:inline-flex p-2 rounded-full border ${mapOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}`} aria-label="Show the daf map" title={mapOpen ? 'Hide the daf map' : 'Show the daf map'}><MapIcon className="w-4 h-4" /></button>
+        <button onClick={() => setMapOpen((m) => !m)} className={`hidden md:inline-flex p-2 rounded-full border ${mapOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}`} aria-label="Pin the daf map" title={mapOpen ? 'Unpin the daf map (it will show only while you scroll)' : 'Pin the daf map open'}><MapIcon className="w-4 h-4" /></button>
         <button disabled={!daf?.prev} onClick={() => daf?.prev && setRef(daf.prev)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Previous daf"><ChevronLeft className="w-5 h-5" /></button>
         <div className="min-w-0 flex-1 text-center leading-tight">
           <div className="truncate font-black text-[15px] sm:text-lg">{daf ? <><span lang="he" dir="rtl" style={{ fontFamily: HE_FONT }}>{daf.heRef}</span><span className="text-slate-600 mx-2">·</span>{daf.ref}</> : ref || 'Super Daf'}</div>
@@ -373,13 +395,18 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       {/* ============ body: upper (the daf) / divider / lower (the notes) ============ */}
       <div ref={bodyRef} className="flex-1 min-h-0 flex flex-col relative">
         <div className="relative flex min-h-0" style={{ height: `${upperPct}%` }}>
-          {daf && (mapOpen || mapPeek) && (
-            <div className={`${mapOpen ? 'relative' : 'absolute inset-y-0 left-0 z-30 shadow-2xl'} hidden md:block`} onMouseLeave={() => setMapPeek(false)}>
+          {daf && (mapOpen || mapPeek || scrolling) && (
+            <div className={`${mapOpen ? 'relative' : 'absolute inset-y-0 left-0 z-30 shadow-2xl animate-in fade-in slide-in-from-left-2 duration-200'} hidden md:block`} onMouseEnter={() => setMapPeek(true)} onMouseLeave={() => setMapPeek(false)}>
               <Minimap daf={daf} focusIdx={focusIdx} onJump={scrollToSeg} bookmarks={bookmarks} surface={surface} />
             </div>
           )}
           {daf && !mapOpen && <div className="hidden md:block absolute inset-y-0 left-0 w-3 z-20" onMouseEnter={() => setMapPeek(true)} title="The daf map" />}
-          <div ref={scrollRef} className="sd-scroll flex-1 min-w-0 overflow-y-auto">
+          <div ref={scrollRef} className="sd-scroll flex-1 min-w-0 overflow-y-auto" onScroll={() => {
+            // The daf map shows itself while you scroll and slips away when you stop.
+            if (!scrolling) setScrolling(true);
+            if (scrollIdle.current) window.clearTimeout(scrollIdle.current);
+            scrollIdle.current = window.setTimeout(() => setScrolling(false), 1200);
+          }}>
             {error && (
               <div className="max-w-xl mx-auto mt-16 px-4 text-center">
                 <div className={`rounded-2xl border ${t.card} p-6`}>
@@ -407,7 +434,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
         {daf && (
           <div
-            className="sd-divider shrink-0 h-7 bg-slate-950 border-y border-slate-800 flex items-center justify-between px-3 select-none"
+            className={`sd-divider shrink-0 h-7 border-y flex items-center justify-between px-3 select-none ${surface === 'paper' ? 'bg-[#e2d7c0] border-[#d3c6aa]' : 'bg-slate-950 border-slate-800'}`}
             onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd} onDoubleClick={() => { setSplit(0.62); setLowerCollapsed(false); }}
           >
             <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 inline-flex items-center gap-1.5"><NotebookPen className="w-3 h-3" /> Notes {daf.segments[panelIdx] && sugyaScope === null ? `· ${short(daf.segments[panelIdx].ref, daf.book)}` : ''}</span>
@@ -420,7 +447,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         )}
 
         {daf && !lowerCollapsed && panelSugya && (
-          <div className="flex-1 min-h-0 bg-slate-900 text-slate-200 flex flex-col">
+          <div className={`sd-lower flex-1 min-h-0 flex flex-col ${surface === 'paper' ? 'sd-lowp' : 'sd-lowd'}`}>
             <Panel daf={daf} sugya={panelSugya} segIdx={sugyaScope !== null ? null : panelIdx} tab={tab} setTab={setTab} noteN={noteN}
               sugyaScoped={sugyaScope !== null} onBackToParagraph={() => setSugyaScope(null)}
               chats={chats} chatInput={chatInput} setChatInput={setChatInput} chatBusy={chatBusy} onAsk={ask}
@@ -490,7 +517,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Language</p><Segmented value={lang} onChange={(v) => setLang(v as Lang)} options={[{ v: 'both', l: 'Hebrew + English' }, { v: 'he', l: 'Hebrew' }, { v: 'en', l: 'English' }]} /></div>
               <div className="flex items-center justify-between"><p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Text size</p><div className="flex items-center rounded-full bg-slate-800 border border-slate-700"><button onClick={() => setFontScale((f) => Math.max(0.8, +(f - 0.1).toFixed(2)))} className="p-2 text-slate-300 hover:text-white" aria-label="Smaller"><Minus className="w-4 h-4" /></button><span className="text-xs font-black text-slate-200 w-10 text-center tabular-nums">{Math.round(fontScale * 100)}%</span><button onClick={() => setFontScale((f) => Math.min(1.7, +(f + 0.1).toFixed(2)))} className="p-2 text-slate-300 hover:text-white" aria-label="Larger"><Plus className="w-4 h-4" /></button></div></div>
               <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Page</p><Segmented value={surface} onChange={(v) => setSurface(v as Surface)} options={[{ v: 'paper', l: 'Paper', icon: Sun }, { v: 'dark', l: 'Dark', icon: Moon }]} /></div>
-              <div className="hidden md:block"><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Daf map</p><Segmented value={mapOpen ? 'open' : 'closed'} onChange={(v) => setMapOpen(v === 'open')} options={[{ v: 'open', l: 'Docked' }, { v: 'closed', l: 'Hidden (hover the left edge to peek)' }]} /></div>
+              <div className="hidden md:block"><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Daf map</p><Segmented value={mapOpen ? 'open' : 'closed'} onChange={(v) => setMapOpen(v === 'open')} options={[{ v: 'closed', l: 'Show while scrolling' }, { v: 'open', l: 'Always pinned' }]} /></div>
               <p className="text-[11px] text-slate-500">Reading the page: <strong className="text-slate-300">bold</strong> is the Gemara’s own words, lighter text is the Davidson elucidation, and the small numbers open notes in the lower half. Drag the divider to give the notes more or less room. On iPad, <strong className="text-slate-300">Add to Home Screen</strong> gives a true full screen with no browser bars.</p>
             </div>
           )}
@@ -512,6 +539,12 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
   return (
     <div className={`${t.page} min-h-full`}>
       <div className="max-w-3xl mx-auto px-3 sm:px-8 pt-3 pb-8">
+        {daf.summary?.preview?.length ? (
+          <div className={`rounded-2xl border ${t.card} px-4 py-3 mb-4 shadow-sm`}>
+            <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${t.accent} mb-1.5`}>On this daf we'll learn</p>
+            <ul className="space-y-1">{daf.summary.preview.slice(0, 3).map((x, i) => <li key={i} className="flex gap-2 text-[15px] leading-snug" style={{ fontFamily: EN_FONT }}><span className={`font-black ${t.accent}`}>{i + 1}.</span><span>{x}</span></li>)}</ul>
+          </div>
+        ) : null}
         {daf.sugyot.map((sugya) => {
           const built = sugya.built;
           const syn = built?.synthesis && !built.synthesis._error ? built.synthesis : null;
@@ -637,6 +670,12 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
             </section>
           );
         })}
+        {daf.summary?.takeaways?.length ? (
+          <div className="rounded-2xl border border-emerald-600/25 bg-emerald-500/10 px-4 py-3 mt-2 shadow-sm">
+            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-emerald-800 mb-1.5">Take away from this daf</p>
+            <ul className="space-y-1">{daf.summary.takeaways.slice(0, 3).map((x, i) => <li key={i} className="flex gap-2 text-[15px] leading-snug" style={{ fontFamily: EN_FONT }}><span className="font-black text-emerald-700">✓</span><span>{x}</span></li>)}</ul>
+          </div>
+        ) : null}
       </div>
     </div>
   );

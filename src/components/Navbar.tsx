@@ -1,4 +1,4 @@
-import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye, Sparkles, ScrollText } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye, Sparkles } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { GamificationStats } from '../lib/deviceTracker';
 
@@ -137,22 +137,6 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
             >
               <Library className="w-4 h-4 shrink-0" />
               <span>Sefarim</span>
-            </button>
-            <button
-              onClick={() => {
-                onHome();
-                window.history.pushState({}, '', '/daf');
-                onTabChange('daf');
-                window.scrollTo(0, 0);
-              }}
-              className={`flex-1 md:flex-none flex items-center justify-center gap-2 px-4 sm:px-5 md:px-6 py-2 rounded-full text-xs sm:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
-                activeTab === 'daf'
-                  ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40'
-                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
-              }`}
-            >
-              <ScrollText className="w-4 h-4 shrink-0" />
-              <span>Super Daf</span>
             </button>
             <button
               onClick={() => {
