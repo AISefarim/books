@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Loader2, Lock, RefreshCw, Users, CalendarDays, Infinity as InfinityIcon, ScrollText } from 'lucide-react';
 
-// /stats - private Super Daf readership numbers. Uses the same admin key as
-// /studio (remembered in this browser); the worker rejects anyone without it.
+// /stats - private Super Daf readership numbers, behind a simple PIN
+// (remembered in this browser); the worker checks it and locks out guessers.
 // Counts are unique PEOPLE (salted IP hashes), not page loads.
 
 const WORKER_URL = (import.meta as any).env?.VITE_CHAT_WORKER_URL || 'https://aisefarim-chat.abrahamserouya.workers.dev';
@@ -11,7 +11,7 @@ const ENDPOINT = `${WORKER_URL.replace(/\/$/, '')}/admin/dafstats`;
 type Stats = { today: number; thisMonth: number; allTime: number; perDay: { day: string; people: number }[]; perDaf: { ref: string; people: number }[] };
 
 export default function DafStatsPage() {
-  const [key, setKey] = useState(() => { try { return localStorage.getItem('studioKey') || ''; } catch { return ''; } });
+  const [key, setKey] = useState(() => { try { return localStorage.getItem('statsPin') || ''; } catch { return ''; } });
   const [draft, setDraft] = useState('');
   const [stats, setStats] = useState<Stats | null>(null);
   const [err, setErr] = useState<string | null>(null);
@@ -21,9 +21,9 @@ export default function DafStatsPage() {
     if (!k) return;
     setBusy(true); setErr(null);
     try {
-      const res = await fetch(`${ENDPOINT}?days=30`, { headers: { 'x-admin-key': k } });
+      const res = await fetch(`${ENDPOINT}?days=30`, { headers: { 'x-stats-pin': k } });
       const d = await res.json();
-      if (!res.ok) { setErr(d.error || `Error ${res.status}`); if (res.status === 401) { setKey(''); try { localStorage.removeItem('studioKey'); } catch { /* ignore */ } } return; }
+      if (!res.ok) { setErr(d.error || `Error ${res.status}`); if (res.status === 401) { setKey(''); try { localStorage.removeItem('statsPin'); } catch { /* ignore */ } } return; }
       setStats(d);
     } catch { setErr('Could not reach the server.'); } finally { setBusy(false); }
   }, []);
@@ -33,10 +33,10 @@ export default function DafStatsPage() {
   if (!key) {
     return (
       <div className="min-h-screen bg-slate-950 text-slate-100 flex items-center justify-center p-6">
-        <form onSubmit={(e) => { e.preventDefault(); const k = draft.trim(); try { localStorage.setItem('studioKey', k); } catch { /* ignore */ } setKey(k); }} className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900 p-6">
+        <form onSubmit={(e) => { e.preventDefault(); const k = draft.trim(); try { localStorage.setItem('statsPin', k); } catch { /* ignore */ } setKey(k); }} className="w-full max-w-sm rounded-3xl border border-slate-800 bg-slate-900 p-6">
           <p className="flex items-center gap-2 font-black text-lg"><Lock className="w-5 h-5 text-indigo-300" /> Super Daf stats</p>
-          <p className="mt-1 text-sm text-slate-400">Enter your admin key (the same one as Studio).</p>
-          <input type="password" autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} className="mt-4 w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2.5 outline-none focus:border-indigo-400" placeholder="Admin key" />
+          <p className="mt-1 text-sm text-slate-400">Enter your PIN.</p>
+          <input type="password" inputMode="numeric" autoComplete="off" autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} className="mt-4 w-full rounded-xl bg-slate-950 border border-slate-700 px-3 py-2.5 text-center text-2xl tracking-[0.4em] outline-none focus:border-indigo-400" placeholder="••••••" aria-label="PIN" />
           {err && <p className="mt-2 text-sm text-rose-300">{err}</p>}
           <button className="mt-4 w-full rounded-xl bg-indigo-600 hover:bg-indigo-500 py-2.5 font-black">Open</button>
         </form>
