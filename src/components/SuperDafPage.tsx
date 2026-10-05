@@ -68,10 +68,16 @@ function RefText({ text, className }: { text: string; className?: string }) {
 // Translations come back with light markdown (a **bold** dibbur hamatchil);
 // render just that, nothing else.
 function Rich({ text, className, style }: { text: string; className?: string; style?: CSSProperties }) {
-  const parts = String(text || '').split(/(\*\*[^*]+\*\*)/g);
+  // Models mark the lemma either as **bold** or <b>bold</b>; everything else is plain text.
+  const clean = String(text || '').replace(/<\/?(?:i|em|br)\s*\/?>/gi, '').replace(/<(?!\/?b>)[^>]+>/g, '');
+  const parts = clean.split(/(\*\*[^*]+\*\*|<b>[^<]*<\/b>)/g);
   return (
     <p className={className} style={style}>
-      {parts.map((p, i) => (p.startsWith('**') && p.endsWith('**') ? <strong key={i} className="sd-dh">{p.slice(2, -2)}</strong> : <span key={i}>{p}</span>))}
+      {parts.map((p, i) => {
+        if (p.startsWith('**') && p.endsWith('**')) return <strong key={i} className="sd-dh">{p.slice(2, -2)}</strong>;
+        if (p.startsWith('<b>') && p.endsWith('</b>')) return <strong key={i} className="sd-dh">{p.slice(3, -4)}</strong>;
+        return <span key={i}>{p}</span>;
+      })}
     </p>
   );
 }
