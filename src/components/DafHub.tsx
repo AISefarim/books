@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ArrowLeft, ArrowRight, Search, X, ScrollText, Sparkles, Loader2, BookOpen } from 'lucide-react';
-import { DAF_API } from '../lib/daf';
+import { DAF_API, pingDafOpen } from '../lib/daf';
 
 // The Daf tab's front page: today's daf, huge, then every finished daf by
 // masechet with a search across names and what each daf teaches.
@@ -21,6 +21,7 @@ export function DafHub({ onOpen, onExit }: { onOpen: (ref: string) => void; onEx
   const [q, setQ] = useState('');
   const searchRef = useRef<HTMLInputElement>(null);
 
+  useEffect(() => { pingDafOpen(); }, []);
   useEffect(() => {
     fetch(`${DAF_API}/index`).then((r) => r.json()).then((d) => setItems(d.items || [])).catch(() => { setItems([]); setFailed(true); });
     fetch(`${DAF_API}/current`).then((r) => r.json()).then((d) => { if (d && d.ref) setToday(d); }).catch(() => {});

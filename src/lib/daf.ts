@@ -87,3 +87,10 @@ export function loadReadyDafs(): Promise<Set<string>> {
   }
   return readyPromise;
 }
+
+// Readership ping (counts people, not page loads - see the worker). Fire and forget.
+export function pingDafOpen(ref?: string) {
+  try {
+    fetch(`${DAF_API}/open`, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ ref: ref || '' }) }).catch(() => {});
+  } catch { /* ignore */ }
+}
