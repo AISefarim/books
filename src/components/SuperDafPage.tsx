@@ -50,7 +50,7 @@ interface BookmarkItem { ref: string; segRef: string; heRef: string; snippet: st
 type Surface = 'paper' | 'dark';
 type Lang = 'both' | 'he' | 'en';
 type Tab = 'notes' | 'halacha' | 'sources' | 'big' | 'disputes' | 'ask';
-type Sheet = { kind: 'sugyot' } | { kind: 'catchup' } | { kind: 'bookmarks' } | { kind: 'listen' } | { kind: 'settings' } | null;
+type Sheet = { kind: 'library' } | { kind: 'sugyot' } | { kind: 'catchup' } | { kind: 'bookmarks' } | { kind: 'listen' } | { kind: 'settings' } | null;
 
 const HE_FONT = "'Frank Ruhl Libre', 'David Libre', 'Noto Serif Hebrew', serif";
 const RASHI_FONT = "'Noto Rashi Hebrew', 'Frank Ruhl Libre', serif";
@@ -448,15 +448,16 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         <button onClick={onExit} className="p-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>
         <button onClick={() => setMapOpen((m) => !m)} className={`hidden md:inline-flex p-2 rounded-full border ${mapOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}`} aria-label="Pin the daf map" title={mapOpen ? 'Unpin the daf map (it will show only while you scroll)' : 'Pin the daf map open'}><MapIcon className="w-4 h-4" /></button>
         <button disabled={!canGo(daf?.prev)} onClick={() => daf?.prev && canGo(daf.prev) && setRef(daf.prev)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Previous daf"><ChevronLeft className="w-5 h-5" /></button>
-        <div className="min-w-0 flex-1 text-center leading-tight">
+        <button onClick={() => setSheet(sheet?.kind === 'library' ? null : { kind: 'library' })} className="min-w-0 flex-1 text-center leading-tight rounded-xl hover:bg-slate-900 py-0.5" title="Browse all dafim">
           <div className="truncate font-black text-[15px] sm:text-lg">{daf ? <><span lang="he" dir="rtl" style={{ fontFamily: HE_FONT }}>{daf.heRef}</span><span className="text-slate-600 mx-2">·</span>{daf.ref}</> : ref || 'Super Daf'}</div>
           <div className="text-[10px] sm:text-[11px] text-slate-500 font-semibold truncate">
             {isCurrent && dateLabel ? `Daf Yomi · ${dateLabel}` : 'Super Daf'}
             {daf && <> · {daf.segments[focusIdx]?.amud}{focusSugya ? ` · ${KIND_LABEL[focusSugya.kind].en} ${focusSugya.index + 1}/${daf.sugyot.length}` : ''}</>}
             {daf && daf.status !== 'ready' && <span className="ml-2 inline-flex items-center gap-1 text-indigo-300"><Loader2 className="w-3 h-3 animate-spin" /> preparing {daf.done}/{daf.total}</span>}
           </div>
-        </div>
+        </button>
         <button disabled={!canGo(daf?.next)} onClick={() => daf?.next && canGo(daf.next) && setRef(daf.next)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Next daf" title={canGo(daf?.next) ? `Next daf · ${daf?.next}` : 'The next daf opens the evening before'}>{canGo(daf?.next) ? <ChevronRight className="w-5 h-5" /> : <Lock className="w-4 h-4" />}</button>
+        <button onClick={() => setSheet(sheet?.kind === 'library' ? null : { kind: 'library' })} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 sm:px-3 py-1.5 text-xs font-black ${sheet?.kind === 'library' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="All dafim" title="Browse all dafim"><Library className="w-4 h-4" /><span className="hidden sm:inline">All dafim</span></button>
         <button disabled={!daf || daf.status !== 'ready'} onClick={() => daf && downloadDaf(daf)} className="p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white disabled:opacity-30" aria-label="Download this daf for offline reading" title={daf?.status === 'ready' ? 'Download this daf (works offline, prints to PDF)' : 'Available once the daf is fully prepared'}><Download className="w-4 h-4" /></button>
         <button onClick={() => setSheet(sheet?.kind === 'settings' ? null : { kind: 'settings' })} className={`p-2 rounded-full border ${sheet?.kind === 'settings' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="Reading settings" title="Reading settings"><Type className="w-4 h-4" /></button>
         <button onClick={toggleFullscreen} className="hidden sm:inline-flex p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white" aria-label="Full screen" title={isFull ? 'Exit full screen' : 'Full screen'}>{isFull ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</button>
@@ -555,8 +556,9 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       {/* ============ sheets ============ */}
       {daf && sheet && (
         <SheetFrame onClose={() => setSheet(null)} title={
-          sheet.kind === 'sugyot' ? 'Sugyot on this daf' : sheet.kind === 'catchup' ? `Catch me up · through ${short(daf.segments[focusIdx].ref, daf.book)}` : sheet.kind === 'bookmarks' ? 'Bookmarks' : sheet.kind === 'listen' ? 'Listen to the daf' : 'Reading settings'
-        } tall={sheet.kind === 'sugyot'}>
+          sheet.kind === 'library' ? 'All dafim in Super Daf' : sheet.kind === 'sugyot' ? 'Sugyot on this daf' : sheet.kind === 'catchup' ? `Catch me up · through ${short(daf.segments[focusIdx].ref, daf.book)}` : sheet.kind === 'bookmarks' ? 'Bookmarks' : sheet.kind === 'listen' ? 'Listen to the daf' : 'Reading settings'
+        } tall={sheet.kind === 'sugyot' || sheet.kind === 'library'}>
+          {sheet.kind === 'library' && <DafLibrary ready={readyDafs} current={current?.ref} open={daf.ref} onPick={(r) => { setSheet(null); if (r !== daf.ref) setRef(r); }} />}
           {sheet.kind === 'sugyot' && (
             <div className="space-y-2">
               {daf.sugyot.map((s) => (
@@ -1129,6 +1131,39 @@ function AskThread({ messages, busy, input, setInput, onSend }: { messages: Chat
         <textarea value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); onSend(); } }} rows={1} placeholder="Ask about this sugya…" className="flex-1 resize-none bg-slate-800 border border-slate-700 focus:border-indigo-500/60 rounded-2xl px-3.5 py-2.5 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none max-h-32" />
         <button type="submit" disabled={busy || !input.trim()} className="bg-indigo-600 hover:bg-indigo-500 disabled:opacity-40 text-white p-2.5 rounded-full" aria-label="Send"><Send className="w-4 h-4" /></button>
       </form>
+    </div>
+  );
+}
+
+// Every daf that has been built, grouped by masechet - the way to reach
+// dafim other than today's. Only built dafim are listed (they cost nothing to open).
+function DafLibrary({ ready, current, open, onPick }: { ready: Set<string>; current?: string; open: string; onPick: (ref: string) => void }) {
+  const groups = useMemo(() => {
+    const all = new Set(ready); if (current) all.add(current);
+    const by: Record<string, number[]> = {};
+    for (const r of all) { const m = r.match(/^(.+?)\s+(\d+)$/); if (m) (by[m[1]] ||= []).push(Number(m[2])); }
+    return Object.entries(by).map(([book, ds]) => [book, ds.sort((a, b) => a - b)] as const).sort(([a], [b]) => (current?.startsWith(a + ' ') ? -1 : current?.startsWith(b + ' ') ? 1 : a.localeCompare(b)));
+  }, [ready, current]);
+  if (!groups.length) return <p className="text-sm text-slate-400"><Loader2 className="inline w-4 h-4 animate-spin mr-1" /> Loading…</p>;
+  return (
+    <div className="space-y-5">
+      {groups.map(([book, ds]) => (
+        <div key={book}>
+          <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">{book} <span className="normal-case tracking-normal font-semibold text-slate-500">· {ds.length} {ds.length === 1 ? 'daf' : 'dafim'}</span></p>
+          <div className="grid grid-cols-5 sm:grid-cols-8 gap-1.5">
+            {ds.map((n) => {
+              const r = `${book} ${n}`; const isOpen = r === open; const isToday = r === current;
+              return (
+                <button key={r} onClick={() => onPick(r)} className={`relative rounded-xl border py-2 text-sm font-black tabular-nums transition-colors ${isOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'border-slate-700/60 bg-slate-800/40 text-slate-200 hover:bg-slate-800'}`} title={isToday ? `${r} · today's daf` : r}>
+                  {n}
+                  {isToday && <span className="absolute -top-1.5 left-1/2 -translate-x-1/2 rounded-full bg-emerald-500 px-1.5 text-[8px] font-black uppercase leading-[14px] text-white">today</span>}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+      <p className="text-[11px] text-slate-500">Each new daf is prepared the evening before it is learned, then stays here for everyone.</p>
     </div>
   );
 }
