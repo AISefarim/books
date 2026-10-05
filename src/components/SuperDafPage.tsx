@@ -128,6 +128,61 @@ function Davidson({ html, text, className, style }: { html?: string; text: strin
 
 // ----------------------------------------------------------------------
 
+
+// ---- Placing Rashi / Tosafot inside the paragraph ------------------------
+// Each comment opens with its dibur hamatchil ("words - comment"). Find those
+// words in the Gemara (ignoring nikud, plene spelling and abbreviations) and
+// return the index of the last Gemara word they cover; -1 when unsure.
+const FINALS: Record<string, string> = { 'ך': 'כ', 'ם': 'מ', 'ן': 'נ', 'ף': 'פ', 'ץ': 'צ' };
+const heSkel = (w: string) => w.replace(/[֑-ׇ]/g, '').replace(/[^א-ת"״']/g, '').replace(/[ךםןףץ]/g, (c) => FINALS[c]).replace(/[וי]/g, '');
+const isAbbr = (w: string) => /["״']/.test(w);
+function diburWords(he: string): string[] | null {
+  const txt = he.replace(/<[^>]+>/g, '');
+  const i = txt.search(/\s[-–—]\s/);
+  if (i < 1) return null;
+  return txt.slice(0, i).split(/\s+/).filter(Boolean).slice(0, 6);
+}
+function locateDibur(segWords: string[], dh: string[], from: number): number {
+  const S = segWords.map(heSkel);
+  const D = dh.map((w) => ({ abbr: isAbbr(w), k: heSkel(w).replace(/["״']/g, '') }));
+  const eq = (a: string, b: string) => !!a && !!b && (a === b || (a.length >= 3 && b.length >= 3 && (a.startsWith(b) || b.startsWith(a))));
+  let best = { score: 0, end: -1, start: -1 };
+  for (let i = 0; i < S.length; i++) {
+    if (D[0].abbr ? false : !eq(S[i], D[0].k)) continue;
+    let p = i, j = 0, score = 0, skips = 0, end = i;
+    while (j < D.length && p < S.length) {
+      if (D[j].abbr) { score += 0.5; end = p; j++; p++; continue; }
+      if (eq(S[p], D[j].k)) { score += 1; end = p; j++; p++; continue; }
+      if (skips++ >= 1) break;
+      if (p + 1 < S.length && eq(S[p + 1], D[j].k)) p++; else j++;
+    }
+    const firstUnique = D[0].k.length >= 4 && S.filter((x) => eq(x, D[0].k)).length === 1;
+    const onlyOnce = S.filter((x) => x === D[0].k).length === 1;
+    const ok = score >= 2 || (D.length === 1 && score >= 1 && (D[0].k.length >= 3 || onlyOnce)) || (score >= 1 && (firstUnique || (D[0].k.length >= 2 && onlyOnce)));
+    if (!ok) continue;
+    // prefer the reading order (comments run in sequence), then the stronger match
+    const better = best.end < 0 || (i >= from && best.start < from) || ((i >= from) === (best.start >= from) && score > best.score);
+    if (better) best = { score, end, start: i };
+  }
+  return best.end;
+}
+// Group the comments by the chunk (interlinear phrase or Hebrew clause) they belong after.
+function placeComments(chunks: string[], comms: Comm[]): { at: Record<number, Comm[]>; rest: Comm[] } {
+  const words: string[] = []; const chunkOf: number[] = [];
+  chunks.forEach((c, k) => c.split(/\s+/).filter(Boolean).forEach((w) => { words.push(w); chunkOf.push(k); }));
+  const at: Record<number, Comm[]> = {}; const rest: Comm[] = [];
+  let from = 0;
+  for (const c of comms) {
+    const dh = diburWords(c.he);
+    const end = dh && words.length ? locateDibur(words, dh, from) : -1;
+    if (end < 0) { rest.push(c); continue; }
+    from = end;
+    (at[chunkOf[end]] ||= []).push(c);
+  }
+  return { at, rest };
+}
+const heClauses = (he: string) => he.split(/(?<=[:.?!;—])\s+/).filter(Boolean);
+
 export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { initialRef?: string | null; pinnedPodcastId?: string | null; media: MediaItem[]; onExit: () => void }) {
   const prefs = useMemo(() => readJson<any>(PREFS_KEY, {}), []);
   const [surface, setSurface] = useState<Surface>(prefs.surface || 'paper');
@@ -671,6 +726,29 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                 const m = mes?.segments?.find((x) => x.ref === s.ref);
                 const hal = halItems.filter((h) => (h.refs || []).includes(s.ref));
                 const core = (built?.core || []).filter((c) => c.anchor === s.ref);
+                const useUnits = showEn && !!m?.units?.length;
+                const clauses = !useUnits && showHe ? heClauses(s.he) : [];
+                const placed = useUnits ? placeComments(m!.units.map((u) => u.he), core) : showHe && clauses.length > 1 ? placeComments(clauses, core) : { at: {} as Record<number, Comm[]>, rest: core };
+                const blurb = (c: Comm) => {
+                  const on = !!words[c.ref];
+                  return (
+                    <div key={c.ref} className={`sd-blurb rounded-lg px-2.5 py-1.5 ${t.soft}`} onClick={(e) => e.stopPropagation()}>
+                      <p className="text-[13px] leading-snug" dir="ltr" style={{ textAlign: 'left', fontFamily: 'inherit' }}>
+                        <span lang="he" className="sd-rashi font-bold mr-1.5" style={{ fontSize: '1rem' }}>{c.title === 'Rashi' ? 'רש״י' : 'תוס׳'}</span>
+                        <span className={`font-black ${t.accent} mr-1`}>{c.title}</span>
+                        <span>{c.gist || firstSentence(c.en) || ''}</span>
+                        <button onClick={() => setWords((w) => ({ ...w, [c.ref]: !w[c.ref] }))} className={`ml-2 text-[11px] font-bold ${t.accent}`}>{on ? 'hide words' : 'words'}</button>
+                      </p>
+                      {on && (
+                        <div className="mt-1.5 animate-in fade-in duration-150">
+                          <p lang="he" dir="rtl" className="sd-rashi" style={{ fontSize: `${1.1 * fontScale}rem`, lineHeight: 1.65 }}>{c.he}</p>
+                          {c.en && <Rich text={c.en} className={`${t.muted} mt-1`} style={{ fontFamily: EN_FONT, fontSize: `${0.88 * fontScale}rem`, lineHeight: 1.55 }} />}
+                          <p className={`text-[10px] ${t.faint} mt-0.5`}><SourceLink r={c.ref} />{c.enSource === 'ai' && <span className="ml-1.5 italic">AI translation</span>}</p>
+                        </div>
+                      )}
+                    </div>
+                  );
+                };
                 const nNotes = m?.notes?.length || 0;
                 const isPanel = panelIdx === idx;
                 return (
@@ -691,17 +769,29 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                         <button onClick={() => openOn(idx, 'notes')} className={`inline-flex items-center gap-1.5 text-[13px] font-black ${t.accent}`}><ChevronRight className="w-3.5 h-3.5" /> {step.headline}</button>
                       </div>
                     )}
-                    {showHe && <p lang="he" dir="rtl" style={heStyle} className="cursor-pointer" onClick={() => openOn(idx, 'notes')}>{s.he}</p>}
+                    {showHe && (clauses.length > 1 && Object.keys(placed.at).length ? (
+                      <div lang="he" dir="rtl" style={heStyle} className="cursor-pointer" onClick={() => openOn(idx, 'notes')}>
+                        {clauses.map((cl, k) => (
+                          <span key={k}>
+                            {cl}{' '}
+                            {placed.at[k]?.length ? <span className="block my-1.5 space-y-1" dir="ltr">{placed.at[k].map(blurb)}</span> : null}
+                          </span>
+                        ))}
+                      </div>
+                    ) : <p lang="he" dir="rtl" style={heStyle} className="cursor-pointer" onClick={() => openOn(idx, 'notes')}>{s.he}</p>)}
 
                     {showEn && (m && m.units?.length ? (
                       <div className={`mt-2 rounded-xl overflow-hidden border ${t.rule}`}>
                         {m.units.map((u, k) => (
-                          <div key={k} className="sd-unit grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-x-4 gap-y-0.5 px-3 py-1.5 cursor-pointer" onClick={() => openOn(idx, 'notes', u.notes?.[0] ?? null)}>
+                          <div key={k}>
+                          <div className="sd-unit grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-x-4 gap-y-0.5 px-3 py-1.5 cursor-pointer" onClick={() => openOn(idx, 'notes', u.notes?.[0] ?? null)}>
                             {showHe && <p lang="he" dir="rtl" className="text-right" style={{ fontFamily: HE_FONT, fontSize: `${1.05 * fontScale}rem`, lineHeight: 1.6 }}>{u.he}</p>}
                             <p style={{ fontFamily: EN_FONT, fontSize: `${0.95 * fontScale}rem`, lineHeight: 1.55 }}>
                               {u.en ? <Marked text={u.en} /> : <><strong>{u.literal}</strong>{u.elucidation ? <span className="sd-eluc"> {u.elucidation}</span> : null}</>}
                               {(u.notes || []).map((n) => <span key={n} className={`sd-note ${isPanel && noteN === n ? 'on' : ''}`} onClick={(e) => { e.stopPropagation(); openOn(idx, 'notes', n); }} title="Open this note below">{n}</span>)}
                             </p>
+                          </div>
+                          {placed.at[k]?.length ? <div className="px-2 py-1.5 space-y-1">{placed.at[k].map(blurb)}</div> : null}
                           </div>
                         ))}
                       </div>
@@ -712,30 +802,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                       </div>
                     ))}
 
-                    {core.length > 0 && (
-                      <div className="mt-2 space-y-1">
-                        {core.map((c) => {
-                          const on = !!words[c.ref];
-                          return (
-                            <div key={c.ref} className={`rounded-lg px-2.5 py-1.5 ${t.soft}`}>
-                              <p className="text-[13px] leading-snug">
-                                <span lang="he" className="sd-rashi font-bold mr-1.5" style={{ fontSize: '1rem' }}>{c.title === 'Rashi' ? 'רש״י' : 'תוס׳'}</span>
-                                <span className={`font-black ${t.accent} mr-1`}>{c.title}</span>
-                                <span>{c.gist || firstSentence(c.en) || ''}</span>
-                                <button onClick={() => setWords((w) => ({ ...w, [c.ref]: !w[c.ref] }))} className={`ml-2 text-[11px] font-bold ${t.accent}`}>{on ? 'hide words' : 'words'}</button>
-                              </p>
-                              {on && (
-                                <div className="mt-1.5 animate-in fade-in duration-150">
-                                  <p lang="he" dir="rtl" className="sd-rashi" style={{ fontSize: `${1.1 * fontScale}rem`, lineHeight: 1.65 }}>{c.he}</p>
-                                  {c.en && <Rich text={c.en} className={`${t.muted} mt-1`} style={{ fontFamily: EN_FONT, fontSize: `${0.88 * fontScale}rem`, lineHeight: 1.55 }} />}
-                                  <p className={`text-[10px] ${t.faint} mt-0.5`}><SourceLink r={c.ref} />{c.enSource === 'ai' && <span className="ml-1.5 italic">AI translation</span>}</p>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                    {placed.rest.length > 0 && <div className="mt-2 space-y-1">{placed.rest.map(blurb)}</div>}
 
                     {hal.length > 0 && (
                       <div className="mt-2 rounded-xl border-l-4 border-amber-500 bg-amber-500/10 px-3 py-2">
@@ -807,13 +874,7 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
   const syn = built?.synthesis && !built.synthesis._error ? built.synthesis : null;
   const seg = segIdx !== null ? daf.segments[segIdx] : null;
   const step = seg ? syn?.steps?.find((st) => (st.refs || []).includes(seg.ref)) : null;
-  // The Rambam's reading is about the whole sugya: show it in full on the
-  // sugya's first paragraph, on paragraphs his rulings codify, and on the
-  // whole-sugya view - elsewhere as a one-line opener, never repeated in full.
-  const halAllForRambam = (built?.halacha?.items || []) as HalachaItem[];
-  const rambamHere = !seg || seg.ref === daf.segments[sugya.segments[0]]?.ref || halAllForRambam.some((h) => h.rambam && (h.refs || []).includes(seg.ref));
-  const [rambamOpen, setRambamOpen] = useState(false);
-  useEffect(() => { setRambamOpen(false); }, [segIdx]);
+  // The Rambam's reading of the sugya shows open in Notes on every paragraph.
   const mes = seg ? built?.mesivta?.segments?.find((x) => x.ref === seg.ref) : null;
   const all = built ? [...built.core, ...built.rishonim, ...built.acharonim, ...built.other] : [];
   const halAll = (built?.halacha?.items || []) as HalachaItem[];
@@ -863,10 +924,7 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
                 ))}
               </div>
             ) : seg && built.mesivta ? <p className="text-slate-500">No commentary on Sefaria is anchored to this paragraph.</p> : seg ? <p className="text-slate-500 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Notes on their way.</p> : null}
-            {syn?.rambam && !rambamHere && !rambamOpen && (
-              <button onClick={() => setRambamOpen(true)} className="w-full text-left rounded-xl border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-[12px] font-bold text-amber-800 inline-flex items-center gap-2"><Landmark className="w-4 h-4" /> The Rambam's reading of this sugya ›</button>
-            )}
-            {syn?.rambam && (rambamHere || rambamOpen) && (
+            {syn?.rambam && (
               <div className="rounded-2xl border-2 border-amber-500/50 bg-amber-500/10 px-3.5 py-3">
                 <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-700"><Landmark className="w-4 h-4" /> The Rambam</p>
                 <p className="mt-1.5 leading-relaxed text-slate-100" style={{ fontFamily: EN_FONT, fontSize: '0.98rem' }}><RefText text={syn.rambam.reading} /></p>
@@ -874,10 +932,10 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
                   <ul className="mt-2 space-y-1.5">{syn.rambam.commentators.map((c, i) => <li key={i} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-amber-500/40 text-amber-800 bg-amber-500/10">{c.source}</span><span className="text-slate-200"><RefText text={c.point} /> <SourceLink r={c.ref} /></span></li>)}</ul>
                 ) : null}
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
-                  {syn.rambam.rulings?.length ? <button onClick={() => setWords((o) => ({ ...o, __rulings: !o.__rulings }))} className="rounded-full border border-amber-500/40 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-amber-800">{words.__rulings ? 'Hide' : 'Show'} his rulings ({syn.rambam.rulings.length})</button> : null}
+                  {syn.rambam.rulings?.length ? <button onClick={() => setWords((o) => ({ ...o, __rulings: o.__rulings === false }))} className="rounded-full border border-amber-500/40 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-amber-800">{words.__rulings !== false ? 'Hide' : 'Show'} his rulings ({syn.rambam.rulings.length})</button> : null}
                   {built.rambamSources.length ? <button onClick={() => setWords((o) => ({ ...o, __rtexts: !o.__rtexts }))} className="rounded-full border border-amber-500/40 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-amber-800">{words.__rtexts ? 'Hide' : 'Read'} the texts & commentators ({built.rambamSources.length})</button> : null}
                 </div>
-                {words.__rulings && syn.rambam.rulings?.length ? <div className="mt-2 space-y-2">{syn.rambam.rulings.map((x, i) => <div key={i} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2"><p className="text-[11px] font-black"><SourceLink r={x.ref} /></p><p className="mt-0.5 text-slate-200"><RefText text={x.ruling} /></p></div>)}</div> : null}
+                {words.__rulings !== false && syn.rambam.rulings?.length ? <div className="mt-2 space-y-2">{syn.rambam.rulings.map((x, i) => <div key={i} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2"><p className="text-[11px] font-black"><SourceLink r={x.ref} /></p><p className="mt-0.5 text-slate-200"><RefText text={x.ruling} /></p></div>)}</div> : null}
                 {words.__rtexts ? <div className="mt-2"><Words comms={built.rambamSources} words={words} setWords={setWords} /></div> : null}
               </div>
             )}
