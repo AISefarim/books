@@ -118,7 +118,6 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 <span className="hidden sm:inline">Videos & Podcasts</span>
               </div>
             </div>
-            <p className="mt-0.5 text-[10px] sm:text-[11px] italic text-amber-200/80 leading-tight">Dedicated to Carol Serouya, the best mother and wife</p>
           </div>
         </div>
 
