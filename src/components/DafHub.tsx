@@ -159,7 +159,7 @@ export function DafHub({ onOpen, onExit }: { onOpen: (ref: string) => void; onEx
             ))}
           </div>
         )}
-        <p className="mt-12 text-center text-xs text-slate-600">Each new daf is prepared the evening before it is learned, and then stays here for everyone.</p>
+        <p className="mt-12 text-center text-xs text-slate-600">Each new daf is prepared at noon the day before it is learned, and then stays here for everyone.</p>
       </div>
     </div>
   );
