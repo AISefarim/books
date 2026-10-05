@@ -371,7 +371,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
   const t = surface === 'paper'
     ? { shell: 'bg-[#efe7d6]', page: 'bg-[#f7f2e7] text-stone-900', card: 'bg-white/70 border-[#e3d8c1]', soft: 'bg-[#efe6d3]', muted: 'text-stone-500', faint: 'text-stone-400', rule: 'border-[#e3d8c1]', accent: 'text-indigo-700', chip: 'bg-white/80 border-[#e3d8c1] text-stone-700', hover: 'hover:bg-white/70', sel: 'ring-2 ring-indigo-400/50' }
-    : { shell: 'bg-[#0f0e0b]', page: 'bg-[#1a1814] text-[#ebe4d3]', card: 'bg-[#24211b] border-[#3a352b]', soft: 'bg-[#2a261f]', muted: 'text-[#b3aa96]', faint: 'text-[#857c6a]', rule: 'border-[#3a352b]', accent: 'text-[#e3b866]', chip: 'bg-[#2a261f] border-[#3f392e] text-[#e2dac7]', hover: 'hover:bg-[#2a261f]', sel: 'ring-2 ring-[#e3b866]/50' };
+    : { shell: 'bg-[#0c0c0e]', page: 'bg-[#141416] text-[#e8e6e3]', card: 'bg-[#1c1c1f] border-[#2e2e33]', soft: 'bg-[#202024]', muted: 'text-[#a8a6a3]', faint: 'text-[#76757a]', rule: 'border-[#2e2e33]', accent: 'text-[#a5b4fc]', chip: 'bg-[#202024] border-[#34343a] text-[#dcdad6]', hover: 'hover:bg-[#202024]', sel: 'ring-2 ring-[#a5b4fc]/40' };
   const showHe = lang !== 'en', showEn = lang !== 'he';
   const dateLabel = current?.date ? new Date(current.date + 'T12:00:00').toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
   const upperPct = lowerCollapsed ? 100 : Math.round(split * 100);
@@ -397,22 +397,38 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd .sd-divider.cursor-col-resize { cursor: col-resize; }
         /* Lower half on paper: a deeper shade of the same paper, not a dark slab. */
         .sd-lowp { background:#ece4d3; color:#292524; }
-        .sd-lowd { background:#14120f; color:#ebe4d3; }
-        .sd-lowd .text-slate-100, .sd-lowd .text-slate-200 { color:#ebe4d3; }
-        .sd-lowd .text-slate-300 { color:#cfc6b2; }
-        .sd-lowd .text-slate-400 { color:#a39a87; }
-        .sd-lowd .text-slate-500 { color:#7d7563; }
-        .sd-lowd .text-indigo-300, .sd-lowd .text-indigo-200 { color:#e3b866; }
-        .sd-lowd .bg-slate-800, .sd-lowd .bg-slate-900, .sd-lowd .bg-slate-800\\/60, .sd-lowd .bg-slate-800\\/50, .sd-lowd .bg-slate-800\\/70 { background:#221f19; }
-        .sd-lowd .hover\\:bg-slate-800:hover, .sd-lowd .hover\\:bg-slate-700:hover { background:#2b271f; }
-        .sd-lowd .border-slate-700, .sd-lowd .border-slate-700\\/60, .sd-lowd .border-slate-800 { border-color:#3a352b; }
-        .sd-lowd .bg-indigo-600 { background:#b8862f; color:#14120f; }
-        .sd-lowd .bg-indigo-500\\/10 { background:rgba(227,184,102,.08); }
-        .sd-lowd .border-indigo-400\\/60 { border-color:rgba(227,184,102,.5); }
-        .sd-lowd textarea { background:#221f19; color:#ebe4d3; }
-        .sd-dark .sd-ref { color:#e3b866; border-bottom-color:rgba(227,184,102,.45); }
-        .sd-dark .sd-note { background:rgba(227,184,102,.18); color:#f0d9a8; }
-        .sd-dark .sd-note:hover, .sd-dark .sd-note.on { background:#b8862f; color:#14120f; }
+        .sd-lowd { background:#111113; color:#e8e6e3; }
+        .sd-lowd .text-slate-100, .sd-lowd .text-slate-200 { color:#e8e6e3; }
+        .sd-lowd .text-slate-300 { color:#c9c7c3; }
+        .sd-lowd .text-slate-400 { color:#9a9894; }
+        .sd-lowd .text-slate-500 { color:#727176; }
+        .sd-lowd .text-indigo-300, .sd-lowd .text-indigo-200 { color:#a5b4fc; }
+        .sd-lowd .bg-slate-800, .sd-lowd .bg-slate-900, .sd-lowd .bg-slate-800\\/60, .sd-lowd .bg-slate-800\\/50, .sd-lowd .bg-slate-800\\/70 { background:#1b1b1e; }
+        .sd-lowd .hover\\:bg-slate-800:hover, .sd-lowd .hover\\:bg-slate-700:hover { background:#232327; }
+        .sd-lowd .border-slate-700, .sd-lowd .border-slate-700\\/60, .sd-lowd .border-slate-800 { border-color:#2e2e33; }
+        .sd-lowd .bg-indigo-600 { background:#5b5fd6; color:#fff; }
+        .sd-lowd .bg-indigo-500\\/10 { background:rgba(165,180,252,.08); }
+        .sd-lowd .border-indigo-400\\/60 { border-color:rgba(165,180,252,.45); }
+        .sd-lowd .text-amber-700, .sd-lowd .text-amber-800 { color:#fcd9a0; }
+        .sd-lowd .text-amber-300 { color:#fcd9a0; }
+        .sd-lowd textarea { background:#1b1b1e; color:#e8e6e3; }
+        .sd-dark .sd-ref { color:#a5b4fc; border-bottom-color:rgba(165,180,252,.4); }
+        .sd-dark .sd-note { background:rgba(165,180,252,.16); color:#c7d2fe; }
+        .sd-dark .sd-note:hover, .sd-dark .sd-note.on { background:#5b5fd6; color:#fff; }
+        .sd-dark .text-amber-700, .sd-dark .text-amber-800, .sd-dark .text-amber-900 { color:#f5cf8e; }
+        .sd-dark .text-amber-500, .sd-dark .text-amber-300 { color:#f5cf8e; }
+        .sd-dark .bg-amber-500\\/10, .sd-dark .bg-amber-500\\/5 { background:rgba(245,207,142,.07); }
+        .sd-dark .bg-amber-500\\/15 { background:rgba(245,207,142,.12); }
+        .sd-dark .border-amber-500, .sd-dark .border-amber-500\\/50, .sd-dark .border-amber-500\\/40, .sd-dark .border-amber-500\\/30 { border-color:rgba(245,207,142,.35); }
+        .sd-dark .text-emerald-700, .sd-dark .text-emerald-800 { color:#8fe3bf; }
+        .sd-dark .bg-emerald-500\\/10 { background:rgba(143,227,191,.07); }
+        .sd-dark .border-emerald-600\\/25 { border-color:rgba(143,227,191,.3); }
+        .sd-dark .text-stone-900, .sd-dark .text-stone-700 { color:#e8e6e3; }
+        .sd-dark .text-stone-500 { color:#a8a6a3; }
+        .sd-dark .text-stone-400 { color:#76757a; }
+        .sd-dark .text-indigo-700 { color:#a5b4fc; }
+        .sd-dark .bg-indigo-600 { background:#5b5fd6; }
+        .sd-dark .bg-slate-900 { background:#1b1b1e; }
         .sd-lowp .text-slate-100, .sd-lowp .text-slate-200 { color:#292524; }
         .sd-lowp .text-slate-300 { color:#44403c; }
         .sd-lowp .text-slate-400 { color:#78716c; }
@@ -424,7 +440,6 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd-lowp .border-slate-700, .sd-lowp .border-slate-700\\/60, .sd-lowp .border-slate-800 { border-color:#ddd1b8; }
         .sd-lowp .bg-indigo-500\\/10 { background:rgba(99,102,241,.08); }
         .sd-lowp .bg-indigo-600 { background:#4f46e5; color:#fff; }
-        .sd-lowd .text-amber-700, .sd-lowd .text-amber-800 { color:#fcd34d; }
         .sd-lowp textarea { background:#fffaf0; color:#292524; }
       `}</style>
 
@@ -490,7 +505,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
         {daf && (
           <div
-            className={`sd-divider shrink-0 flex items-center justify-between select-none ${wide ? 'w-3 flex-col border-x py-3 px-0 cursor-col-resize' : 'h-7 border-y px-3'} ${surface === 'paper' ? 'bg-[#e2d7c0] border-[#d3c6aa]' : 'bg-[#0f0e0b] border-[#3a352b]'}`}
+            className={`sd-divider shrink-0 flex items-center justify-between select-none ${wide ? 'w-3 flex-col border-x py-3 px-0 cursor-col-resize' : 'h-7 border-y px-3'} ${surface === 'paper' ? 'bg-[#e2d7c0] border-[#d3c6aa]' : 'bg-[#0c0c0e] border-[#2e2e33]'}`}
             onPointerDown={onDragStart} onPointerMove={onDragMove} onPointerUp={onDragEnd} onPointerCancel={onDragEnd} onDoubleClick={() => { setSplit(0.62); setLowerCollapsed(false); }}
           >
             {!wide && <span className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 inline-flex items-center gap-1.5"><NotebookPen className="w-3 h-3" /> Notes {daf.segments[panelIdx] && sugyaScope === null ? `· ${short(daf.segments[panelIdx].ref, daf.book)}` : ''}</span>}
@@ -989,7 +1004,7 @@ function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focu
   const core = daf.sugyot.flatMap((s) => s.built?.core || []);
   const count = (segRef: string, title: string) => core.filter((c) => c.anchor === segRef && c.title === title).length;
   const marked = new Set(bookmarks.filter((b) => b.ref === daf.ref).map((b) => b.segRef));
-  const fill = surface === 'paper' ? { page: '#fbf7ee', stroke: '#d9cdb3', block: '#cfc3a9', mishnah: '#e8c279', side: '#ddd3bd', focus: '#4f46e5', text: '#8a7f6a', bg: '#efe7d6' } : { page: '#1a1814', stroke: '#3a352b', block: '#4a4438', mishnah: '#8a5a1c', side: '#3a352b', focus: '#e3b866', text: '#a39a87', bg: '#0f0e0b' };
+  const fill = surface === 'paper' ? { page: '#fbf7ee', stroke: '#d9cdb3', block: '#cfc3a9', mishnah: '#e8c279', side: '#ddd3bd', focus: '#4f46e5', text: '#8a7f6a', bg: '#efe7d6' } : { page: '#18181b', stroke: '#2e2e33', block: '#3a3a40', mishnah: '#6b5a3a', side: '#2e2e33', focus: '#a5b4fc', text: '#8a898e', bg: '#0c0c0e' };
   return (
     <aside className="flex h-full shrink-0 w-[128px] flex-col items-center gap-3 py-3 overflow-y-auto sd-scroll border-r border-black/5" style={{ background: fill.bg }} aria-label="Where you are on the daf">
       <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider" style={{ color: fill.text }}><MapIcon className="w-3 h-3" /> The daf</div>
