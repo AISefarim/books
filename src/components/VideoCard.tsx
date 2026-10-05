@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Trash2, Share2, Check, PlayCircle, Edit2, GripVertical, Play, Eye, Star, Bookmark, Headphones, MessageCircle, Clock, CheckCircle2 } from 'lucide-react';
 import { Video } from '../types';
 import { hasDeviceWatched } from '../lib/deviceTracker';
+import { dafRefForMedia } from '../lib/daf';
+import { useReadyDafs } from '../lib/useReadyDafs';
 
 interface VideoCardProps {
   key?: string | number;
@@ -20,6 +22,9 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
   const [copied, setCopied] = useState(false);
 
   const isAudio = video.type === 'audio';
+  const readyDafs = useReadyDafs();
+  const dafRef = dafRefForMedia(video);
+  const hasSuperDaf = !!dafRef && readyDafs.has(dafRef);
 
   const handleShare = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -52,6 +57,13 @@ export function VideoCard({ video, isAdmin, onEdit, onDelete, onSelect, category
       className="bg-slate-900 rounded-[1.5rem] p-3.5 shadow-sm hover:shadow-[0_8px_30px_rgb(0,0,0,0.3)] hover:-translate-y-1 transition-all duration-300 border border-slate-800 flex flex-col group cursor-pointer"
       onClick={onSelect}
     >
+      {hasSuperDaf && (
+        <div className="-mx-3.5 -mt-3.5 mb-3 rounded-t-[1.5rem] bg-gradient-to-r from-indigo-600 to-violet-600 px-3.5 py-2 flex items-center gap-2 text-white">
+          <span className="text-base">📖</span>
+          <span className="text-[11px] font-black uppercase tracking-[0.16em]">Super Daf</span>
+          <span className="ml-auto text-[10px] font-bold text-indigo-100">Learn {dafRef} →</span>
+        </div>
+      )}
       <div className="aspect-square rounded-[1rem] bg-slate-950 flex items-center justify-center relative overflow-hidden mb-4 border border-slate-800/50">
         
         {/* Watched on this device badge indicator */}

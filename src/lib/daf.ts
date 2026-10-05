@@ -72,3 +72,18 @@ export function dafFromTitle(title: string): string | null {
   }
   return null;
 }
+
+// The daf an AI Daf episode belongs to ("Bekhorot 14", or folder "Bekhorot" + title "14").
+export function dafRefForMedia(v: { title?: string; folder?: string; category?: string }): string | null {
+  if (!/\bdaf\b/i.test(v.category || '')) return null;
+  return dafFromTitle(v.title || '') || dafFromTitle(`${v.folder || ''} ${v.title || ''}`);
+}
+
+// Dafim that have a finished Super Daf. Fetched once per page load and shared.
+let readyPromise: Promise<Set<string>> | null = null;
+export function loadReadyDafs(): Promise<Set<string>> {
+  if (!readyPromise) {
+    readyPromise = fetch(`${DAF_API}/ready`).then((r) => r.json()).then((d) => new Set<string>(d.refs || [])).catch(() => new Set<string>());
+  }
+  return readyPromise;
+}
