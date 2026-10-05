@@ -2,12 +2,13 @@ import { useState, useEffect, useMemo, useRef, useCallback, type CSSProperties, 
 import {
   ArrowLeft, ChevronLeft, ChevronRight, Headphones, X, ExternalLink, Clock, Loader2, Scale, Landmark, Send, MessageSquareText,
   Minus, Plus, Lock, Bookmark, BookmarkCheck, Maximize2, Minimize2, Type, Sun, Moon, Map as MapIcon, ListTree, Check, Library,
-  Quote, Sparkles, NotebookPen, Share2, GripHorizontal, ChevronUp, ChevronDown,
+  Quote, Sparkles, NotebookPen, Share2, GripHorizontal, ChevronUp, ChevronDown, Download,
 } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
 import { DAF_API, dafPath, sefariaUrl, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
 import { useReadyDafs } from '../lib/useReadyDafs';
+import { downloadDaf } from '../lib/dafExport';
 
 // ----------------------------------------------------------------------
 // Types mirroring the worker's /daf/get response
@@ -441,6 +442,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
           </div>
         </div>
         <button disabled={!canGo(daf?.next)} onClick={() => daf?.next && canGo(daf.next) && setRef(daf.next)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Next daf" title={canGo(daf?.next) ? `Next daf · ${daf?.next}` : 'The next daf opens the evening before'}>{canGo(daf?.next) ? <ChevronRight className="w-5 h-5" /> : <Lock className="w-4 h-4" />}</button>
+        <button disabled={!daf || daf.status !== 'ready'} onClick={() => daf && downloadDaf(daf)} className="p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white disabled:opacity-30" aria-label="Download this daf for offline reading" title={daf?.status === 'ready' ? 'Download this daf (works offline, prints to PDF)' : 'Available once the daf is fully prepared'}><Download className="w-4 h-4" /></button>
         <button onClick={() => setSheet(sheet?.kind === 'settings' ? null : { kind: 'settings' })} className={`p-2 rounded-full border ${sheet?.kind === 'settings' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="Reading settings" title="Reading settings"><Type className="w-4 h-4" /></button>
         <button onClick={toggleFullscreen} className="hidden sm:inline-flex p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white" aria-label="Full screen" title={isFull ? 'Exit full screen' : 'Full screen'}>{isFull ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</button>
       </header>
