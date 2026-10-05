@@ -34,7 +34,7 @@ import { LearningGamificationBanner } from './components/LearningGamificationBan
 import { ChatPage } from './components/ChatPage';
 import { SuperDafPage } from './components/SuperDafPage';
 import { SuperDafHero } from './components/SuperDafHero';
-import { refFromPath, dafFromTitle, dafPath } from './lib/daf';
+import { refFromPath, dafFromTitle, dafPath, dafRefForMedia, loadReadyDafs } from './lib/daf';
 import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats, registerMediaList, recordWebsiteVisit } from './lib/deviceTracker';
 
 export default function App() {
@@ -45,9 +45,12 @@ export default function App() {
 
   // A daf podcast is listened to inside Super Daf, with the sources open,
   // rather than played bare from the Media section.
-  const isDafPodcast = (v: Video) => v.type === 'audio' && /\bdaf\b/i.test(v.category || '');
+  // AI Daf episodes (audio or video) whose daf has a Super Daf open inside it.
+  const [readyDafs, setReadyDafs] = useState<Set<string>>(new Set());
+  useEffect(() => { loadReadyDafs().then(setReadyDafs); }, []);
+  const isDafPodcast = (v: Video) => { const r = dafRefForMedia(v); return !!r && readyDafs.has(r); };
   const openSuperDaf = (podcast?: Video) => {
-    const r = podcast ? dafFromTitle(podcast.title) : null;
+    const r = podcast ? dafRefForMedia(podcast) || dafFromTitle(podcast.title) : null;
     const path = (r ? dafPath(r) : '/daf') + (podcast ? `?podcast=${podcast.id}` : '');
     window.history.pushState({}, '', path);
     setSelectedBook(null);
@@ -297,9 +300,14 @@ export default function App() {
           }
         } else if (sharedVideoId) {
           const videoToOpen = mediaDocs.find(v => v.id === sharedVideoId);
-          if (videoToOpen && isDafPodcast(videoToOpen)) {
+          const dafRef = videoToOpen ? dafRefForMedia(videoToOpen) : null;
+          if (videoToOpen && dafRef) {
+            // An AI Daf episode: open its Super Daf if one exists, else the episode page.
             recordDeviceWatch(videoToOpen.id, videoToOpen);
-            openSuperDaf(videoToOpen);
+            loadReadyDafs().then((ready) => {
+              if (ready.has(dafRef)) openSuperDaf(videoToOpen);
+              else { setSelectedVideo(videoToOpen); setActiveTab('videos'); setIsDirectLinkEntry(true); }
+            });
           } else if (videoToOpen) {
             setSelectedVideo(videoToOpen);
             setActiveTab('videos');

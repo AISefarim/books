@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
-import { DAF_API, dafPath, sefariaUrl, titleMatchesDaf } from '../lib/daf';
+import { DAF_API, dafPath, sefariaUrl, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
 
 // ----------------------------------------------------------------------
 // Types mirroring the worker's /daf/get response
@@ -160,6 +160,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const bodyRef = useRef<HTMLDivElement>(null);
   const rootRef = useRef<HTMLDivElement>(null);
   const pollRef = useRef<number | null>(null);
+  const pinnedRef = useRef<number | null>(null);
   const dragging = useRef(false);
   const wideQuery = '(pointer: fine) and (min-width: 1024px)';
   const [wide, setWide] = useState<boolean>(() => typeof window !== 'undefined' && window.matchMedia(wideQuery).matches);
@@ -281,6 +282,8 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       for (const e of vis) { const d = Math.abs(e.boundingClientRect.top + e.boundingClientRect.height / 2 - mid); if (d < bestD) { bestD = d; best = e; } }
       const idx = Number((best.target as HTMLElement).dataset.seg);
       setFocusIdx(idx);
+      // Scrolling to another paragraph releases a tap-pin, so the notes follow you.
+      if (pinnedRef.current !== null && pinnedRef.current !== idx) { pinnedRef.current = null; setPinned(null); setNoteN(null); setSugyaScope(null); }
       writeJson(LAST_KEY, { ref: daf.ref, segRef: daf.segments[idx]?.ref, at: Date.now() });
     }, { root, threshold: [0, 0.25, 0.5, 0.75, 1] });
     els.forEach((el) => obs.observe(el));
@@ -302,9 +305,10 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const podcasts = useMemo(() => {
     if (!daf) return [] as MediaItem[];
     const pin = media.filter((m) => m.id === pinnedPodcastId);
-    return [...pin, ...media.filter((m) => m.type === 'audio' && m.id !== pinnedPodcastId && titleMatchesDaf(m.title, daf.book, daf.daf))];
+    return [...pin, ...media.filter((m) => m.id !== pinnedPodcastId && (dafRefForMedia(m) === daf.ref || (m.type === 'audio' && titleMatchesDaf(m.title, daf.book, daf.daf))))];
   }, [media, daf, pinnedPodcastId]);
   const sugyaOf = useCallback((segIdx: number) => daf ? daf.sugyot.find((s) => s.segments.includes(segIdx)) || daf.sugyot[0] : null, [daf]);
+  pinnedRef.current = pinned;
   const panelIdx = pinned ?? focusIdx;
   const panelSugya = sugyaScope !== null && daf ? daf.sugyot[sugyaScope] : sugyaOf(panelIdx);
   const focusSugya = sugyaOf(focusIdx);
@@ -730,6 +734,13 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
   const syn = built?.synthesis && !built.synthesis._error ? built.synthesis : null;
   const seg = segIdx !== null ? daf.segments[segIdx] : null;
   const step = seg ? syn?.steps?.find((st) => (st.refs || []).includes(seg.ref)) : null;
+  // The Rambam's reading is about the whole sugya: show it in full on the
+  // sugya's first paragraph, on paragraphs his rulings codify, and on the
+  // whole-sugya view - elsewhere as a one-line opener, never repeated in full.
+  const halAllForRambam = (built?.halacha?.items || []) as HalachaItem[];
+  const rambamHere = !seg || seg.ref === daf.segments[sugya.segments[0]]?.ref || halAllForRambam.some((h) => h.rambam && (h.refs || []).includes(seg.ref));
+  const [rambamOpen, setRambamOpen] = useState(false);
+  useEffect(() => { setRambamOpen(false); }, [segIdx]);
   const mes = seg ? built?.mesivta?.segments?.find((x) => x.ref === seg.ref) : null;
   const all = built ? [...built.core, ...built.rishonim, ...built.acharonim, ...built.other] : [];
   const halAll = (built?.halacha?.items || []) as HalachaItem[];
@@ -779,7 +790,10 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
                 ))}
               </div>
             ) : seg && built.mesivta ? <p className="text-slate-500">No commentary on Sefaria is anchored to this paragraph.</p> : seg ? <p className="text-slate-500 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Notes on their way.</p> : null}
-            {syn?.rambam && (
+            {syn?.rambam && !rambamHere && !rambamOpen && (
+              <button onClick={() => setRambamOpen(true)} className="w-full text-left rounded-xl border border-amber-500/40 bg-amber-500/5 px-3 py-2 text-[12px] font-bold text-amber-800 inline-flex items-center gap-2"><Landmark className="w-4 h-4" /> The Rambam's reading of this sugya ›</button>
+            )}
+            {syn?.rambam && (rambamHere || rambamOpen) && (
               <div className="rounded-2xl border-2 border-amber-500/50 bg-amber-500/10 px-3.5 py-3">
                 <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-700"><Landmark className="w-4 h-4" /> The Rambam</p>
                 <p className="mt-1.5 leading-relaxed text-slate-100" style={{ fontFamily: EN_FONT, fontSize: '0.98rem' }}><RefText text={syn.rambam.reading} /></p>

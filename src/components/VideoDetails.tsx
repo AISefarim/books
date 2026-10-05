@@ -4,6 +4,8 @@ import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Video, Book } from '../types';
 import { AudioPlayer } from './AudioPlayer';
+import { dafRefForMedia, dafPath } from '../lib/daf';
+import { useReadyDafs } from '../lib/useReadyDafs';
 import { PodcastSocialCard } from './PodcastSocialCard';
 import { LearningGamificationBanner } from './LearningGamificationBanner';
 import { getDeviceWatchStats, recordDeviceWatch, hasDeviceWatched, calculateMediaPoints } from '../lib/deviceTracker';
@@ -38,6 +40,9 @@ export function VideoDetails({
   onReadBook
 }: VideoDetailsProps) {
   const [copied, setCopied] = useState(false);
+  const readyDafs = useReadyDafs();
+  const dafRef = dafRefForMedia(video);
+  const hasSuperDaf = !!dafRef && readyDafs.has(dafRef);
   const [hoveredStar, setHoveredStar] = useState(0);
   const [hasRated, setHasRated] = useState(() => {
     return localStorage.getItem(`rated_video_${video.id}`) === 'true';
@@ -184,6 +189,20 @@ ${url}`;
           <ArrowLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Back to Library
         </button>
       </div>
+
+      {hasSuperDaf && (
+        <a href={`${dafPath(dafRef!)}?podcast=${video.id}`} className="group mb-8 block rounded-[2rem] bg-gradient-to-br from-indigo-600 via-violet-600 to-indigo-700 p-6 md:p-8 shadow-[0_25px_60px_-20px_rgba(99,102,241,0.8)] ring-1 ring-white/10 hover:brightness-110 transition-all">
+          <div className="flex flex-col md:flex-row md:items-center gap-4 md:gap-8">
+            <div className="text-5xl md:text-6xl">📖</div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] md:text-xs font-black uppercase tracking-[0.2em] text-indigo-100">Super Daf · {dafRef}</p>
+              <p className="mt-1 text-2xl md:text-4xl font-black text-white tracking-tight leading-tight">Learn this daf in Super Daf</p>
+              <p className="mt-1.5 text-sm md:text-base text-indigo-100 font-medium">The Gemara with Rashi, Tosafot, numbered notes, the Rambam and the halacha — with this episode playing inside.</p>
+            </div>
+            <span className="shrink-0 inline-flex items-center justify-center gap-2 rounded-2xl bg-white text-indigo-700 px-6 py-4 text-sm md:text-base font-black uppercase tracking-wider shadow-xl group-hover:translate-x-0.5 transition-transform">Open Super Daf →</span>
+          </div>
+        </a>
+      )}
 
       {/* Your Personal Viewing Total Banner with subtle gamification - placed ABOVE the video card */}
       <div className="mb-8">
