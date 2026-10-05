@@ -38,7 +38,7 @@ interface Sugya {
 interface Daf {
   ref: string; heRef: string; book: string; daf: string; title: string; heTitle: string; next: string | null; prev: string | null;
   segments: Seg[]; sugyot: Sugya[]; status: 'ready' | 'building'; done: number; total: number; attribution: string;
-  summary?: { preview?: string[]; takeaways?: string[] } | null;
+  summary?: { preview?: string[]; takeaways?: string[]; sugyaLessons?: string[] } | null;
   versions: { he: { title: string; license: string }; en: { title: string; license: string } };
 }
 interface TldrSoFar { upto: string; sofar: string; nowWeAre: string; keepInMind: string[] }
@@ -596,6 +596,9 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                       <button onClick={() => toggleBookmark(idx)} className={`p-1 rounded-md ${isBookmarked(s.ref) ? 'text-amber-500' : t.faint}`} aria-label="Bookmark this paragraph">{isBookmarked(s.ref) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}</button>
                     </div>
 
+                    {step && step.refs[0] === s.ref && (
+                      <button onClick={() => openOn(idx, 'notes')} className={`mb-1.5 inline-flex items-center gap-1.5 text-[13px] font-black ${t.accent}`}><ChevronRight className="w-3.5 h-3.5" /> {step.headline}</button>
+                    )}
                     {showHe && <p lang="he" dir="rtl" style={heStyle} className="cursor-pointer" onClick={() => openOn(idx, 'notes')}>{s.he}</p>}
 
                     {showEn && (m && m.units?.length ? (
@@ -660,12 +663,15 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                       </div>
                     )}
 
-                    {step && step.refs[0] === s.ref && (
-                      <button onClick={() => openOn(idx, 'notes')} className={`mt-2 inline-flex items-center gap-1.5 text-[12px] font-bold ${t.accent}`}><ChevronRight className="w-3.5 h-3.5" /> {step.headline}</button>
-                    )}
                   </article>
                 );
               })}
+              {daf.summary?.sugyaLessons?.[sugya.index] && (
+                <div className="mt-2 rounded-2xl bg-indigo-600 text-white px-4 py-3 shadow-md shadow-indigo-600/20 flex items-start gap-3">
+                  <span className="shrink-0 mt-0.5 text-[10px] font-black uppercase tracking-[0.16em] text-indigo-200">What we learned</span>
+                  <span className="text-[15px] font-semibold leading-snug" style={{ fontFamily: EN_FONT }}>{daf.summary.sugyaLessons[sugya.index]}</span>
+                </div>
+              )}
               {sugya.continuesOn && <p className={`mt-1 px-3 text-xs ${t.muted} italic`}>Continues on {short(sugya.continuesOn, daf.book)} — tomorrow’s daf.</p>}
             </section>
           );
