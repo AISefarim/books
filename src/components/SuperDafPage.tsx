@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
-import { DAF_API, dafPath, sefariaUrl, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
+import { DAF_API, pingDafOpen, dafPath, sefariaUrl, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
 import { useReadyDafs } from '../lib/useReadyDafs';
 import { downloadDaf } from '../lib/dafExport';
 
@@ -363,6 +363,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
   const isCurrent = !!(daf && current && daf.ref === current.ref);
   const readyDafs = useReadyDafs();
+  useEffect(() => { if (daf?.ref) pingDafOpen(daf.ref); }, [daf?.ref]);
   const canGo = (r?: string | null) => !!r && (readyDafs.has(r) || r === current?.ref);
   const podcasts = useMemo(() => {
     if (!daf) return [] as MediaItem[];

@@ -7,10 +7,16 @@ import './index.css';
 // visitors never download it; the worker rejects any request without the admin key.
 const StudioPage = lazy(() => import('./components/StudioPage'));
 const isStudio = window.location.pathname === '/studio';
+const DafStatsPage = lazy(() => import('./components/DafStatsPage'));
+const isStats = window.location.pathname === '/stats';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {isStudio ? (
+    {isStats ? (
+      <Suspense fallback={null}>
+        <DafStatsPage />
+      </Suspense>
+    ) : isStudio ? (
       <Suspense fallback={null}>
         <StudioPage />
       </Suspense>
