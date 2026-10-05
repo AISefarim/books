@@ -119,7 +119,7 @@ export default function App() {
     if (window.location.pathname === '/chat') {
       setActiveTab('chat');
     }
-    if (window.location.pathname === '/daf' || window.location.pathname.startsWith('/daf/')) {
+    if (/^\/(super)?daf(\/|$)/.test(window.location.pathname)) {
       setActiveTab('daf');
     }
   }, []);
@@ -989,6 +989,12 @@ export default function App() {
         </div>
       )}
 
+      {activeTab === 'sefarim' && !selectedBook && !searchQuery && !selectedCategory && !activeSeries && (
+        <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-4">
+          <SuperDafHero onOpen={() => openSuperDaf()} />
+        </div>
+      )}
+
       {/* Welcome Video Section (Disappears for people who have been on our website over 25 times) */}
       {activeTab !== 'chat' && activeTab !== 'daf' && !deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-2">
@@ -1219,9 +1225,6 @@ export default function App() {
           />
         ) : activeTab === 'sefarim' ? (
           <>
-            {!searchQuery && !selectedCategory && !activeSeries && (
-              <SuperDafHero onOpen={() => openSuperDaf()} />
-            )}
             {!isLoading && featuredBooks.length > 0 && !searchQuery && !selectedCategory && !activeSeries && (
               <FeaturedBooks 
                 books={featuredBooks} 
