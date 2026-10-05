@@ -179,15 +179,28 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     const onFs = () => setIsFull(!!(document.fullscreenElement || (document as any).webkitFullscreenElement));
     document.addEventListener('fullscreenchange', onFs);
     document.addEventListener('webkitfullscreenchange', onFs);
-    let startY = 0;
-    const onStart = (e: TouchEvent) => { startY = e.touches[0]?.clientY || 0; };
+    // iPad Safari decides who owns a swipe on its first move: if the inner
+    // scroller is resting exactly at its top or bottom edge, the gesture is
+    // handed to the page and full screen drags away with your finger. Keep
+    // every scroller 1px off its edges so it always takes the gesture itself,
+    // and swallow any touch that starts outside a scroller.
+    const nudge = (el: HTMLElement) => {
+      const max = el.scrollHeight - el.clientHeight;
+      if (max <= 1) return;
+      if (el.scrollTop <= 0) el.scrollTop = 1;
+      else if (el.scrollTop >= max) el.scrollTop = max - 1;
+    };
+    const onStart = (e: TouchEvent) => {
+      const el = (e.target as HTMLElement)?.closest?.('.sd-scroll') as HTMLElement | null;
+      if (el) nudge(el);
+    };
     const onMove = (e: TouchEvent) => {
       const el = (e.target as HTMLElement)?.closest?.('.sd-scroll') as HTMLElement | null;
-      const dy = (e.touches[0]?.clientY || 0) - startY;
       if (!el) { if (e.cancelable) e.preventDefault(); return; }
-      const atTop = el.scrollTop <= 0, atBottom = Math.ceil(el.scrollTop + el.clientHeight) >= el.scrollHeight - 1;
-      if (((atTop && dy > 0) || (atBottom && dy < 0)) && e.cancelable) e.preventDefault();
+      if (el.scrollHeight <= el.clientHeight + 1 && e.cancelable) e.preventDefault(); // nothing to scroll: don't let the page move
     };
+    const onScrollAny = (e: Event) => { const el = e.target as HTMLElement; if (el?.classList?.contains('sd-scroll')) nudge(el); };
+    document.addEventListener('scroll', onScrollAny, true);
     const root = rootRef.current;
     root?.addEventListener('touchstart', onStart, { passive: true });
     root?.addEventListener('touchmove', onMove, { passive: false });
@@ -196,6 +209,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       document.removeEventListener('fullscreenchange', onFs);
       document.removeEventListener('webkitfullscreenchange', onFs);
       root?.removeEventListener('touchstart', onStart); root?.removeEventListener('touchmove', onMove);
+      document.removeEventListener('scroll', onScrollAny, true);
     };
   }, []);
 
@@ -348,7 +362,9 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd .sd-ref:hover { border-bottom-style: solid; }
         .sd-dark .sd-ref { color: #a5b4fc; border-bottom-color: rgba(165,180,252,.5); }
         .sd .sd-eluc { opacity: .68; font-weight: 400; }
-        .sd .sd-scroll { scrollbar-width: thin; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; }
+        .sd { touch-action: none; }
+        .sd .sd-scroll { scrollbar-width: thin; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; touch-action: pan-y; }
+        .sd button, .sd a, .sd textarea { touch-action: manipulation; }
         .sd .sd-para { scroll-margin-top: .5rem; }
         .sd .sd-rashi { font-family: ${RASHI_FONT}; }
         .sd .sd-note { display:inline-flex; align-items:center; justify-content:center; min-width:1.15rem; height:1.15rem; padding:0 .3rem; margin:0 .1rem; border-radius:.4rem; font-size:.62rem; font-weight:800; vertical-align:super; line-height:1; background:rgba(99,102,241,.14); color:#4f46e5; cursor:pointer; }
@@ -405,7 +421,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
             // The daf map shows itself while you scroll and slips away when you stop.
             if (!scrolling) setScrolling(true);
             if (scrollIdle.current) window.clearTimeout(scrollIdle.current);
-            scrollIdle.current = window.setTimeout(() => setScrolling(false), 1200);
+            scrollIdle.current = window.setTimeout(() => setScrolling(false), 450);
           }}>
             {error && (
               <div className="max-w-xl mx-auto mt-16 px-4 text-center">
