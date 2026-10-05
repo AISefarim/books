@@ -1895,6 +1895,7 @@ export default function App() {
             />
           ) : (
             <DafHub
+              whatsappUrl={bannerUrl}
               onOpen={(r) => openSuperDaf(undefined, r)}
               onExit={() => { setActiveTab('sefarim'); handleHome(); window.history.pushState({}, '', '/'); }}
             />

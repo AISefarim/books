@@ -9,10 +9,16 @@ const StudioPage = lazy(() => import('./components/StudioPage'));
 const isStudio = window.location.pathname === '/studio';
 const DafStatsPage = lazy(() => import('./components/DafStatsPage'));
 const isStats = window.location.pathname === '/stats';
+const JoinPage = lazy(() => import('./components/JoinPage'));
+const isJoin = /^\/join\/?$/.test(window.location.pathname);
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    {isStats ? (
+    {isJoin ? (
+      <Suspense fallback={null}>
+        <JoinPage />
+      </Suspense>
+    ) : isStats ? (
       <Suspense fallback={null}>
         <DafStatsPage />
       </Suspense>
