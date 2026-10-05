@@ -10,6 +10,7 @@ const DOWNLOADED_BOOK_COUNT_KEY = 'ai_sefarim_downloaded_book_count';
 const WATCH_EVENTS_KEY = 'ai_sefarim_watch_events';
 const MEDIA_REGISTRY_KEY = 'ai_sefarim_media_registry';
 const WEBSITE_VISIT_COUNT_KEY = 'ai_sefarim_website_visit_count';
+const READ_DAF_IDS_KEY = 'ai_sefarim_read_daf_ids';
 const WEBSITE_SESSION_KEY = 'ai_sefarim_website_session_active';
 
 // XP and Session multipliers:
@@ -26,6 +27,10 @@ export const XP_PER_EPUB = 25;
 
 export const SESSIONS_PER_DOWNLOAD = 2;
 export const XP_PER_DOWNLOAD = 35;
+
+// A daf learned in Super Daf counts as much as three shiurim.
+export const SESSIONS_PER_DAF = 3 * SESSIONS_PER_MEDIA;
+export const XP_PER_DAF = 3 * XP_PER_MEDIA;
 
 export interface WatchEvent {
   mediaId: string;
@@ -1021,16 +1026,21 @@ export function getDeviceWatchStats(): DeviceWatchStats {
       mediaSessions = watchedMediaCount;
     }
 
+    let dafCount = 0;
+    try { dafCount = (JSON.parse(localStorage.getItem(READ_DAF_IDS_KEY) || '[]') as string[]).length; } catch { dafCount = 0; }
+
     const totalSessions = Math.round(
       mediaSessions +
       readBooksCount * SESSIONS_PER_EPUB +
-      downloadedBooksCount * SESSIONS_PER_DOWNLOAD
+      downloadedBooksCount * SESSIONS_PER_DOWNLOAD +
+      dafCount * SESSIONS_PER_DAF
     );
 
     const totalScore = Math.round(
       mediaPoints +
       readBooksCount * XP_PER_EPUB +
-      downloadedBooksCount * XP_PER_DOWNLOAD
+      downloadedBooksCount * XP_PER_DOWNLOAD +
+      dafCount * XP_PER_DAF
     );
 
     const totalBooksRead = Math.max(
@@ -1359,3 +1369,21 @@ export function resetWebsiteVisits(): void {
   }
 }
 
+
+/**
+ * Records a daf learned in Super Daf (once per daf on this device): worth
+ * three shiurim. Silent - it just updates the totals.
+ */
+export function recordDeviceDafRead(dafRef: string): boolean {
+  try {
+    const ids: string[] = JSON.parse(localStorage.getItem(READ_DAF_IDS_KEY) || '[]');
+    if (ids.includes(dafRef)) return false;
+    ids.push(dafRef);
+    localStorage.setItem(READ_DAF_IDS_KEY, JSON.stringify(ids));
+    notifyStatsUpdated();
+    return true;
+  } catch (err) {
+    console.error('Failed to save daf read to localStorage', err);
+    return false;
+  }
+}
