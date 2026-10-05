@@ -9,6 +9,7 @@ import { AudioPlayer } from './AudioPlayer';
 import { DAF_API, pingDafOpen, gistText, dafPath, sefariaUrl, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
 import { useReadyDafs } from '../lib/useReadyDafs';
 import { downloadDaf } from '../lib/dafExport';
+import { recordDeviceDafRead } from '../lib/deviceTracker';
 
 // ----------------------------------------------------------------------
 // Types mirroring the worker's /daf/get response
@@ -365,6 +366,16 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const readyDafs = useReadyDafs();
   const mishnahIdxs = useMemo(() => (daf ? daf.segments.map((s, i) => (s.startsMishnah ? i : -1)).filter((i) => i >= 0) : []), [daf]);
   useEffect(() => { if (daf?.ref) pingDafOpen(daf.ref); }, [daf?.ref]);
+  // Learning credit (worth three shiurim), given quietly once the daf has
+  // really been learned: half of it read, or four minutes spent on it.
+  useEffect(() => {
+    if (!daf?.ref) return;
+    const t = window.setTimeout(() => recordDeviceDafRead(daf.ref), 4 * 60 * 1000);
+    return () => window.clearTimeout(t);
+  }, [daf?.ref]);
+  useEffect(() => {
+    if (daf?.ref && daf.segments.length && focusIdx >= Math.floor(daf.segments.length / 2)) recordDeviceDafRead(daf.ref);
+  }, [daf?.ref, daf?.segments.length, focusIdx]);
   const canGo = (r?: string | null) => !!r && (readyDafs.has(r) || r === current?.ref);
   const podcasts = useMemo(() => {
     if (!daf) return [] as MediaItem[];

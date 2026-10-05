@@ -1898,6 +1898,7 @@ export default function App() {
             />
           ) : (
             <DafHub
+              header={<Navbar {...navbarProps} />}
               whatsappUrl={bannerUrl}
               onOpen={(r) => openSuperDaf(undefined, r)}
               onExit={() => { setActiveTab('sefarim'); handleHome(); window.history.pushState({}, '', '/'); }}

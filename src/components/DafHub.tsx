@@ -28,7 +28,7 @@ function Highlight({ text, words }: { text: string; words: string[] }) {
   return <>{text.split(re).map((part, i) => (i % 2 ? <mark key={i} className="bg-indigo-500/30 text-white rounded px-0.5">{part}</mark> : <Fragment key={i}>{part}</Fragment>))}</>;
 }
 
-export function DafHub({ onOpen, onExit, whatsappUrl }: { onOpen: (ref: string) => void; onExit: () => void; whatsappUrl?: string }) {
+export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: string) => void; onExit: () => void; whatsappUrl?: string; header?: ReactNode }) {
   const [items, setItems] = useState<DafMeta[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [today, setToday] = useState<Day | null>(null);
@@ -123,27 +123,43 @@ export function DafHub({ onOpen, onExit, whatsappUrl }: { onOpen: (ref: string) 
   // Yesterday / tomorrow: open when built; otherwise say when they will be.
   const SideDay = ({ label, day, dir }: { label: string; day: Day | null; dir: 'prev' | 'next' }) => {
     const meta = day ? byRef.get(day.ref) : undefined;
+    const ready = !!(meta && day);
     const Icon = dir === 'prev' ? ChevronLeft : ChevronRight;
-    const body: ReactNode = (
-      <>
-        <p className="flex items-center gap-1.5 text-[11px] font-black uppercase tracking-[0.16em] text-slate-400">{dir === 'prev' && <Icon className="w-3.5 h-3.5" />}{label}{day?.date ? ` · ${fmtDate(day.date, { weekday: 'short', month: 'short', day: 'numeric' })}` : ''}{dir === 'next' && <Icon className="w-3.5 h-3.5" />}</p>
-        <p className="mt-1.5 text-xl sm:text-2xl font-black text-slate-100">{day ? day.ref : <Loader2 className="w-5 h-5 animate-spin" />}{(meta?.heRef || day?.heRef) ? <span className="ml-2 text-lg text-indigo-200 font-bold" lang="he" style={{ fontFamily: HE_FONT }}>{meta?.heRef || day?.heRef}</span> : null}</p>
-        {day && (meta ? <p className="mt-1.5 text-sm text-slate-400 leading-snug line-clamp-2">{meta.preview[0]}</p> : <p className="mt-1.5 text-sm text-slate-500 inline-flex items-center gap-1.5"><Lock className="w-3.5 h-3.5" /> {dir === 'next' ? 'Opens at noon the day before' : 'Not in Super Daf yet'}</p>)}
-      </>
+    const arrow = (
+      <span className={`shrink-0 flex w-11 h-11 sm:w-14 sm:h-14 rounded-full items-center justify-center transition-transform ${ready ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30 group-hover:scale-110' : 'bg-slate-800 text-slate-500'}`}>
+        {ready ? <Icon className="w-6 h-6 sm:w-7 sm:h-7" strokeWidth={2.5} /> : <Lock className="w-4 h-4 sm:w-5 sm:h-5" />}
+      </span>
     );
-    return meta && day
-      ? <button onClick={() => onOpen(day.ref)} className="text-left rounded-2xl border border-slate-700/70 bg-slate-900 hover:border-indigo-400/50 p-4 sm:p-5 transition-all hover:-translate-y-0.5">{body}</button>
-      : <div className="rounded-2xl border border-slate-800 bg-slate-900/50 p-4 sm:p-5 opacity-80">{body}</div>;
+    const text = (
+      <div className={`min-w-0 flex-1 ${dir === 'next' ? 'text-right' : ''}`}>
+        <p className="text-[11px] sm:text-xs font-black uppercase tracking-[0.16em] text-indigo-300">{label}{day?.date ? <span className="text-slate-500"> · {fmtDate(day.date, { weekday: 'short', month: 'short', day: 'numeric' })}</span> : null}</p>
+        <p className="mt-1 text-lg sm:text-2xl font-black text-slate-100 leading-tight">{day ? day.ref : <Loader2 className="inline w-5 h-5 animate-spin" />}</p>
+        {(meta?.heRef || day?.heRef) ? <p className="text-base sm:text-lg text-indigo-200 font-bold leading-tight" lang="he" style={{ fontFamily: HE_FONT }}>{meta?.heRef || day?.heRef}</p> : null}
+        {day && (meta ? <p className="hidden sm:block mt-1.5 text-sm text-slate-400 leading-snug line-clamp-2">{meta.preview[0]}</p> : <p className="mt-1 text-xs sm:text-sm text-slate-500">{dir === 'next' ? 'Opens at noon the day before' : 'Not in Super Daf yet'}</p>)}
+      </div>
+    );
+    const inner = dir === 'prev' ? <>{arrow}{text}</> : <>{text}{arrow}</>;
+    const cls = 'group w-full flex items-center gap-3 sm:gap-4 rounded-2xl border p-3.5 sm:p-5 text-left transition-all';
+    return ready
+      ? <button onClick={() => onOpen(day!.ref)} aria-label={`${label}: ${day!.ref}`} className={`${cls} border-indigo-400/30 bg-indigo-500/[0.07] hover:bg-indigo-500/[0.14] hover:border-indigo-400/60 hover:-translate-y-0.5`}>{inner}</button>
+      : <div className={`${cls} border-slate-800 bg-slate-900/50`}>{inner}</div>;
   };
 
   return (
-    <div className="fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-slate-950 text-slate-100 px-4 sm:px-8 pb-24">
-      <div className="max-w-5xl mx-auto">
-        {/* top bar */}
-        <div className="flex items-center gap-3 pt-4 pb-3">
-          <button onClick={onExit} className="p-2 -ml-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>
-          <div className="flex items-center gap-2 font-black text-lg tracking-tight"><ScrollText className="w-5 h-5 text-indigo-300" /> Super Daf</div>
-          <p className="ml-auto hidden sm:block text-xs italic text-slate-500">Dedicated to Carol Serouya, the best mother and wife</p>
+    <div className="fixed inset-0 z-[60] overflow-y-auto overscroll-contain bg-slate-950 text-slate-100 pb-24">
+      {/* the AI Sefarim header, as on every other page (scrolls away so the search can stick) */}
+      {header && <div>{header}</div>}
+      <div className="max-w-5xl mx-auto px-4 sm:px-8">
+        {/* title + dedication */}
+        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 pt-5 pb-4">
+          <div className="flex items-center gap-2">
+            {!header && <button onClick={onExit} className="p-2 -ml-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>}
+            <ScrollText className="w-6 h-6 text-indigo-300" />
+            <h1 className="text-2xl font-black tracking-tight">Super Daf</h1>
+          </div>
+          <p className="sm:ml-auto sm:text-right text-sm sm:text-[15px] leading-snug text-slate-300 sm:border-l sm:border-slate-700 sm:pl-4">
+            Dedicated to <span className="font-black text-slate-100">Carol Serouya</span>, the best mother and wife
+          </p>
         </div>
 
         {/* device tip */}
