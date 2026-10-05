@@ -4,7 +4,7 @@ import { DAF_API } from '../lib/daf';
 
 // A slim "today's daf" strip at the top of the Sefarim tab - the way into
 // Super Daf now that it no longer has its own navbar tab.
-export function SuperDafHero({ onOpen }: { onOpen: () => void }) {
+export function SuperDafHero({ onOpen }: { onOpen: (ref?: string) => void }) {
   const [current, setCurrent] = useState<{ ref: string; heRef?: string; date: string } | null>(null);
 
   useEffect(() => {
@@ -15,7 +15,7 @@ export function SuperDafHero({ onOpen }: { onOpen: () => void }) {
 
   return (
     <button
-      onClick={onOpen}
+      onClick={() => onOpen(current?.ref)}
       className="group w-full text-left rounded-2xl border border-indigo-400/30 bg-gradient-to-r from-indigo-600/20 via-slate-900 to-slate-900 hover:border-indigo-300/50 transition-all px-4 sm:px-5 py-3 flex items-center gap-3 sm:gap-4 shadow-[0_10px_30px_-18px_rgba(99,102,241,0.7)]"
     >
       <span className="shrink-0 w-10 h-10 rounded-xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30">

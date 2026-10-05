@@ -33,6 +33,7 @@ import { NewReleasesSection } from './components/NewReleasesSection';
 import { LearningGamificationBanner } from './components/LearningGamificationBanner';
 import { ChatPage } from './components/ChatPage';
 import { SuperDafPage } from './components/SuperDafPage';
+import { DafHub } from './components/DafHub';
 import { SuperDafHero } from './components/SuperDafHero';
 import { refFromPath, dafFromTitle, dafPath, dafRefForMedia, loadReadyDafs } from './lib/daf';
 import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats, registerMediaList, recordWebsiteVisit } from './lib/deviceTracker';
@@ -49,8 +50,12 @@ export default function App() {
   const [readyDafs, setReadyDafs] = useState<Set<string>>(new Set());
   useEffect(() => { loadReadyDafs().then(setReadyDafs); }, []);
   const isDafPodcast = (v: Video) => { const r = dafRefForMedia(v); return !!r && readyDafs.has(r); };
-  const openSuperDaf = (podcast?: Video) => {
-    const r = podcast ? dafRefForMedia(podcast) || dafFromTitle(podcast.title) : null;
+  // /daf (or /superdaf) is the hub; /daf/<Masechet>/<n> is the reader.
+  const [dafRef, setDafRef] = useState<string | null>(() => refFromPath(window.location.pathname));
+  useEffect(() => { if (activeTab === 'daf') setDafRef(refFromPath(window.location.pathname)); }, [activeTab]);
+  const openSuperDaf = (podcast?: Video, ref?: string) => {
+    const r = ref || (podcast ? dafRefForMedia(podcast) || dafFromTitle(podcast.title) : null);
+    setDafRef(r);
     const path = (r ? dafPath(r) : '/daf') + (podcast ? `?podcast=${podcast.id}` : '');
     window.history.pushState({}, '', path);
     setSelectedBook(null);
@@ -641,8 +646,13 @@ export default function App() {
       }
     };
 
+    const onDafPop = () => {
+      if (/^\/(super)?daf(\/|$)/.test(window.location.pathname)) { setActiveTab('daf'); setDafRef(refFromPath(window.location.pathname)); }
+      else setActiveTab((t) => (t === 'daf' ? 'sefarim' : t));
+    };
     window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', onDafPop);
+    return () => { window.removeEventListener('popstate', handlePopState); window.removeEventListener('popstate', onDafPop); };
   }, [books, videos]);
 
   const handleHome = () => {
@@ -999,7 +1009,7 @@ export default function App() {
 
       {activeTab === 'sefarim' && !selectedBook && !searchQuery && !selectedCategory && !activeSeries && (
         <div className="max-w-7xl mx-auto px-6 lg:px-12 pt-4">
-          <SuperDafHero onOpen={() => openSuperDaf()} />
+          <SuperDafHero onOpen={(r) => openSuperDaf(undefined, r)} />
         </div>
       )}
 
@@ -1875,12 +1885,20 @@ export default function App() {
         ) : activeTab === 'chat' ? (
           <ChatPage onExit={() => { setActiveTab('sefarim'); handleHome(); }} books={books} media={videos} categoryThumbnails={siteSettings.videoCategoryThumbnails} />
         ) : activeTab === 'daf' ? (
-          <SuperDafPage
-            initialRef={refFromPath(window.location.pathname)}
-            pinnedPodcastId={new URLSearchParams(window.location.search).get('podcast')}
-            media={videos}
-            onExit={() => { setActiveTab('sefarim'); handleHome(); window.history.pushState({}, '', '/'); }}
-          />
+          dafRef ? (
+            <SuperDafPage
+              key={dafRef}
+              initialRef={dafRef}
+              pinnedPodcastId={new URLSearchParams(window.location.search).get('podcast')}
+              media={videos}
+              onExit={() => { window.history.pushState({}, '', '/daf'); setDafRef(null); window.scrollTo(0, 0); }}
+            />
+          ) : (
+            <DafHub
+              onOpen={(r) => openSuperDaf(undefined, r)}
+              onExit={() => { setActiveTab('sefarim'); handleHome(); window.history.pushState({}, '', '/'); }}
+            />
+          )
         ) : null}
       </main>
 
