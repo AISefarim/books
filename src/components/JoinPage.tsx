@@ -137,7 +137,7 @@ export default function JoinPage() {
       {/* stays on screen while scrolling */}
       <div className="fixed inset-x-0 top-0 z-30 border-b border-emerald-300/20 bg-gradient-to-r from-emerald-700/95 via-emerald-600/95 to-teal-700/95 backdrop-blur shadow-lg shadow-black/30">
         <p className="mx-auto max-w-6xl px-4 py-2 sm:py-2.5 text-center text-[13px] sm:text-base font-black tracking-tight text-white">
-          Everything is <span lang="he" dir="rtl" className="ml-1 text-[1.15em] font-bold text-emerald-50" style={{ fontFamily: HE_FONT }}>לְשֵׁם שָׁמַיִם</span>. Everything is free.
+          Everything is <span lang="he" dir="rtl" className="ml-1 text-[1.15em] font-bold text-emerald-50" style={{ fontFamily: HE_FONT }}>לְשֵׁם שָׁמַיִם</span>. Everything is free. No ads.
         </p>
       </div>
 
