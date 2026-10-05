@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
-import { DAF_API, pingDafOpen, dafPath, sefariaUrl, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
+import { DAF_API, pingDafOpen, gistText, dafPath, sefariaUrl, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
 import { useReadyDafs } from '../lib/useReadyDafs';
 import { downloadDaf } from '../lib/dafExport';
 
@@ -363,6 +363,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
   const isCurrent = !!(daf && current && daf.ref === current.ref);
   const readyDafs = useReadyDafs();
+  const mishnahIdxs = useMemo(() => (daf ? daf.segments.map((s, i) => (s.startsMishnah ? i : -1)).filter((i) => i >= 0) : []), [daf]);
   useEffect(() => { if (daf?.ref) pingDafOpen(daf.ref); }, [daf?.ref]);
   const canGo = (r?: string | null) => !!r && (readyDafs.has(r) || r === current?.ref);
   const podcasts = useMemo(() => {
@@ -531,6 +532,18 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
             </div>
           )}
           {daf && !mapOpen && <div className="hidden md:block absolute inset-y-0 left-0 w-3 z-20" onMouseEnter={() => setMapPeek(true)} title="The daf map" />}
+          {daf && mishnahIdxs.length > 0 && (() => {
+            const prev = [...mishnahIdxs].reverse().find((i) => i < focusIdx);
+            const next = mishnahIdxs.find((i) => i > focusIdx);
+            if (prev === undefined && next === undefined) return null;
+            return (
+              <div className={`absolute bottom-3 right-4 z-20 flex items-center rounded-full border shadow-lg backdrop-blur ${t.chip}`}>
+                <button disabled={prev === undefined} onClick={() => prev !== undefined && scrollToSeg(prev)} className="p-2 pl-3 disabled:opacity-30" aria-label="Previous Mishnah" title={prev !== undefined ? `Previous Mishnah · ${short(daf.segments[prev].ref, daf.book)}` : 'No earlier Mishnah on this daf'}><ChevronUp className="w-4 h-4" /></button>
+                <span className="px-1 text-[11px] font-black uppercase tracking-wider select-none"><span lang="he" style={{ fontFamily: HE_FONT, fontSize: '0.95rem' }}>מתני׳</span> Mishnah</span>
+                <button disabled={next === undefined} onClick={() => next !== undefined && scrollToSeg(next)} className="p-2 pr-3 disabled:opacity-30" aria-label="Next Mishnah" title={next !== undefined ? `Next Mishnah · ${short(daf.segments[next].ref, daf.book)}` : 'No later Mishnah on this daf'}><ChevronDown className="w-4 h-4" /></button>
+              </div>
+            );
+          })()}
           <div ref={scrollRef} className="sd-scroll flex-1 min-w-0 overflow-y-auto" onScroll={() => {
             // The daf map shows itself while you scroll and slips away when you stop.
             if (!scrolling) setScrolling(true);
@@ -694,7 +707,18 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
           const btn = (label: ReactNode, onClick: () => void, icon: any, dim = false) => { const Icon = icon; return <button onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors ${t.chip} ${t.hover} ${dim ? 'opacity-45' : ''}`}><Icon className={`w-3.5 h-3.5 ${t.accent}`} />{label}</button>; };
           return (
             <section key={sugya.index} className="mb-8">
-              {sugya.index > 0 && (
+              {sugya.kind === 'mishnah' ? (
+                <div className={sugya.index > 0 ? 'mt-12 mb-6' : 'mt-2 mb-5'} role="separator" aria-label="A new Mishnah begins">
+                  <div className="rounded-3xl border-2 border-amber-500/40 bg-amber-500/10 px-5 py-5 text-center shadow-sm">
+                    <div className="flex items-center justify-center gap-4">
+                      <span className="h-px flex-1 bg-amber-500/50" />
+                      <span lang="he" className="text-amber-800" style={{ fontFamily: HE_FONT, fontSize: '2.3rem', fontWeight: 700, lineHeight: 1 }}>מַתְנִיתִין</span>
+                      <span className="h-px flex-1 bg-amber-500/50" />
+                    </div>
+                    <p className="mt-2 text-[11px] font-black uppercase tracking-[0.22em] text-amber-700">A new Mishnah · {short(sugya.from, daf.book)}</p>
+                  </div>
+                </div>
+              ) : sugya.index > 0 && (
                 <div className="flex items-center gap-3 my-6" aria-hidden="true">
                   <div className={`flex-1 border-t-2 ${t.rule}`} />
                   <span className={`text-[11px] font-black ${t.faint}`} style={{ fontFamily: HE_FONT, fontSize: '0.95rem' }}>❖ {KIND_LABEL[sugya.kind].he}</span>
@@ -736,8 +760,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                     <div key={c.ref} className={`sd-blurb rounded-lg px-2.5 py-1.5 ${t.soft}`} onClick={(e) => e.stopPropagation()}>
                       <p className="text-[13px] leading-snug" dir="ltr" style={{ textAlign: 'left', fontFamily: 'inherit' }}>
                         <span lang="he" className="sd-rashi font-bold mr-1.5" style={{ fontSize: '1rem' }}>{c.title === 'Rashi' ? 'רש״י' : 'תוס׳'}</span>
-                        <span className={`font-black ${t.accent} mr-1`}>{c.title}</span>
-                        <span>{c.gist || firstSentence(c.en) || ''}</span>
+                        <span>{c.gist ? gistText(c.title, c.gist) : firstSentence(c.en) || ''}</span>
                         <button onClick={() => setWords((w) => ({ ...w, [c.ref]: !w[c.ref] }))} className={`ml-2 text-[11px] font-bold ${t.accent}`}>{on ? 'hide words' : 'words'}</button>
                       </p>
                       {on && (
@@ -1040,7 +1063,7 @@ function Words({ comms, words, setWords }: { comms: Comm[]; words: Record<string
         const on = !!words[c.ref];
         return (
           <div key={c.ref} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2.5">
-            <p className="text-slate-200"><span className="font-black text-indigo-300">{c.title}</span>{c.gist ? <> — {c.gist}</> : null}</p>
+            <p className="text-slate-200"><span className="font-black text-indigo-300">{c.title}</span>{c.gist ? <> — {gistText(c.title, c.gist)}</> : null}</p>
             <div className="mt-1.5 flex gap-2">
               <button onClick={() => setWords((o) => ({ ...o, [c.ref]: !o[c.ref] }))} className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-slate-200 hover:bg-slate-700">{on ? 'Hide the words' : 'Read the words'}</button>
               <a href={sefariaUrl(c.ref)} target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-slate-400 hover:text-white inline-flex items-center gap-1">Sefaria <ExternalLink className="w-3 h-3" /></a>
@@ -1068,10 +1091,20 @@ function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focu
   const core = daf.sugyot.flatMap((s) => s.built?.core || []);
   const count = (segRef: string, title: string) => core.filter((c) => c.anchor === segRef && c.title === title).length;
   const marked = new Set(bookmarks.filter((b) => b.ref === daf.ref).map((b) => b.segRef));
+  const mishnayot = daf.segments.map((s, i) => (s.startsMishnah ? i : -1)).filter((i) => i >= 0);
   const fill = surface === 'paper' ? { page: '#fbf7ee', stroke: '#d9cdb3', block: '#cfc3a9', mishnah: '#e8c279', side: '#ddd3bd', focus: '#4f46e5', text: '#8a7f6a', bg: '#efe7d6' } : { page: '#18181b', stroke: '#2e2e33', block: '#3a3a40', mishnah: '#6b5a3a', side: '#2e2e33', focus: '#a5b4fc', text: '#8a898e', bg: '#0c0c0e' };
   return (
     <aside className="flex h-full shrink-0 w-[128px] flex-col items-center gap-3 py-3 overflow-y-auto sd-scroll border-r border-black/5" style={{ background: fill.bg }} aria-label="Where you are on the daf">
       <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider" style={{ color: fill.text }}><MapIcon className="w-3 h-3" /> The daf</div>
+      {mishnayot.length > 0 && (
+        <div className="w-full px-2 flex flex-col gap-1">
+          {mishnayot.map((i, k) => (
+            <button key={i} onClick={() => onJump(i)} className="w-full rounded-lg px-2 py-1 text-left text-[10px] font-black leading-tight transition-colors" style={{ background: fill.mishnah, color: surface === 'paper' ? '#5b3a06' : '#f5e3c0' }} title={`Jump to this Mishnah (${daf.segments[i].ref})`}>
+              <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '0.8rem' }}>מתני׳</span> {mishnayot.length > 1 ? `${k + 1} · ` : ''}{daf.segments[i].amud}
+            </button>
+          ))}
+        </div>
+      )}
       {amudim.map(([amud, idxs]) => {
         const total = idxs.reduce((a, i) => a + Math.max(40, daf.segments[i].he.length), 0);
         const H = Math.min(440, Math.max(160, Math.round(total / 9)));
@@ -1088,6 +1121,7 @@ function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focu
               return (
                 <g key={i} onClick={() => onJump(i)} className="cursor-pointer">
                   {sugyaStart && <line x1={PAD} x2={W - PAD} y1={y - 1.5} y2={y - 1.5} stroke={fill.focus} strokeOpacity={0.5} strokeWidth={1} />}
+                  {s.startsMishnah && <line x1={2} x2={W - 2} y1={y - 1.5} y2={y - 1.5} stroke="#d97706" strokeWidth={2.5} strokeLinecap="round" />}
                   <rect x={PAD} y={y} width={COL} height={Math.min(h, 4 + tos * 6)} rx={1.5} fill={fill.side} opacity={tos ? 0.9 : 0.25} />
                   <rect x={PAD + COL + GAP} y={y} width={GEM} height={h} rx={2} fill={isFocus ? fill.focus : s.isMishnah ? fill.mishnah : fill.block} opacity={isFocus ? 1 : 0.85} />
                   <rect x={W - PAD - COL} y={y} width={COL} height={Math.min(h, 4 + rashi * 6)} rx={1.5} fill={fill.side} opacity={rashi ? 0.9 : 0.25} />
@@ -1098,7 +1132,7 @@ function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focu
           </svg>
         );
       })}
-      <p className="px-2 text-[9px] leading-tight text-center" style={{ color: fill.text }}>Center: Gemara · right: Rashi · left: Tosafot · tap to jump</p>
+      <p className="px-2 text-[9px] leading-tight text-center" style={{ color: fill.text }}>Center: Gemara (amber = Mishnah) · right: Rashi · left: Tosafot · tap to jump</p>
     </aside>
   );
 }

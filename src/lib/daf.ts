@@ -94,3 +94,14 @@ export function pingDafOpen(ref?: string) {
     fetch(`${DAF_API}/open`, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ ref: ref || '' }) }).catch(() => {});
   } catch { /* ignore */ }
 }
+
+// A commentary gist shown under its own label ("רש״י") shouldn't repeat the
+// name: "Rashi explains that Rabbi Yochanan..." -> "Rabbi Yochanan...".
+const GIST_VERBS = 'explain|note|clarif(?:y|ie)|say|state|point out|observe|comment|add|teach|write|hold|interpret|understand|emphasize|maintain|argue|ask|raise|question|suggest|answer|resolve|infer|derive|read|gloss|define|distinguish|describe|identif(?:y|ie)';
+export function gistText(title: string, gist?: string): string {
+  let g = String(gist || '').trim();
+  const t = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  g = g.replace(new RegExp(`^${t}\\s+(?:here\\s+|also\\s+)?(?:${GIST_VERBS})s?\\s+(?:that\\s+)?`, 'i'), '');
+  g = g.replace(new RegExp(`^${t}\\s+`, 'i'), '');
+  return g.charAt(0).toUpperCase() + g.slice(1);
+}
