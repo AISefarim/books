@@ -41,6 +41,13 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
   const dafimRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { pingDafOpen(); }, []);
+  const [frame, setFrame] = useState<{ rashiHe?: string; tosafotHe?: string } | null>(null);
+  useEffect(() => {
+    if (!today?.ref) return;
+    fetch(`${DAF_API}/teaser?ref=${encodeURIComponent(today.ref)}`).then((r) => r.json()).then((t) => { if (t && t.available !== false) setFrame(t); }).catch(() => {});
+    const href = 'https://fonts.googleapis.com/css2?family=Noto+Rashi+Hebrew&display=swap';
+    if (!document.querySelector(`link[href="${href}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = href; document.head.appendChild(l); }
+  }, [today?.ref]);
   useEffect(() => {
     fetch(`${DAF_API}/index`).then((r) => r.json()).then((d) => setItems(d.items || [])).catch(() => { setItems([]); setFailed(true); });
     const day = (o: number, set: (d: Day) => void) => fetch(`${DAF_API}/current?offset=${o}`).then((r) => r.json()).then((d) => { if (d && d.ref) set(d); }).catch(() => {});
@@ -171,33 +178,47 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
           </div>
         )}
 
-        {/* ===== today's daf: dark, typographic, set like the top of a printed daf ===== */}
-        <button onClick={() => today && onOpen(today.ref)} disabled={!today} className="group relative w-full overflow-hidden rounded-[28px] border border-white/10 px-6 sm:px-12 pt-6 sm:pt-7 pb-9 sm:pb-12 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] transition-transform hover:-translate-y-0.5"
-          style={{ background: 'radial-gradient(120% 90% at 50% 0%, rgba(99,102,241,0.20) 0%, rgba(99,102,241,0.04) 45%, transparent 70%), linear-gradient(180deg, #121527 0%, #0d0f1c 100%)' }}>
+        {/* ===== today's daf: composed like a page of Gemara - the title in the
+             center, today's real Rashi and Tosafot in faint columns around it ===== */}
+        <button onClick={() => today && onOpen(today.ref)} disabled={!today} className="group relative w-full overflow-hidden rounded-[28px] border border-white/10 px-6 sm:px-10 pt-6 sm:pt-7 pb-9 sm:pb-11 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] transition-transform hover:-translate-y-0.5"
+          style={{ background: 'radial-gradient(120% 90% at 50% 0%, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.04) 45%, transparent 70%), linear-gradient(180deg, #121527 0%, #0d0f1c 100%)' }}>
+          {/* a printed page's double rule */}
+          <span aria-hidden="true" className="pointer-events-none absolute inset-3 rounded-[20px] border border-[#d9ccad]/15" />
+          <span aria-hidden="true" className="pointer-events-none absolute inset-[18px] rounded-[16px] border border-[#d9ccad]/[0.07]" />
           {/* running head */}
-          <div dir="rtl" className="flex items-baseline justify-between gap-4 text-[#d9ccad]/60" style={{ fontFamily: HE_FONT }}>
+          <div dir="rtl" className="relative flex items-baseline justify-between gap-4 px-2 text-[#d9ccad]/60" style={{ fontFamily: HE_FONT }}>
             <span className="text-base sm:text-lg">{todayHe ? `מסכת ${todayHe.replace(/\s+\S+$/, '')}` : ''}</span>
             <span className="text-base sm:text-lg">{todayHe ? `דף ${todayHe.split(' ').pop()}` : ''}</span>
           </div>
-          <div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#d9ccad]/25 to-transparent" />
-          <p className="mt-7 inline-flex items-center gap-2 text-[11px] sm:text-xs font-black uppercase tracking-[0.24em] text-indigo-200/80">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Today’s Daf Yomi{dateLabel ? ` · ${dateLabel}` : ''}
-          </p>
-          {today ? (
-            <>
-              <p lang="he" dir="rtl" className="mt-4 text-[64px] sm:text-[104px] leading-none text-[#f1e9d6]" style={{ fontFamily: HE_FONT, fontWeight: 700 }}>{todayHe || today.ref}</p>
-              <p className="mt-3 text-lg sm:text-2xl font-semibold tracking-[0.08em] text-slate-300">{today.ref}</p>
-              <div className="mx-auto mt-6 flex w-40 items-center gap-3 text-[#d9ccad]/50" aria-hidden="true">
-                <span className="h-px flex-1 bg-current" /><span className="text-[10px]">◆</span><span className="h-px flex-1 bg-current" />
-              </div>
-              <span className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 text-white px-7 py-3.5 text-base sm:text-lg font-black shadow-xl shadow-indigo-600/30 group-hover:gap-3 group-hover:bg-indigo-500 transition-all">
-                Start learning <ArrowRight className="w-5 h-5" />
-              </span>
-              {todayMeta?.sugyot ? <p className="mt-3 text-xs font-semibold text-slate-500">{todayMeta.sugyot} sugyot</p> : null}
-            </>
-          ) : (
-            <div className="mt-8 flex justify-center items-center gap-2 text-slate-400"><Loader2 className="w-5 h-5 animate-spin" /> Finding today’s daf…</div>
-          )}
+          <div className="relative mx-2 mt-2 h-px bg-gradient-to-r from-transparent via-[#d9ccad]/25 to-transparent" />
+
+          <div className="relative mt-5 md:grid md:grid-cols-[1fr_1.7fr_1fr] md:gap-7 md:items-stretch">
+            {/* Tosafot - outer column */}
+            <Column label="תוספות" text={frame?.tosafotHe} />
+            {/* the Gemara's place: the title */}
+            <div className="md:py-2">
+              <p className="inline-flex items-center gap-2 whitespace-nowrap text-[11px] sm:text-xs font-black uppercase tracking-[0.2em] text-indigo-200/80">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Today’s Daf Yomi{today?.date ? ` · ${fmtDate(today.date, { weekday: 'short', month: 'short', day: 'numeric' })}` : ''}
+              </p>
+              {today ? (
+                <>
+                  <p lang="he" dir="rtl" className="mt-4 text-[60px] sm:text-[92px] leading-none text-[#f1e9d6]" style={{ fontFamily: HE_FONT, fontWeight: 700 }}>{todayHe || today.ref}</p>
+                  <p className="mt-3 text-lg sm:text-2xl font-semibold tracking-[0.08em] text-slate-300">{today.ref}</p>
+                  <div className="mx-auto mt-6 flex w-40 items-center gap-3 text-[#d9ccad]/50" aria-hidden="true">
+                    <span className="h-px flex-1 bg-current" /><span className="text-[10px]">◆</span><span className="h-px flex-1 bg-current" />
+                  </div>
+                  <span className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 text-white px-7 py-3.5 text-base sm:text-lg font-black shadow-xl shadow-indigo-600/30 group-hover:gap-3 group-hover:bg-indigo-500 transition-all">
+                    Start learning <ArrowRight className="w-5 h-5" />
+                  </span>
+                  {todayMeta?.sugyot ? <p className="mt-3 text-xs font-semibold text-slate-500">{todayMeta.sugyot} sugyot</p> : null}
+                </>
+              ) : (
+                <div className="mt-8 flex justify-center items-center gap-2 text-slate-400"><Loader2 className="w-5 h-5 animate-spin" /> Finding today’s daf…</div>
+              )}
+            </div>
+            {/* Rashi - inner column */}
+            <Column label="רש״י" text={frame?.rashiHe} />
+          </div>
         </button>
 
         {/* ===== yesterday & tomorrow ===== */}
@@ -281,6 +302,20 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
         )}
         <p className="mt-12 text-center text-xs text-slate-600">Each new daf is prepared at noon the day before it is learned, and then stays here for everyone.</p>
       </div>
+    </div>
+  );
+}
+
+// A faint column of real commentary in Rashi script, fading at its edges -
+// texture around the title, the way Rashi and Tosafot frame a daf.
+function Column({ label, text }: { label: string; text?: string }) {
+  return (
+    <div aria-hidden="true" className="hidden md:flex flex-col select-none" dir="rtl">
+      <span className="mb-2 text-sm font-bold text-[#d9ccad]/45" style={{ fontFamily: HE_FONT }}>{label}</span>
+      <p className="flex-1 overflow-hidden text-justify text-[12.5px] leading-[1.6] text-[#d9ccad]/[0.22]"
+        style={{ fontFamily: "'Noto Rashi Hebrew', 'Frank Ruhl Libre', serif", maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)', maxHeight: 300 }}>
+        {text || ''}
+      </p>
     </div>
   );
 }
