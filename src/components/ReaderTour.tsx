@@ -21,7 +21,7 @@ const STEPS: Step[] = [
   { find: inView('.sd .sd-blurb'), title: 'Rashi and Tosafot', body: 'Explained in a line, right where they comment. Tap “words” to read the original.' },
   { find: () => document.querySelector('.sd .sd-lower'), title: 'The notes', body: 'Numbered notes from the commentaries, the Rambam, halacha, the big picture, disputes, sources - and Ask, for any question. Drag the divider to give the notes more or less room.' },
   { find: () => document.querySelector('.sd [aria-label="Our Mishnah"]'), title: 'Our Mishnah', body: 'Forgot the Mishnah this Gemara is discussing? Tap here and it opens beside the daf - even if it began a few dapim back.' },
-  { find: () => { const n = document.querySelectorAll('.sd nav'); return n[n.length - 1] || null; }, title: 'Tools', body: 'Jump between sugyot, “Catch me up” on everything so far, save bookmarks, and listen to the shiur.' },
+  { find: () => { const n = document.querySelectorAll('.sd nav'); return n[n.length - 1] || null; }, title: 'Tools', body: '“Catch me up” on everything so far - instantly, with a deeper version a tap away - save bookmarks, ask a question, and listen to the shiur.' },
   { find: () => document.querySelector('.sd header'), title: 'Up top', body: 'Move to the previous or next daf, browse all dapim, download this daf for offline, and change text size or switch to dark mode (the “T”).' },
 ];
 
