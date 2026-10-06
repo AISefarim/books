@@ -331,7 +331,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
           </>
         )}
         {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-900 px-4 py-2 text-sm font-black shadow-2xl"><Check className="w-4 h-4 text-emerald-600" /> {toast}</div>}
-        <p className="mt-12 text-center text-xs text-slate-600">Each new daf is prepared about a day and a half before it is learned, and then stays here for everyone.</p>
+        <p className="mt-12 text-center text-xs text-slate-600">Each new daf is prepared a few days before it is learned, and then stays here for everyone.</p>
       </div>
     </div>
   );
