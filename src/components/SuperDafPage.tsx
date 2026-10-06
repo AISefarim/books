@@ -862,7 +862,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
 
                     {step && step.refs[0] === s.ref && (
                       <div className="text-center mb-2">
-                        <button onClick={() => openOn(idx, 'notes')} className={`inline-flex items-center gap-1.5 text-[13px] font-black ${t.accent}`}><ChevronRight className="w-3.5 h-3.5" /> {step.headline}</button>
+                        <button onClick={() => openOn(idx, 'notes')} className={`inline-flex items-center gap-1.5 text-[13px] font-black ${t.accent}`}>{step.headline}</button>
                       </div>
                     )}
                     {showHe && !(gemaraLayout === 'phrases' && useUnits) && (clauses.length > 1 && Object.keys(placed.at).length ? (
