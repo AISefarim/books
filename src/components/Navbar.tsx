@@ -107,7 +107,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
               <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider border-r border-slate-700 pr-2">
                 <BookOpen className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-indigo-400 shrink-0" />
                 <span>{totalBooks.toLocaleString()}</span>
-                <span className="hidden sm:inline">Sefarim</span>
+                <span className="hidden sm:inline md:hidden xl:inline">Sefarim</span>
               </div>
               <div className="flex items-center gap-1.5 text-[10px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider">
                 <div className="flex items-center gap-1 text-indigo-400 shrink-0">
@@ -115,7 +115,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                   <Headphones className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                 </div>
                 <span>{mediaCount.toLocaleString()}</span>
-                <span className="hidden sm:inline">Videos & Podcasts</span>
+                <span className="hidden sm:inline md:hidden xl:inline">Videos &amp; Podcasts</span>
               </div>
             </div>
           </div>
