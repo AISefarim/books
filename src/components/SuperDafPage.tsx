@@ -362,12 +362,21 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     if (!daf) return;
     const root = scrollRef.current; if (!root) return;
     const els = Array.from(root.querySelectorAll<HTMLElement>('[data-seg]'));
-    const obs = new IntersectionObserver((entries) => {
-      const vis = entries.filter((e) => e.isIntersecting); if (!vis.length) return;
-      const mid = root.getBoundingClientRect().top + root.clientHeight / 2;
-      let best = vis[0], bestD = Infinity;
-      for (const e of vis) { const d = Math.abs(e.boundingClientRect.top + e.boundingClientRect.height / 2 - mid); if (d < bestD) { bestD = d; best = e; } }
-      const idx = Number((best.target as HTMLElement).dataset.seg);
+    const obs = new IntersectionObserver(() => {
+      // Judge every paragraph on screen, not just the ones whose visibility just
+      // changed - otherwise the "current paragraph" (and Our Mishnah, and the
+      // notes) can stick on an earlier one.
+      const rr = root.getBoundingClientRect();
+      const mid = rr.top + rr.height / 2;
+      let best: HTMLElement | null = null, bestD = Infinity;
+      for (const el of els) {
+        const r = el.getBoundingClientRect();
+        if (r.bottom < rr.top || r.top > rr.bottom) continue;
+        const d = r.top <= mid && r.bottom >= mid ? 0 : Math.min(Math.abs(r.top - mid), Math.abs(r.bottom - mid));
+        if (d < bestD) { bestD = d; best = el; }
+      }
+      if (!best) return;
+      const idx = Number(best.dataset.seg);
       setFocusIdx(idx);
       // Scrolling to another paragraph releases a tap-pin, so the notes follow you.
       if (pinnedRef.current !== null && pinnedRef.current !== idx) { pinnedRef.current = null; setPinned(null); setNoteN(null); setSugyaScope(null); }
@@ -868,7 +877,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                     <div key={c.ref} className={`sd-blurb rounded-lg px-2.5 py-1.5 ${t.soft}`} onClick={(e) => e.stopPropagation()}>
                       <p className="text-[13px] leading-snug" dir="ltr" style={{ textAlign: 'left', fontFamily: 'inherit' }}>
                         <span lang="he" className="sd-rashi font-bold mr-1.5" style={{ fontSize: '1rem' }}>{c.title === 'Rashi' ? 'רש״י' : 'תוס׳'}</span>
-                        <span>{c.gist || firstSentence(c.en) || ''}</span>
+                        <span>{c.gist || m?.notes?.find((n) => n.ref === c.ref)?.point || firstSentence(c.en) || ''}</span>
                         <button onClick={() => setWords((w) => ({ ...w, [c.ref]: !w[c.ref] }))} className={`ml-2 text-[11px] font-bold ${t.accent}`}>{on ? 'hide words' : 'words'}</button>
                       </p>
                       {on && (
