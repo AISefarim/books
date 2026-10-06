@@ -196,6 +196,8 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const [lang, setLang] = useState<Lang>(prefs.lang || 'both');
   const [fontScale, setFontScale] = useState<number>(prefs.fontScale || 1);
   const [mapOpen, setMapOpen] = useState<boolean>(prefs.mapOpen === true);
+  // 'full' = full Hebrew paragraph + phrase-by-phrase; 'phrases' = phrase-by-phrase only (about twice as much on screen)
+  const [gemaraLayout, setGemaraLayout] = useState<'full' | 'phrases'>(prefs.gemaraLayout === 'phrases' ? 'phrases' : 'full');
   const [mapPeek, setMapPeek] = useState(false);
   const [scrolling, setScrolling] = useState(false);
   const scrollIdle = useRef<number | null>(null);
@@ -229,7 +231,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const dragging = useRef(false);
   // Side by side on computers, and on a tablet held sideways (iPad landscape);
   // notes below on phones and on a tablet held upright. Rotating switches live.
-  const wideQuery = '(pointer: fine) and (min-width: 1024px), (min-width: 1024px) and (orientation: landscape)';
+  const wideQuery = '(min-width: 1000px)';
   const [wide, setWide] = useState<boolean>(() => typeof window !== 'undefined' && window.matchMedia(wideQuery).matches);
   useEffect(() => {
     const mq = window.matchMedia(wideQuery);
@@ -243,7 +245,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   useEffect(() => {
     if (!document.querySelector(`link[href="${FONTS_HREF}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = FONTS_HREF; document.head.appendChild(l); }
   }, []);
-  useEffect(() => { writeJson(PREFS_KEY, { surface, lang, fontScale, mapOpen, split: splitTall, splitWide, lowerCollapsed }); }, [surface, lang, fontScale, mapOpen, splitTall, splitWide, lowerCollapsed]);
+  useEffect(() => { writeJson(PREFS_KEY, { surface, lang, fontScale, mapOpen, split: splitTall, splitWide, lowerCollapsed, gemaraLayout }); }, [surface, lang, fontScale, mapOpen, splitTall, splitWide, lowerCollapsed, gemaraLayout]);
   useEffect(() => { writeJson(BOOKMARKS_KEY, bookmarks); }, [bookmarks]);
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 1800); return () => window.clearTimeout(id); }, [toast]);
 
@@ -609,7 +611,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               </div>
             )}
             {daf && (
-              <Reader daf={daf} t={t} showHe={showHe} showEn={showEn} fontScale={fontScale} panelIdx={pinned} noteN={noteN}
+              <Reader daf={daf} t={t} showHe={showHe} showEn={showEn} fontScale={fontScale} panelIdx={pinned} noteN={noteN} gemaraLayout={gemaraLayout}
                 isBookmarked={isBookmarked} toggleBookmark={toggleBookmark} onShare={shareSeg} openOn={openOn} openSugya={openSugya}
                 canGo={canGo} onGo={(r) => { setRef(r); scrollRef.current?.scrollTo({ top: 0 }); }} />
             )}
@@ -657,11 +659,11 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               const active = sheet?.kind === id || (id === 'ask' && tab === 'ask' && !lowerCollapsed);
               if (amber) return (
                 // Our Mishnah: a raised, glowing circle - the one button that invites a tap
-                <button key={id} onClick={() => window.dispatchEvent(new Event('sd-mishnah-toggle'))} className="group flex flex-col items-center gap-0.5 py-1" title="Our Mishnah (M)" aria-label="Our Mishnah">
-                  <span className="sd-mish-glow flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 ring-2 ring-indigo-400/50 transition-colors group-hover:bg-indigo-500 group-active:bg-indigo-700">
+                <button key={id} onClick={() => window.dispatchEvent(new Event('sd-mishnah-toggle'))} className="group flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-2 py-1 lg:py-1.5" title="Our Mishnah (M)" aria-label="Our Mishnah">
+                  <span className="sd-mish-glow flex h-9 w-9 lg:h-8 lg:w-8 items-center justify-center rounded-full bg-indigo-600 ring-2 ring-indigo-400/50 transition-colors group-hover:bg-indigo-500 group-active:bg-indigo-700">
                     <span lang="he" className="text-white" style={{ fontFamily: HE_FONT, fontSize: '0.8rem', fontWeight: 700 }}>מתני׳</span>
                   </span>
-                  <span className="text-[10px] font-black" style={{ color: '#c7d2fe' }}>Our Mishnah</span>
+                  <span className="text-[10px] lg:text-xs font-black lg:whitespace-nowrap" style={{ color: '#c7d2fe' }}>Our Mishnah</span>
                 </button>
               );
               return (
@@ -670,7 +672,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
                   if (id === 'ask') { setTab('ask'); setLowerCollapsed(false); setSheet(null); return; }
                   if (id === 'catchup') requestSofar(focusIdx);
                   setSheet(sheet?.kind === id ? null : { kind: id } as Sheet);
-                }} className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
+                }} className={`flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-2 rounded-xl py-1.5 lg:py-2 text-[10px] lg:text-xs font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
                   <Icon className="w-5 h-5" />{label}
                 </button>
               );
@@ -714,6 +716,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
           {sheet.kind === 'settings' && (
             <div className="space-y-5">
               <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Language</p><Segmented value={lang} onChange={(v) => setLang(v as Lang)} options={[{ v: 'both', l: 'Hebrew + English' }, { v: 'he', l: 'Hebrew' }, { v: 'en', l: 'English' }]} /></div>
+              <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Gemara layout</p><Segmented value={gemaraLayout} onChange={(v) => setGemaraLayout(v as 'full' | 'phrases')} options={[{ v: 'full', l: 'Full paragraph + phrase by phrase' }, { v: 'phrases', l: 'Phrase by phrase only' }]} /><p className="mt-1.5 text-[11px] text-slate-500">“Phrase by phrase only” skips the repeated Hebrew paragraph, so about twice as much of the daf fits on screen.</p></div>
               <div className="flex items-center justify-between"><p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Text size</p><div className="flex items-center rounded-full bg-slate-800 border border-slate-700"><button onClick={() => setFontScale((f) => Math.max(0.8, +(f - 0.1).toFixed(2)))} className="p-2 text-slate-300 hover:text-white" aria-label="Smaller"><Minus className="w-4 h-4" /></button><span className="text-xs font-black text-slate-200 w-10 text-center tabular-nums">{Math.round(fontScale * 100)}%</span><button onClick={() => setFontScale((f) => Math.min(1.7, +(f + 0.1).toFixed(2)))} className="p-2 text-slate-300 hover:text-white" aria-label="Larger"><Plus className="w-4 h-4" /></button></div></div>
               <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Page</p><Segmented value={surface} onChange={(v) => setSurface(v as Surface)} options={[{ v: 'paper', l: 'Paper', icon: Sun }, { v: 'dark', l: 'Dark', icon: Moon }]} /></div>
               <div className="hidden md:block"><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Daf map</p><Segmented value={mapOpen ? 'open' : 'closed'} onChange={(v) => setMapOpen(v === 'open')} options={[{ v: 'closed', l: 'Show while scrolling' }, { v: 'open', l: 'Always pinned' }]} /></div>
@@ -730,7 +733,8 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 // ----------------------------------------------------------------------
 // Upper half: the daf. Hebrew, interlinear, Rashi & Tosafot inline, halacha standalone.
 
-function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmarked, toggleBookmark, onShare, openOn, openSugya, canGo, onGo }: {
+function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmarked, toggleBookmark, onShare, openOn, openSugya, canGo, onGo, gemaraLayout = 'full' }: {
+  gemaraLayout?: 'full' | 'phrases';
   daf: Daf; t: any; showHe: boolean; showEn: boolean; fontScale: number; panelIdx: number | null; noteN: number | null;
   isBookmarked: (r: string) => boolean; toggleBookmark: (i: number) => void; onShare: (i: number) => void; openOn: (i: number, tab?: Tab, n?: number | null) => void; openSugya: (s: number, tab: Tab) => void;
   canGo: (r?: string | null) => boolean; onGo: (r: string) => void;
@@ -861,7 +865,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                         <button onClick={() => openOn(idx, 'notes')} className={`inline-flex items-center gap-1.5 text-[13px] font-black ${t.accent}`}><ChevronRight className="w-3.5 h-3.5" /> {step.headline}</button>
                       </div>
                     )}
-                    {showHe && (clauses.length > 1 && Object.keys(placed.at).length ? (
+                    {showHe && !(gemaraLayout === 'phrases' && useUnits) && (clauses.length > 1 && Object.keys(placed.at).length ? (
                       <div lang="he" dir="rtl" style={heStyle} className="cursor-pointer" onClick={() => openOn(idx, 'notes')}>
                         {clauses.map((cl, k) => (
                           <span key={k}>
