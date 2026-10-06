@@ -77,7 +77,8 @@ const KIND_LABEL: Record<Sugya['kind'], { he: string; en: string }> = {
   mishnah: { he: 'משנה', en: 'Mishnah' }, gemara: { he: 'גמרא', en: 'Gemara' }, topic: { he: 'סוגיא', en: 'New topic' }, continued: { he: 'המשך', en: 'Continued' },
 };
 const short = (ref: string, book: string) => ref.replace(book + ' ', '');
-const firstSentence = (s?: string) => { const t = String(s || '').trim(); const m = t.match(/^(.+?[.!?])(\s|$)/); return m ? m[1] : t; };
+const plain = (s?: string) => String(s || '').replace(/\*\*/g, '');
+const firstSentence = (s?: string) => { const t = plain(s).trim(); const m = t.match(/^(.+?[.!?])(\s|$)/); return m ? m[1] : t; };
 
 // ----------------------------------------------------------------------
 // Text helpers
@@ -97,6 +98,9 @@ function splitRefs(inner: string): string[] {
   return inner.split(/(?<=\d[ab]?)\s*[,;]\s*/).map((x) => x.trim()).filter(Boolean);
 }
 function RefText({ text, className }: { text: string; className?: string }) {
+  // **phrase** marks a note's one key phrase
+  const keys = String(text || '').split(/(\*\*[^*]+\*\*)/g);
+  if (keys.length > 1) return <span className={className}>{keys.map((k, i) => /^\*\*[^*]+\*\*$/.test(k) ? <strong key={i} className="sd-key"><RefText text={k.slice(2, -2)} /></strong> : <RefText key={i} text={k} />)}</span>;
   const parts = String(text || '').split(/(\[[^\[\]]{3,500}\])/g);
   return (
     <span className={className}>
@@ -593,6 +597,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         @media (prefers-reduced-motion: reduce) { .sd-mish-glow { animation: none; } }
         @keyframes sd-resume-fade { to { opacity: 0; transform: translateY(-6px); pointer-events: none; } }
         .sd-x { border-width:1px; border-radius:1rem; }
+        .sd .sd-key { font-weight:700; }
         .sd-cite { display:inline-block; margin-left:.3em; padding:0 .45em; border-radius:9999px; font-family: system-ui, sans-serif; font-size:.68em; font-weight:700; line-height:1.6; vertical-align:.12em; text-decoration:none; white-space:nowrap; }
         .sd-lowp .sd-cite, .sd:not(.sd-dark) .sd-cite { color:#4338ca; background:rgba(99,102,241,.10); }
         .sd-lowd .sd-cite, .sd-dark .sd-cite { color:#c7d2fe; background:rgba(165,180,252,.14); }
@@ -920,7 +925,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                     <div key={c.ref} className={`sd-blurb rounded-lg px-2.5 py-1.5 ${t.soft}`} onClick={(e) => e.stopPropagation()}>
                       <p className="text-[13px] leading-snug" dir="ltr" style={{ textAlign: 'left', fontFamily: 'inherit' }}>
                         <span lang="he" className="sd-rashi font-bold mr-1.5" style={{ fontSize: '1rem' }}>{c.title === 'Rashi' ? 'רש״י' : 'תוס׳'}</span>
-                        <span>{c.gist || m?.notes?.find((n) => n.ref === c.ref)?.point || firstSentence(c.en) || ''}</span>
+                        <span>{plain(c.gist || m?.notes?.find((n) => n.ref === c.ref)?.point) || firstSentence(c.en) || ''}</span>
                         <button onClick={() => setWords((w) => ({ ...w, [c.ref]: !w[c.ref] }))} className={`ml-2 text-[11px] font-bold ${t.accent}`}>{on ? 'hide words' : 'words'}</button>
                       </p>
                       {on && (
@@ -1005,7 +1010,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                           <div key={i} className="mt-1.5 text-[13px] leading-snug">
                             <p className="font-bold">{it.issue}</p>
                             {([['Rambam', it.rambam], ['Shulchan Arukh', it.shulchanArukh], ['Rema', it.rema]] as [string, Ruling | null | undefined][]).map(([who, r]) => r ? (
-                              <p key={who} className="mt-0.5"><span className="font-black text-amber-900">{who}:</span> {r.short || firstSentence(r.ruling)}</p>
+                              <p key={who} className="mt-0.5"><span className="font-black text-amber-900">{who}:</span> {plain(r.short) || firstSentence(r.ruling)}</p>
                             ) : null)}
                           </div>
                         ))}
@@ -1507,13 +1512,13 @@ function ExtraSections({ built, seg }: { built: Built; seg: Seg | null }) {
             </p>
             {v.en && <p className="mt-1 text-slate-300" style={{ fontFamily: EN_FONT, fontSize: '0.95rem', lineHeight: 1.55 }}>{v.en}</p>}
             {marks.size > 0 && <p className="mt-1 text-[11px] text-slate-500">Highlighted: the words the Gemara quotes here.</p>}
-            {n?.use && <p className="mt-2.5 text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.95rem', lineHeight: 1.55 }}><span className="font-black sd-k-pasuk">How the Gemara reads it · </span>{n.use}</p>}
+            {n?.use && <p className="mt-2.5 text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.95rem', lineHeight: 1.55 }}><span className="font-black sd-k-pasuk">How the Gemara reads it · </span><RefText text={n.use} /></p>}
             {n?.commentators?.length ? (
               <div className="mt-2.5">
                 <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1.5">On the verse itself</p>
                 <ul className="space-y-1.5">
                   {n.commentators.map((c) => (
-                    <li key={c.ref} className="text-[0.92rem] leading-snug text-slate-200"><span className="font-black sd-k-pasuk">{c.source.replace(/ on (Torah|Tanakh|Nevi'im|Ketuvim).*$/, '')}</span> · {c.point} <SourceLink r={c.ref} /></li>
+                    <li key={c.ref} className="text-[0.92rem] leading-snug text-slate-200"><span className="font-black sd-k-pasuk">{c.source.replace(/ on (Torah|Tanakh|Nevi'im|Ketuvim).*$/, '')}</span> · <RefText text={c.point} /> <SourceLink r={c.ref} /></li>
                   ))}
                 </ul>
               </div>
@@ -1543,7 +1548,7 @@ function ExtraSections({ built, seg }: { built: Built; seg: Seg | null }) {
               <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '1rem', letterSpacing: 0 }}>סוד</span> The inner meaning
               <span className="ml-auto normal-case tracking-normal font-bold"><SourceLink r={x.ref} /></span>
             </p>
-            <p className="mt-2 text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.96rem', lineHeight: 1.6 }}><span className="font-black sd-k-sod">{x.source} · </span>{x.point}</p>
+            <p className="mt-2 text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.96rem', lineHeight: 1.6 }}><span className="font-black sd-k-sod">{x.source} · </span><RefText text={x.point} /></p>
             {src && (src.he || src.en) && (
               <>
                 <button onClick={() => toggle('s:' + x.ref)} className="mt-1.5 text-[11px] font-black sd-k-sod">{open['s:' + x.ref] ? 'Hide the text' : 'Read the text'}</button>

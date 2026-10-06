@@ -99,7 +99,7 @@ export function pingDafOpen(ref?: string) {
 // name: "Rashi explains that Rabbi Yochanan..." -> "Rabbi Yochanan...".
 const GIST_VERBS = 'explain|note|clarif(?:y|ie)|say|state|point out|observe|comment|add|teach|write|hold|interpret|understand|emphasize|maintain|argue|ask|raise|question|suggest|answer|resolve|infer|derive|read|gloss|define|distinguish|describe|identif(?:y|ie)';
 export function gistText(title: string, gist?: string): string {
-  const g = String(gist || '').trim();
+  const g = String(gist || '').replace(/\*\*/g, '').trim();
   const t = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   // "Rashi explains that X" -> "X" (already a full sentence)
   const that = g.match(new RegExp(`^${t}\\s+(?:here\\s+|also\\s+)?(?:${GIST_VERBS})s?\\s+that\\s+(.+)$`, 'i'));
