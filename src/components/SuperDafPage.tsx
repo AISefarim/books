@@ -10,7 +10,6 @@ import { DAF_API, pingDafOpen, gistText, dafPath, sefariaUrl, titleMatchesDaf, d
 import { useReadyDafs } from '../lib/useReadyDafs';
 import { downloadDaf } from '../lib/dafExport';
 import { recordDeviceDafRead } from '../lib/deviceTracker';
-import { GemaraOpening, takeOpeningFor } from './GemaraOpening';
 
 // ----------------------------------------------------------------------
 // Types mirroring the worker's /daf/get response
@@ -33,7 +32,11 @@ interface MUnit { he: string; en?: string; literal?: string; elucidation?: strin
 interface MNote { n: number; source: string; point: string; ref: string }
 interface MesivtaSeg { ref: string; units: MUnit[]; notes: MNote[] }
 interface Mesivta { segments?: MesivtaSeg[]; _error?: string }
-interface Built { partial?: boolean; core: Comm[]; rishonim: Comm[]; acharonim: Comm[]; other: Comm[]; rambamSources: Comm[]; halachaSources: Comm[]; synthesis: Synthesis | null; halacha: Halacha | null; mesivta: Mesivta | null }
+interface PasukNote { ref: string; anchor: string; use?: string; talmudCount?: number | null; commentators?: { source: string; ref: string; point: string }[] }
+interface SodNote { source: string; ref: string; anchor?: string; point: string }
+interface SodText { ref: string; title: string; heTitle?: string; he: string; en: string; anchor: string; viaMishnah?: string | null }
+interface Extras { pasuk?: PasukNote[]; sod?: SodNote[]; sodTexts?: SodText[] }
+interface Built { partial?: boolean; core: Comm[]; rishonim: Comm[]; acharonim: Comm[]; other: Comm[]; rambamSources: Comm[]; halachaSources: Comm[]; synthesis: Synthesis | null; halacha: Halacha | null; mesivta: Mesivta | null; pasukSources?: Comm[]; mishnahSources?: Comm[]; sodSources?: Comm[]; extras?: Extras | null }
 interface Sugya {
   index: number; kind: 'mishnah' | 'gemara' | 'topic' | 'continued'; heading: string; from: string; to: string; segments: number[];
   prelude?: { from: string; to: string; segments: Seg[] }; continuation?: { from: string; to: string; segments: Seg[] }; continuesOn?: string;
@@ -41,6 +44,7 @@ interface Sugya {
 }
 interface Daf {
   ref: string; heRef: string; book: string; daf: string; title: string; heTitle: string; next: string | null; prev: string | null;
+  mishnayot?: { ref: string; he: string; en: string; startsAt: string; fromDaf: string | null }[];
   segments: Seg[]; sugyot: Sugya[]; status: 'ready' | 'building'; done: number; total: number; attribution: string;
   summary?: { preview?: string[]; takeaways?: string[]; sugyaLessons?: string[] } | null;
   versions: { he: { title: string; license: string }; en: { title: string; license: string } };
@@ -199,7 +203,6 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const [lowerCollapsed, setLowerCollapsed] = useState<boolean>(prefs.lowerCollapsed === true);
   const [current, setCurrent] = useState<{ ref: string; date: string } | null>(null);
   const [ref, setRef] = useState<string | null>(initialRef || null);
-  const [opening, setOpening] = useState<string | null>(() => takeOpeningFor(initialRef));
   const [daf, setDaf] = useState<Daf | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [focusIdx, setFocusIdx] = useState(0);
@@ -366,7 +369,6 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
   const isCurrent = !!(daf && current && daf.ref === current.ref);
   const readyDafs = useReadyDafs();
-  const mishnahIdxs = useMemo(() => (daf ? daf.segments.map((s, i) => (s.startsMishnah ? i : -1)).filter((i) => i >= 0) : []), [daf]);
   useEffect(() => { if (daf?.ref) pingDafOpen(daf.ref); }, [daf?.ref]);
   // Learning credit (worth three shiurim), given quietly once the daf has
   // really been learned: half of it read, or four minutes spent on it.
@@ -451,7 +453,6 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
   return (
     <div ref={rootRef} className={`sd fixed inset-0 z-[60] flex flex-col ${t.shell} ${surface === 'dark' ? 'sd-dark' : ''}`} style={{ overscrollBehavior: 'none', height: '100dvh' }}>
-      {opening && <GemaraOpening heRef={opening} onDone={() => setOpening(null)} />}
       <style>{`
         .sd .sd-ref { color: #4f46e5; text-decoration: none; border-bottom: 1px dotted rgba(79,70,229,.5); font-size: .78em; font-weight: 600; }
         .sd .sd-ref:hover { border-bottom-style: solid; }
@@ -515,6 +516,19 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd-lowp .bg-indigo-500\\/10 { background:rgba(99,102,241,.08); }
         .sd-lowp .bg-indigo-600 { background:#4f46e5; color:#fff; }
         .sd-lowp textarea { background:#fffaf0; color:#292524; }
+        .sd-x { border-width:1px; border-radius:1rem; }
+        .sd-lowp .sd-x { background:#f7f2e7; border-color:#ddd1b8; } .sd-lowd .sd-x { background:#1b1b1e; border-color:#2e2e33; }
+        .sd-lowp .sd-k-pasuk { color:#0f766e; } .sd-lowd .sd-k-pasuk { color:#5eead4; }
+        .sd-lowp .sd-k-mishnah { color:#b45309; } .sd-lowd .sd-k-mishnah { color:#f5cf8e; }
+        .sd-lowp .sd-k-sod { color:#6d28d9; } .sd-lowd .sd-k-sod { color:#c4b5fd; }
+        .sd-lowp .sd-x-pasuk { border-left:4px solid #14b8a6; } .sd-lowd .sd-x-pasuk { border-left:4px solid #2dd4bf; }
+        .sd-lowp .sd-x-mishnah { border-left:4px solid #f59e0b; } .sd-lowd .sd-x-mishnah { border-left:4px solid #f5cf8e; }
+        .sd-lowp .sd-x-sod { border-left:4px solid #8b5cf6; } .sd-lowd .sd-x-sod { border-left:4px solid #a78bfa; }
+        .sd-lowp .sd-quoted { background:#fde68a; border-radius:3px; } .sd-lowd .sd-quoted { background:rgba(245,207,142,.28); border-radius:3px; }
+        .sd-chip-x { font-size:10px; font-weight:900; border-radius:9999px; padding:1px 7px; border-width:1px; }
+        .sd-chip-pasuk { color:#0f766e; border-color:rgba(20,184,166,.45); } .sd-dark .sd-chip-pasuk { color:#5eead4; }
+        .sd-chip-mishnah { color:#b45309; border-color:rgba(245,158,11,.45); } .sd-dark .sd-chip-mishnah { color:#f5cf8e; }
+        .sd-chip-sod { color:#6d28d9; border-color:rgba(139,92,246,.45); } .sd-dark .sd-chip-sod { color:#c4b5fd; }
       `}</style>
 
       {/* ============ top bar ============ */}
@@ -522,7 +536,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         <button onClick={onExit} className="p-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>
         <button onClick={() => setMapOpen((m) => !m)} className={`hidden md:inline-flex p-2 rounded-full border ${mapOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}`} aria-label="Pin the daf map" title={mapOpen ? 'Unpin the daf map (it will show only while you scroll)' : 'Pin the daf map open'}><MapIcon className="w-4 h-4" /></button>
         <button disabled={!canGo(daf?.prev)} onClick={() => daf?.prev && canGo(daf.prev) && setRef(daf.prev)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Previous daf"><ChevronLeft className="w-5 h-5" /></button>
-        <button onClick={() => setSheet(sheet?.kind === 'library' ? null : { kind: 'library' })} className="min-w-0 flex-1 text-center leading-tight rounded-xl hover:bg-slate-900 py-0.5" title="Browse all dafim">
+        <button onClick={() => setSheet(sheet?.kind === 'library' ? null : { kind: 'library' })} className="min-w-0 flex-1 text-center leading-tight rounded-xl hover:bg-slate-900 py-0.5" title="Browse all dapim">
           <div className="truncate font-black text-[15px] sm:text-lg">{daf ? <><span lang="he" dir="rtl" style={{ fontFamily: HE_FONT }}>{daf.heRef}</span><span className="text-slate-600 mx-2">·</span>{daf.ref}</> : ref || 'Super Daf'}</div>
           <div className="text-[10px] sm:text-[11px] text-slate-500 font-semibold truncate">
             {isCurrent && dateLabel ? `Daf Yomi · ${dateLabel}` : 'Super Daf'}
@@ -531,7 +545,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
           </div>
         </button>
         <button disabled={!canGo(daf?.next)} onClick={() => daf?.next && canGo(daf.next) && setRef(daf.next)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Next daf" title={canGo(daf?.next) ? `Next daf · ${daf?.next}` : 'The next daf opens at noon the day before'}>{canGo(daf?.next) ? <ChevronRight className="w-5 h-5" /> : <Lock className="w-4 h-4" />}</button>
-        <button onClick={() => setSheet(sheet?.kind === 'library' ? null : { kind: 'library' })} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 sm:px-3 py-1.5 text-xs font-black ${sheet?.kind === 'library' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="All dafim" title="Browse all dafim"><Library className="w-4 h-4" /><span className="hidden sm:inline">All dafim</span></button>
+        <button onClick={() => setSheet(sheet?.kind === 'library' ? null : { kind: 'library' })} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 sm:px-3 py-1.5 text-xs font-black ${sheet?.kind === 'library' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="All dapim" title="Browse all dapim"><Library className="w-4 h-4" /><span className="hidden sm:inline">All dapim</span></button>
         <button disabled={!daf || daf.status !== 'ready'} onClick={() => daf && downloadDaf(daf)} className="p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white disabled:opacity-30" aria-label="Download this daf for offline reading" title={daf?.status === 'ready' ? 'Download this daf (works offline, prints to PDF)' : 'Available once the daf is fully prepared'}><Download className="w-4 h-4" /></button>
         <button onClick={() => setSheet(sheet?.kind === 'settings' ? null : { kind: 'settings' })} className={`p-2 rounded-full border ${sheet?.kind === 'settings' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="Reading settings" title="Reading settings"><Type className="w-4 h-4" /></button>
         <button onClick={toggleFullscreen} className="hidden sm:inline-flex p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white" aria-label="Full screen" title={isFull ? 'Exit full screen' : 'Full screen'}>{isFull ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</button>
@@ -546,18 +560,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
             </div>
           )}
           {daf && !mapOpen && <div className="hidden md:block absolute inset-y-0 left-0 w-3 z-20" onMouseEnter={() => setMapPeek(true)} title="The daf map" />}
-          {daf && mishnahIdxs.length > 0 && (() => {
-            const prev = [...mishnahIdxs].reverse().find((i) => i < focusIdx);
-            const next = mishnahIdxs.find((i) => i > focusIdx);
-            if (prev === undefined && next === undefined) return null;
-            return (
-              <div className={`absolute bottom-3 right-4 z-20 flex items-center rounded-full border shadow-lg backdrop-blur ${t.chip}`}>
-                <button disabled={prev === undefined} onClick={() => prev !== undefined && scrollToSeg(prev)} className="p-2 pl-3 disabled:opacity-30" aria-label="Previous Mishnah" title={prev !== undefined ? `Previous Mishnah · ${short(daf.segments[prev].ref, daf.book)}` : 'No earlier Mishnah on this daf'}><ChevronUp className="w-4 h-4" /></button>
-                <span className="px-1 text-[11px] font-black uppercase tracking-wider select-none"><span lang="he" style={{ fontFamily: HE_FONT, fontSize: '0.95rem' }}>מתני׳</span> Mishnah</span>
-                <button disabled={next === undefined} onClick={() => next !== undefined && scrollToSeg(next)} className="p-2 pr-3 disabled:opacity-30" aria-label="Next Mishnah" title={next !== undefined ? `Next Mishnah · ${short(daf.segments[next].ref, daf.book)}` : 'No later Mishnah on this daf'}><ChevronDown className="w-4 h-4" /></button>
-              </div>
-            );
-          })()}
+          {daf && (daf.mishnayot || []).length > 0 && <MishnahPeek daf={daf} focusIdx={focusIdx} onGo={scrollToSeg} surface={surface} />}
           <div ref={scrollRef} className="sd-scroll flex-1 min-w-0 overflow-y-auto" onScroll={() => {
             // The daf map shows itself while you scroll and slips away when you stop.
             if (!scrolling) setScrolling(true);
@@ -642,7 +645,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       {/* ============ sheets ============ */}
       {daf && sheet && (
         <SheetFrame onClose={() => setSheet(null)} title={
-          sheet.kind === 'library' ? 'All dafim in Super Daf' : sheet.kind === 'sugyot' ? 'Sugyot on this daf' : sheet.kind === 'catchup' ? `Catch me up · through ${short(daf.segments[focusIdx].ref, daf.book)}` : sheet.kind === 'bookmarks' ? 'Bookmarks' : sheet.kind === 'listen' ? 'Listen to the daf' : 'Reading settings'
+          sheet.kind === 'library' ? 'All dapim in Super Daf' : sheet.kind === 'sugyot' ? 'Sugyot on this daf' : sheet.kind === 'catchup' ? `Catch me up · through ${short(daf.segments[focusIdx].ref, daf.book)}` : sheet.kind === 'bookmarks' ? 'Bookmarks' : sheet.kind === 'listen' ? 'Listen to the daf' : 'Reading settings'
         } tall={sheet.kind === 'sugyot' || sheet.kind === 'library'}>
           {sheet.kind === 'library' && <DafLibrary ready={readyDafs} current={current?.ref} open={daf.ref} onPick={(r) => { setSheet(null); if (r !== daf.ref) setRef(r); }} />}
           {sheet.kind === 'sugyot' && (
@@ -795,6 +798,9 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                   );
                 };
                 const nNotes = m?.notes?.length || 0;
+                const hasPasuk = (built?.pasukSources || []).some((v) => v.anchor === s.ref);
+                const hasMishnah = (built?.mishnahSources || []).some((v) => v.anchor === s.ref);
+                const hasSod = (built?.extras?.sod || []).some((v) => v.anchor === s.ref);
                 const isPanel = panelIdx === idx;
                 return (
                   <article key={s.ref} data-seg={idx} className={`sd-para rounded-2xl px-3 sm:px-4 py-3 mb-2 ${isPanel ? t.sel : ''}`}>
@@ -804,6 +810,9 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                       {s.startsGemara && <span className={`text-[10px] font-black uppercase tracking-widest ${t.accent}`}>Gemara</span>}
                       {s.startsTopic && <span className={`text-[10px] font-black ${t.accent}`}>§ new topic</span>}
                       <span className="flex-1" />
+                      {hasPasuk && <button onClick={() => openOn(idx, 'notes')} className="sd-chip-x sd-chip-pasuk" title="A verse is quoted here - see it in the notes"><span lang="he" style={{ fontFamily: HE_FONT }}>פסוק</span></button>}
+                      {hasMishnah && <button onClick={() => openOn(idx, 'notes')} className="sd-chip-x sd-chip-mishnah" title="Another Mishnah is cited here - read it in the notes"><span lang="he" style={{ fontFamily: HE_FONT }}>משנה</span></button>}
+                      {hasSod && <button onClick={() => openOn(idx, 'notes')} className="sd-chip-x sd-chip-sod" title="A sod reading of this passage - in the notes"><span lang="he" style={{ fontFamily: HE_FONT }}>סוד</span></button>}
                       {nNotes > 0 && <button onClick={() => openOn(idx, 'notes')} className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-black ${t.chip} ${t.hover}`}><NotebookPen className="w-3 h-3" /> {nNotes}</button>}
                       <button onClick={() => onShare(idx)} className={`p-1 rounded-md ${t.faint}`} aria-label="Share this paragraph" title="Share"><Share2 className="w-4 h-4" /></button>
                       <button onClick={() => toggleBookmark(idx)} className={`p-1 rounded-md ${isBookmarked(s.ref) ? 'text-amber-500' : t.faint}`} aria-label="Bookmark this paragraph">{isBookmarked(s.ref) ? <BookmarkCheck className="w-4 h-4" /> : <Bookmark className="w-4 h-4" />}</button>
@@ -969,6 +978,7 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
                 ))}
               </div>
             ) : seg && built.mesivta ? <p className="text-slate-500">No commentary on Sefaria is anchored to this paragraph.</p> : seg ? <p className="text-slate-500 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Notes on their way.</p> : null}
+            <ExtraSections built={built} seg={seg} />
             {syn?.rambam && (
               <div className="rounded-2xl border-2 border-amber-500/50 bg-amber-500/10 px-3.5 py-3">
                 <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-700"><Landmark className="w-4 h-4" /> The Rambam</p>
@@ -1266,7 +1276,7 @@ function DafLibrary({ ready, current, open, onPick }: { ready: Set<string>; curr
     <div className="space-y-5">
       {groups.map(([book, ds]) => (
         <div key={book}>
-          <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">{book} <span className="normal-case tracking-normal font-semibold text-slate-500">· {ds.length} {ds.length === 1 ? 'daf' : 'dafim'}</span></p>
+          <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">{book} <span className="normal-case tracking-normal font-semibold text-slate-500">· {ds.length} {ds.length === 1 ? 'daf' : 'dapim'}</span></p>
           <div className="grid grid-cols-5 sm:grid-cols-8 gap-1.5">
             {ds.map((n) => {
               const r = `${book} ${n}`; const isOpen = r === open; const isToday = r === current;
@@ -1282,5 +1292,181 @@ function DafLibrary({ ready, current, open, onPick }: { ready: Set<string>; curr
       ))}
       <p className="text-[11px] text-slate-500">Each new daf is prepared at noon the day before it is learned, then stays here for everyone.</p>
     </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// Passuk / Mishnah / Sod: each appears only when Sefaria links one to this
+// paragraph. Verses and Mishnayot are Sefaria's own links and texts - never
+// generated - so the reader always sees the real source.
+function quotedWords(verseHe: string, segHe: string): Set<number> {
+  const seg = new Set(segHe.split(/\s+/).map(heSkel).filter((w) => w.length >= 2));
+  const out = new Set<number>();
+  verseHe.split(/\s+/).forEach((w, i) => { const k = heSkel(w); if (k.length >= 2 && seg.has(k)) out.add(i); });
+  return out;
+}
+
+function ExtraSections({ built, seg }: { built: Built; seg: Seg | null }) {
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const on = (r: { anchor?: string }) => !seg || r.anchor === seg.ref;
+  const dedupe = <T extends { ref: string }>(xs: T[]) => xs.filter((x, i) => xs.findIndex((y) => y.ref === x.ref) === i);
+  const verses = dedupe((built.pasukSources || []).filter(on));
+  const mishnayot = dedupe((built.mishnahSources || []).filter(on));
+  const sod = dedupe((built.extras?.sod || []).filter(on));
+  if (!verses.length && !mishnayot.length && !sod.length) return null;
+  const notes = built.extras?.pasuk || [];
+  const sodTexts = built.extras?.sodTexts || [];
+  const toggle = (k: string) => setOpen((o) => ({ ...o, [k]: !o[k] }));
+
+  return (
+    <div className="space-y-3">
+      {verses.map((v) => {
+        const n = notes.find((x) => x.ref === v.ref);
+        const marks = seg ? quotedWords(v.he, seg.he) : new Set<number>();
+        return (
+          <div key={v.ref} className="sd-x sd-x-pasuk px-3.5 py-3">
+            <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] sd-k-pasuk">
+              <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '1rem', letterSpacing: 0 }}>פסוק</span> The verse
+              <span className="ml-auto normal-case tracking-normal font-bold"><SourceLink r={v.ref} /></span>
+            </p>
+            <p lang="he" dir="rtl" className="mt-2 text-slate-100" style={{ fontFamily: HE_FONT, fontSize: '1.2rem', lineHeight: 1.7 }}>
+              {v.he.split(/\s+/).map((w, i) => <span key={i}>{marks.has(i) ? <span className="sd-quoted px-0.5">{w}</span> : w} </span>)}
+            </p>
+            {v.en && <p className="mt-1 text-slate-300" style={{ fontFamily: EN_FONT, fontSize: '0.95rem', lineHeight: 1.55 }}>{v.en}</p>}
+            {marks.size > 0 && <p className="mt-1 text-[11px] text-slate-500">Highlighted: the words the Gemara quotes here.</p>}
+            {n?.use && <p className="mt-2.5 text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.95rem', lineHeight: 1.55 }}><span className="font-black sd-k-pasuk">How the Gemara reads it · </span>{n.use}</p>}
+            {n?.commentators?.length ? (
+              <div className="mt-2.5">
+                <p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-1.5">On the verse itself</p>
+                <ul className="space-y-1.5">
+                  {n.commentators.map((c) => (
+                    <li key={c.ref} className="text-[0.92rem] leading-snug text-slate-200"><span className="font-black sd-k-pasuk">{c.source.replace(/ on (Torah|Tanakh|Nevi'im|Ketuvim).*$/, '')}</span> · {c.point} <SourceLink r={c.ref} /></li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {typeof n?.talmudCount === 'number' && n.talmudCount > 1 && <p className="mt-2 text-[11px] font-bold text-slate-400">This verse is quoted {n.talmudCount} times across the Talmud.</p>}
+          </div>
+        );
+      })}
+
+      {mishnayot.map((m) => (
+        <div key={m.ref} className="sd-x sd-x-mishnah px-3.5 py-3">
+          <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] sd-k-mishnah">
+            <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '1rem', letterSpacing: 0 }}>משנה</span> Mishnah cited
+            <span className="ml-auto normal-case tracking-normal font-bold"><SourceLink r={m.ref} /></span>
+          </p>
+          <p lang="he" dir="rtl" className={`mt-2 text-slate-100 ${open['m:' + m.ref] ? '' : 'line-clamp-4'}`} style={{ fontFamily: HE_FONT, fontSize: '1.1rem', lineHeight: 1.7 }}>{m.he}</p>
+          {m.en && <p className={`mt-1 text-slate-300 ${open['m:' + m.ref] ? '' : 'line-clamp-4'}`} style={{ fontFamily: EN_FONT, fontSize: '0.95rem', lineHeight: 1.55 }}>{m.en}</p>}
+          <button onClick={() => toggle('m:' + m.ref)} className="mt-1.5 text-[11px] font-black sd-k-mishnah">{open['m:' + m.ref] ? 'Show less' : 'Read the whole Mishnah'}</button>
+        </div>
+      ))}
+
+      {sod.map((x) => {
+        const src = sodTexts.find((t) => t.ref === x.ref) || (built.sodSources || []).find((t) => t.ref === x.ref);
+        return (
+          <div key={x.ref} className="sd-x sd-x-sod px-3.5 py-3">
+            <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] sd-k-sod">
+              <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '1rem', letterSpacing: 0 }}>סוד</span> The inner meaning
+              <span className="ml-auto normal-case tracking-normal font-bold"><SourceLink r={x.ref} /></span>
+            </p>
+            <p className="mt-2 text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.96rem', lineHeight: 1.6 }}><span className="font-black sd-k-sod">{x.source} · </span>{x.point}</p>
+            {src && (src.he || src.en) && (
+              <>
+                <button onClick={() => toggle('s:' + x.ref)} className="mt-1.5 text-[11px] font-black sd-k-sod">{open['s:' + x.ref] ? 'Hide the text' : 'Read the text'}</button>
+                {open['s:' + x.ref] && (
+                  <div className="mt-1.5">
+                    {src.he && <p lang="he" dir="rtl" className="text-slate-200" style={{ fontFamily: HE_FONT, fontSize: '1.05rem', lineHeight: 1.7 }}>{src.he}</p>}
+                    {src.en && <p className="mt-1 text-slate-300" style={{ fontFamily: EN_FONT, fontSize: '0.92rem', lineHeight: 1.55 }}>{src.en}</p>}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ----------------------------------------------------------------------
+// "Which Mishnah am I on?" - a pill that always names the Mishnah the current
+// paragraph belongs to (even one that began dapim ago) and opens it in a card,
+// so the reader never has to scroll back to remember it. Text from Sefaria.
+const HEB_NUM = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'יא', 'יב', 'יג', 'יד', 'טו', 'טז', 'יז', 'יח', 'יט', 'כ'];
+function mishnahLabel(ref: string) {
+  const m = ref.match(/(\d+):(\d+)(?:-(\d+))?$/);
+  if (!m) return { en: ref.replace(/^Mishnah /, ''), he: '' };
+  const [, p, a, b] = m;
+  const h = (n: string) => HEB_NUM[Number(n)] || n;
+  // פ״ב מ״ו, פי״א מ״ג: gershayim before the number's last letter
+  const g = (prefix: string, n: string) => { const x = h(n); return prefix + x.slice(0, -1) + '״' + x.slice(-1); };
+  return { en: `${p}:${a}${b ? '–' + b : ''}`, he: `${g('פ', p)} ${g('מ', a)}${b ? '–' + h(b) : ''}` };
+}
+
+function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: number; onGo: (i: number) => void; surface: Surface }) {
+  const list = (daf.mishnayot || []).map((m) => ({ ...m, idx: daf.segments.findIndex((s) => s.ref === m.startsAt) }));
+  const currentI = list.reduce((acc, m, i) => (m.idx <= focusIdx ? i : acc), 0);
+  const [open, setOpen] = useState(false);
+  const [sel, setSel] = useState<number | null>(null);
+  useEffect(() => { if (!open) setSel(null); }, [open]);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+      if ((e.key === 'm' || e.key === 'M') && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '')) setOpen((o) => !o);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
+  const shown = list[sel ?? currentI];
+  if (!shown) return null;
+  const cur = mishnahLabel(list[currentI].ref);
+  const dafNum = Number(daf.daf);
+  const from = shown.idx < 0 ? (shown.startsAt.match(/(\d+)([ab])/) || []) : null;
+  const back = from && from[1] ? dafNum - Number(from[1]) : 0;
+  const paper = surface === 'paper';
+  const lab = mishnahLabel(shown.ref);
+
+  return (
+    <>
+      <button onClick={() => setOpen((o) => !o)} className={`absolute bottom-3 right-4 z-20 inline-flex items-center gap-2 rounded-full border px-3.5 py-2 shadow-lg backdrop-blur transition-colors ${paper ? 'bg-[#fbf3df]/95 border-amber-500/40 text-amber-900 hover:bg-[#fff6e0]' : 'bg-[#1d1a14]/95 border-amber-400/30 text-amber-100 hover:bg-[#262017]'}`} title="Open the Mishnah you're learning (M)" aria-expanded={open}>
+        <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '1.05rem', fontWeight: 700 }}>מתני׳</span>
+        <span className="text-[11px] font-black uppercase tracking-wider opacity-80">Mishnah {cur.en}</span>
+      </button>
+      {open && (
+        <div className={`absolute bottom-16 right-4 left-4 sm:left-auto sm:w-[460px] z-30 max-h-[70%] flex flex-col rounded-3xl border shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200 ${paper ? 'bg-[#fbf6ea] border-amber-500/30 text-stone-900' : 'bg-[#17150f] border-amber-400/25 text-stone-100'}`} role="dialog" aria-label="The Mishnah">
+          <div className={`flex items-start gap-3 px-5 pt-4 pb-3 border-b ${paper ? 'border-amber-500/20' : 'border-amber-400/15'}`}>
+            <div className="min-w-0 flex-1">
+              <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${paper ? 'text-amber-700' : 'text-amber-300'}`}>The Mishnah you're learning</p>
+              <p className="mt-0.5 font-black">
+                <span lang="he" className="mr-2" style={{ fontFamily: HE_FONT, fontSize: '1.15rem' }}>מַתְנִיתִין {lab.he}</span>
+                <span className="text-sm opacity-70">{shown.ref}</span>
+              </p>
+              <p className={`text-xs mt-0.5 ${paper ? 'text-stone-500' : 'text-stone-400'}`}>
+                {shown.idx < 0 ? <>Began on {shown.startsAt.replace(daf.book + ' ', '')}{back > 0 ? ` · ${back} ${back === 1 ? 'daf' : 'dapim'} back` : ''}</> : <>Begins on this daf at {shown.startsAt.replace(daf.book + ' ', '')}</>}
+              </p>
+            </div>
+            <button onClick={() => setOpen(false)} className={`p-1.5 rounded-full ${paper ? 'hover:bg-amber-100' : 'hover:bg-white/10'}`} aria-label="Close"><X className="w-4 h-4" /></button>
+          </div>
+          {list.length > 1 && (
+            <div className="flex flex-wrap gap-1.5 px-5 pt-3">
+              {list.map((m, i) => (
+                <button key={m.ref} onClick={() => setSel(i)} className={`rounded-full px-2.5 py-1 text-[11px] font-black border ${i === (sel ?? currentI) ? (paper ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-400 text-stone-900 border-amber-400') : (paper ? 'border-amber-500/30 text-amber-800' : 'border-amber-400/25 text-amber-200')}`}>
+                  {mishnahLabel(m.ref).en}{i === currentI ? ' · now' : ''}
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="overflow-y-auto px-5 py-4 space-y-3 sd-scroll">
+            <p lang="he" dir="rtl" style={{ fontFamily: HE_FONT, fontSize: '1.25rem', lineHeight: 1.75 }}>{shown.he}</p>
+            {shown.en && <p className={paper ? 'text-stone-700' : 'text-stone-300'} style={{ fontFamily: EN_FONT, fontSize: '0.98rem', lineHeight: 1.6 }}>{shown.en}</p>}
+          </div>
+          <div className={`flex items-center gap-2 px-5 py-3 border-t text-xs ${paper ? 'border-amber-500/20 text-stone-500' : 'border-amber-400/15 text-stone-400'}`}>
+            {shown.idx >= 0 && <button onClick={() => { onGo(shown.idx); setOpen(false); }} className={`rounded-full px-3 py-1.5 font-black ${paper ? 'bg-amber-600 text-white' : 'bg-amber-400 text-stone-900'}`}>Go to it on the daf</button>}
+            <span className="ml-auto">Press <kbd className="font-bold">M</kbd> anytime</span>
+          </div>
+        </div>
+      )}
+    </>
   );
 }

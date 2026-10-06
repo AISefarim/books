@@ -1,7 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Search, X, ScrollText, Loader2, BookOpen, Monitor, Tablet, Smartphone, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
 import { DAF_API, pingDafOpen, normalizeTractate } from '../lib/daf';
-import { noteOpening } from './GemaraOpening';
 
 // The Daf tab's front page: today's daf (huge), yesterday and tomorrow
 // beside it, then every finished daf by masechet, with a forgiving search
@@ -102,7 +101,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
   const DafCard = ({ it, hit }: { it: DafMeta; hit?: string | null }) => {
     const isToday = it.ref === today?.ref;
     return (
-      <button onClick={() => { noteOpening(it.ref, it.heRef); onOpen(it.ref); }} className={`group text-left rounded-2xl border p-4 transition-all hover:-translate-y-0.5 ${isToday ? 'border-indigo-400/60 bg-indigo-500/10' : 'border-slate-800 bg-slate-900 hover:border-slate-600'}`}>
+      <button onClick={() => onOpen(it.ref)} className={`group text-left rounded-2xl border p-4 transition-all hover:-translate-y-0.5 ${isToday ? 'border-indigo-400/60 bg-indigo-500/10' : 'border-slate-800 bg-slate-900 hover:border-slate-600'}`}>
         <div className="flex items-start gap-3">
           <div className="shrink-0 w-14 h-14 rounded-xl bg-slate-800 group-hover:bg-indigo-600 transition-colors flex flex-col items-center justify-center">
             <span className="text-lg font-black leading-none" lang="he" style={{ fontFamily: HE_FONT }}>{heDaf(it.heRef)}</span>
@@ -142,7 +141,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
     const inner = dir === 'prev' ? <>{arrow}{text}</> : <>{text}{arrow}</>;
     const cls = 'group w-full flex items-center gap-3 sm:gap-4 rounded-2xl border p-3.5 sm:p-5 text-left transition-all';
     return ready
-      ? <button onClick={() => { noteOpening(day!.ref, meta?.heRef || day!.heRef); onOpen(day!.ref); }} aria-label={`${label}: ${day!.ref}`} className={`${cls} border-indigo-400/30 bg-indigo-500/[0.07] hover:bg-indigo-500/[0.14] hover:border-indigo-400/60 hover:-translate-y-0.5`}>{inner}</button>
+      ? <button onClick={() => onOpen(day!.ref)} aria-label={`${label}: ${day!.ref}`} className={`${cls} border-indigo-400/30 bg-indigo-500/[0.07] hover:bg-indigo-500/[0.14] hover:border-indigo-400/60 hover:-translate-y-0.5`}>{inner}</button>
       : <div className={`${cls} border-slate-800 bg-slate-900/50`}>{inner}</div>;
   };
 
@@ -172,37 +171,41 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
           </div>
         )}
 
-        {/* ===== today's daf, extremely prominent ===== */}
-        <button onClick={() => { if (!today) return; noteOpening(today.ref, todayHe); onOpen(today.ref); }} disabled={!today} className="group relative w-full overflow-hidden text-left rounded-[28px] border border-indigo-400/30 bg-gradient-to-br from-indigo-600 via-indigo-700 to-violet-800 shadow-[0_30px_80px_-30px_rgba(99,102,241,0.8)] px-5 sm:px-10 py-7 sm:py-10 transition-transform hover:-translate-y-0.5">
-          <div className="pointer-events-none absolute -right-16 -top-16 w-72 h-72 rounded-full bg-white/10 blur-3xl" />
-          <div className="pointer-events-none absolute right-6 sm:right-10 top-1/2 -translate-y-1/2 text-[120px] sm:text-[200px] leading-none font-black text-white/[0.07] select-none" style={{ fontFamily: HE_FONT }} aria-hidden>{todayHe.split(' ').pop() || 'דף'}</div>
-          <div className="relative">
-            <p className="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-[11px] sm:text-xs font-black uppercase tracking-[0.2em] text-white">
+        {/* ===== today's daf, extremely prominent - set like a printed daf ===== */}
+        <button onClick={() => today && onOpen(today.ref)} disabled={!today} className="group relative w-full overflow-hidden text-left rounded-[28px] border border-[#d8c9a8] text-stone-900 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)] px-5 sm:px-10 pt-5 sm:pt-6 pb-7 sm:pb-9 transition-transform hover:-translate-y-0.5" style={{ background: 'linear-gradient(180deg, #f8f2e3 0%, #f3ead4 100%)' }}>
+          <div className="pointer-events-none absolute right-6 sm:right-10 top-14 text-[110px] sm:text-[190px] leading-none font-bold text-[#3b2a17]/[0.06] select-none" style={{ fontFamily: HE_FONT }} aria-hidden>{todayHe.split(' ').pop() || 'דף'}</div>
+          {/* running head, like the top line of a page of Gemara */}
+          <div dir="rtl" className="relative flex items-baseline justify-between gap-4 text-[#3b2a17]" style={{ fontFamily: HE_FONT }}>
+            <span className="text-lg sm:text-2xl font-bold">{todayHe ? `מסכת ${todayHe.replace(/\s+\S+$/, '')}` : 'דף היומי'}</span>
+            <span className="text-lg sm:text-2xl font-bold">{todayHe ? `דף ${todayHe.split(' ').pop()}` : ''}</span>
+          </div>
+          <div className="relative mt-2 h-px bg-[#3b2a17]/25" />
+          <div className="relative mt-5">
+            <p className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-3 py-1 text-[11px] sm:text-xs font-black uppercase tracking-[0.2em] text-white">
               <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" /> Today’s Daf Yomi{dateLabel ? ` · ${dateLabel}` : ''}
             </p>
             {today ? (
               <>
-                <h1 className="mt-4 text-4xl sm:text-6xl font-black tracking-tight text-white leading-[1.05]">{today.ref}</h1>
-                {todayHe && <p className="mt-1 text-3xl sm:text-4xl text-indigo-100" lang="he" dir="rtl" style={{ fontFamily: HE_FONT, textAlign: 'left' }}>{todayHe}</p>}
+                <h1 className="mt-4 text-4xl sm:text-6xl font-black tracking-tight text-stone-900 leading-[1.05]">{today.ref}</h1>
                 {todayMeta?.preview?.length ? (
                   <div className="mt-6 max-w-2xl">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-200 mb-2">On this daf we’ll learn</p>
-                    <ol className="space-y-1.5">
+                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-700 mb-2">On this daf we’ll learn</p>
+                    <ol className="space-y-2">
                       {todayMeta.preview.map((p, i) => (
-                        <li key={i} className="flex gap-3 text-[15px] sm:text-lg text-white/95 leading-snug"><span className="shrink-0 w-6 h-6 rounded-full bg-white/20 text-xs font-black flex items-center justify-center mt-0.5">{i + 1}</span>{p}</li>
+                        <li key={i} className="flex gap-3 text-[16px] sm:text-[19px] text-stone-800 leading-snug" style={{ fontFamily: "'Source Serif 4', Georgia, serif" }}><span className="shrink-0 w-6 h-6 rounded-full bg-[#3b2a17] text-[#f6efdd] text-xs font-black flex items-center justify-center mt-0.5" style={{ fontFamily: 'inherit' }}>{i + 1}</span>{p}</li>
                       ))}
                     </ol>
                   </div>
                 ) : (
-                  <p className="mt-5 text-indigo-100 text-sm sm:text-base">Gemara, Rashi, Tosafot, Mesivta notes, the Rambam and halacha, sugya by sugya.</p>
+                  <p className="mt-5 text-stone-600 text-sm sm:text-base">Gemara, Rashi, Tosafot, Mesivta notes, the Rambam and halacha, sugya by sugya.</p>
                 )}
-                <span className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-white text-indigo-700 px-6 py-3.5 text-base sm:text-lg font-black shadow-xl group-hover:gap-3 transition-all">
+                <span className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 text-white px-6 py-3.5 text-base sm:text-lg font-black shadow-xl shadow-indigo-600/25 group-hover:gap-3 transition-all">
                   {todayMeta ? 'Start learning' : 'Open today’s daf'} <ArrowRight className="w-5 h-5" />
                 </span>
-                {todayMeta?.sugyot ? <span className="ml-4 text-sm font-semibold text-indigo-100">{todayMeta.sugyot} sugyot</span> : null}
+                {todayMeta?.sugyot ? <span className="ml-4 text-sm font-semibold text-stone-600">{todayMeta.sugyot} sugyot</span> : null}
               </>
             ) : (
-              <div className="mt-6 flex items-center gap-2 text-indigo-100"><Loader2 className="w-5 h-5 animate-spin" /> Finding today’s daf…</div>
+              <div className="mt-6 flex items-center gap-2 text-stone-600"><Loader2 className="w-5 h-5 animate-spin" /> Finding today’s daf…</div>
             )}
           </div>
         </button>
@@ -231,7 +234,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
         <div className="sticky top-0 z-20 -mx-4 sm:mx-0 px-4 sm:px-0 pt-6 pb-3 bg-slate-950/90 backdrop-blur">
           <div className="relative">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-            <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a masechet, a daf or a topic: “Bechoros 17”, “בכורות יז”, “twins”…" aria-label="Search the dafim"
+            <input ref={searchRef} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search a masechet, a daf or a topic: “Bechoros 17”, “בכורות יז”, “twins”…" aria-label="Search the dapim"
               className="w-full rounded-2xl bg-slate-900 border border-slate-700 focus:border-indigo-400 focus:ring-4 focus:ring-indigo-500/20 outline-none pl-12 pr-14 py-3.5 text-base text-slate-100 placeholder:text-slate-500" />
             {q ? <button onClick={() => { setQ(''); searchRef.current?.focus(); }} className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-slate-800" aria-label="Clear search"><X className="w-4 h-4" /></button>
               : <kbd className="hidden sm:block absolute right-4 top-1/2 -translate-y-1/2 rounded-md border border-slate-700 px-1.5 py-0.5 text-[11px] font-bold text-slate-500">/</kbd>}
@@ -242,13 +245,13 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
           <div className="py-16 flex justify-center text-slate-500"><Loader2 className="w-6 h-6 animate-spin" /></div>
         ) : words.length ? (
           <div className="mt-3">
-            <p className="text-sm text-slate-400 mb-3">{results.length ? `${results.length} ${results.length === 1 ? 'daf' : 'dafim'} found` : <>Nothing matches “{q}”. Try a masechet, a daf number, or a word like “firstborn”.</>}</p>
+            <p className="text-sm text-slate-400 mb-3">{results.length ? `${results.length} ${results.length === 1 ? 'daf' : 'dapim'} found` : <>Nothing matches “{q}”. Try a masechet, a daf number, or a word like “firstborn”.</>}</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               {results.map(({ it, hit }) => <DafCard key={it.ref} it={it} hit={hit} />)}
             </div>
           </div>
         ) : books.length === 0 ? (
-          <div className="py-16 text-center text-slate-400">{failed ? 'Could not load the library right now.' : 'No dafim yet.'}</div>
+          <div className="py-16 text-center text-slate-400">{failed ? 'Could not load the library right now.' : 'No dapim yet.'}</div>
         ) : (
           <>
             {/* ===== masechtot ===== */}
@@ -259,10 +262,13 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
                 const first = split(b.dafim[0].ref).n, last = split(b.dafim[b.dafim.length - 1].ref).n;
                 return (
                   <button key={b.name} onClick={() => { setBook(b.name); setTimeout(() => dafimRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }}
-                    className={`text-left rounded-2xl border p-4 transition-all hover:-translate-y-0.5 ${on ? 'border-indigo-400/70 bg-indigo-500/15 ring-2 ring-indigo-400/30' : 'border-slate-800 bg-slate-900 hover:border-slate-600'}`}>
-                    {b.he && <p className="text-2xl text-indigo-200 leading-none" lang="he" style={{ fontFamily: HE_FONT }}>{b.he}</p>}
-                    <p className="mt-2 font-black text-slate-100">{b.name}</p>
-                    <p className="text-xs text-slate-400">{b.dafim.length} {b.dafim.length === 1 ? 'daf' : 'dafim'} · {first === last ? `daf ${first}` : `dafim ${first}–${last}`}{b.name === todayBook ? ' · learning now' : ''}</p>
+                    className={`relative overflow-hidden text-left rounded-2xl border p-4 pr-6 transition-all hover:-translate-y-0.5 ${on ? 'border-[#c9a24a] ring-2 ring-[#c9a24a]/40' : 'border-[#5a3a22] hover:border-[#c9a24a]/70'}`}
+                    style={{ background: 'radial-gradient(120% 120% at 20% 0%, #52261b 0%, #33160f 60%, #22100a 100%)' }}>
+                    <span aria-hidden="true" className="absolute inset-y-0 right-0 w-2.5 bg-gradient-to-l from-black/40 to-transparent" />
+                    <span aria-hidden="true" className="absolute inset-2 rounded-xl border border-[#c9a24a]/25 pointer-events-none" />
+                    {b.he && <p className="relative text-2xl leading-none" lang="he" style={{ fontFamily: HE_FONT, color: '#e2c071' }}>{b.he}</p>}
+                    <p className="relative mt-2 font-black text-[#f3e6c8]">{b.name}</p>
+                    <p className="relative text-xs text-[#d9c39a]/80">{b.dafim.length} {b.dafim.length === 1 ? 'daf' : 'dapim'} · {first === last ? `daf ${first}` : `dapim ${first}–${last}`}{b.name === todayBook ? ' · learning now' : ''}</p>
                   </button>
                 );
               })}
@@ -274,7 +280,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
                 <div className="flex items-baseline gap-3 mb-4 border-b border-slate-800 pb-2">
                   <h2 className="text-xl sm:text-2xl font-black tracking-tight">{shownBook.name}</h2>
                   {shownBook.he && <span className="text-xl text-slate-400" lang="he" style={{ fontFamily: HE_FONT }}>{shownBook.he}</span>}
-                  <span className="ml-auto text-xs font-bold text-slate-500">{shownBook.dafim.length} {shownBook.dafim.length === 1 ? 'daf' : 'dafim'}</span>
+                  <span className="ml-auto text-xs font-bold text-slate-500">{shownBook.dafim.length} {shownBook.dafim.length === 1 ? 'daf' : 'dapim'}</span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {shownBook.dafim.map((it) => <DafCard key={it.ref} it={it} />)}
