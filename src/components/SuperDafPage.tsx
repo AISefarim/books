@@ -369,6 +369,12 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   };
   const onDragEnd = () => { dragging.current = false; };
 
+  // "Continue from ..." is a brief offer: it fades after a few seconds.
+  useEffect(() => {
+    if (!resume) return;
+    const t = window.setTimeout(() => setResume(null), 6000);
+    return () => window.clearTimeout(t);
+  }, [resume]);
   const isCurrent = !!(daf && current && daf.ref === current.ref);
   const readyDafs = useReadyDafs();
   useEffect(() => { if (daf?.ref) pingDafOpen(daf.ref); }, [daf?.ref]);
@@ -518,6 +524,8 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd-lowp .bg-indigo-500\\/10 { background:rgba(99,102,241,.08); }
         .sd-lowp .bg-indigo-600 { background:#4f46e5; color:#fff; }
         .sd-lowp textarea { background:#fffaf0; color:#292524; }
+        .sd-resume { animation: sd-resume-fade .6s ease 5.4s forwards; }
+        @keyframes sd-resume-fade { to { opacity: 0; transform: translateY(-6px); pointer-events: none; } }
         .sd-x { border-width:1px; border-radius:1rem; }
         .sd-lowp .sd-x { background:#f7f2e7; border-color:#ddd1b8; } .sd-lowd .sd-x { background:#1b1b1e; border-color:#2e2e33; }
         .sd-lowp .sd-k-pasuk { color:#0f766e; } .sd-lowd .sd-k-pasuk { color:#5eead4; }
@@ -579,7 +587,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
             )}
             {!daf && !error && <div className="mt-20 flex flex-col items-center gap-3 text-slate-500"><Loader2 className="w-6 h-6 animate-spin text-indigo-400" /><p className="text-sm font-medium">Opening the daf…</p></div>}
             {daf && resume && (
-              <div className="sticky top-2 z-20 mx-auto w-fit max-w-[92%]">
+              <div className="sd-resume sticky top-2 z-20 mx-auto w-fit max-w-[92%]">
                 <button onClick={() => { const i = daf.segments.findIndex((s) => s.ref === resume.segRef); if (i >= 0) scrollToSeg(i); setResume(null); }} className="inline-flex items-center gap-2 rounded-full bg-slate-900 text-slate-100 border border-slate-700 shadow-xl px-4 py-2 text-xs font-bold">
                   <Bookmark className="w-3.5 h-3.5 text-indigo-300" /> Continue from {short(resume.segRef, daf.book)}
                   <span onClick={(e) => { e.stopPropagation(); setResume(null); }} className="ml-1 text-slate-500 hover:text-slate-200"><X className="w-3.5 h-3.5" /></span>
@@ -610,7 +618,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         )}
 
         {daf && !lowerCollapsed && panelSugya && (
-          <div className={`sd-lower flex-1 min-h-0 flex flex-col ${surface === 'paper' ? 'sd-lowp' : 'sd-lowd'}`}>
+          <div className={`sd-lower flex-1 min-h-0 min-w-0 flex flex-col ${surface === 'paper' ? 'sd-lowp' : 'sd-lowd'}`}>
             <Panel daf={daf} sugya={panelSugya} segIdx={sugyaScope !== null ? null : panelIdx} tab={tab} setTab={setTab} noteN={noteN}
               sugyaScoped={sugyaScope !== null} onBackToParagraph={() => setSugyaScope(null)}
               chats={chats} chatInput={chatInput} setChatInput={setChatInput} chatBusy={chatBusy} onAsk={ask}
@@ -1416,10 +1424,15 @@ function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: num
 
   return (
     <>
-      {/* a round button in the corner: easy to find, small enough to stay out of the way */}
-      <button onClick={() => setOpen((o) => !o)} className={`absolute right-4 bottom-4 z-20 flex h-[68px] w-[68px] flex-col items-center justify-center rounded-full border-2 shadow-xl transition-transform hover:scale-105 active:scale-95 ${paper ? 'bg-amber-500 border-amber-300 text-white shadow-amber-900/25' : 'bg-amber-400 border-amber-200 text-stone-900 shadow-black/50'}`} title="Our Mishnah (M)" aria-label="Our Mishnah" aria-expanded={open}>
-        <span className="text-[10px] font-bold leading-none">Our</span>
-        <span className="mt-0.5 text-[11px] font-black uppercase leading-none tracking-wide">Mishnah</span>
+      {/* a small round button in the corner: quiet, but easy to find */}
+      {/* phones: a narrow tab on the edge so it never covers the text */}
+      <button onClick={() => setOpen((o) => !o)} className={`sm:hidden absolute right-0 bottom-20 z-20 rounded-l-xl px-1.5 py-3 shadow-lg ${paper ? 'bg-amber-600 text-white' : 'bg-amber-400 text-stone-900'}`} aria-label="Our Mishnah" aria-expanded={open}>
+        <span className="block text-[10px] font-black uppercase tracking-wider [writing-mode:vertical-rl] rotate-180">Our Mishnah</span>
+      </button>
+      <button onClick={() => setOpen((o) => !o)} className={`hidden sm:flex absolute right-4 bottom-4 z-20 h-16 w-16 flex-col items-center justify-center rounded-full border shadow-lg backdrop-blur transition-transform hover:-translate-y-0.5 active:scale-95 ${paper ? 'bg-[#fffaf0]/95 border-amber-700/30 text-amber-800 shadow-stone-900/15' : 'bg-[#1c1b19]/95 border-amber-300/25 text-amber-200 shadow-black/50'}`} title="Our Mishnah (M)" aria-label="Our Mishnah" aria-expanded={open}>
+        <span aria-hidden="true" className={`pointer-events-none absolute inset-1 rounded-full border ${paper ? 'border-amber-700/15' : 'border-amber-300/10'}`} />
+        <span className={`text-[9px] font-black uppercase tracking-[0.18em] ${paper ? 'text-stone-500' : 'text-stone-400'}`}>Our</span>
+        <span className="text-[14px] font-semibold italic leading-tight" style={{ fontFamily: EN_FONT }}>Mishnah</span>
       </button>
       {open && (
         <div className={`absolute top-3 bottom-3 right-3 z-30 w-[calc(100%-1.5rem)] sm:w-[min(620px,92%)] flex flex-col rounded-3xl border shadow-2xl animate-in fade-in slide-in-from-right-4 duration-200 ${paper ? 'bg-[#fbf6ea] border-amber-500/30 text-stone-900' : 'bg-[#17150f] border-amber-400/25 text-stone-100'}`} role="dialog" aria-label="Our Mishnah">
