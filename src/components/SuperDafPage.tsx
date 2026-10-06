@@ -251,12 +251,16 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     return () => mq.removeEventListener('change', on);
   }, []);
   const [tab2, setTab2] = useState<Tab>('halacha');
+  // how much of the notes column the top panel gets (draggable; remembered)
+  const [notesSplit, setNotesSplit] = useState<number>(typeof prefs.notesSplit === 'number' ? prefs.notesSplit : 0.7);
+  const lowerRef = useRef<HTMLDivElement>(null);
+  const notesDrag = useRef(false);
   const setSplit = (v: number | ((x: number) => number)) => (wide ? setSplitWide : setSplitTall)(v as any);
 
   useEffect(() => {
     if (!document.querySelector(`link[href="${FONTS_HREF}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = FONTS_HREF; document.head.appendChild(l); }
   }, []);
-  useEffect(() => { writeJson(PREFS_KEY, { surface, lang, fontScale, mapOpen, split: splitTall, splitWide, lowerCollapsed, gemaraLayout }); }, [surface, lang, fontScale, mapOpen, splitTall, splitWide, lowerCollapsed, gemaraLayout]);
+  useEffect(() => { writeJson(PREFS_KEY, { surface, lang, fontScale, mapOpen, split: splitTall, splitWide, lowerCollapsed, gemaraLayout, notesSplit }); }, [surface, lang, fontScale, mapOpen, splitTall, splitWide, lowerCollapsed, gemaraLayout, notesSplit]);
   useEffect(() => { writeJson(BOOKMARKS_KEY, bookmarks); }, [bookmarks]);
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 1800); return () => window.clearTimeout(id); }, [toast]);
 
@@ -645,15 +649,25 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         )}
 
         {daf && !lowerCollapsed && panelSugya && (
-          <div className={`sd-lower flex-1 min-h-0 min-w-0 flex flex-col ${surface === 'paper' ? 'sd-lowp' : 'sd-lowd'}`}>
-            <div className={`min-h-0 flex flex-col ${wide && tallNotes ? 'flex-[7]' : 'flex-1'}`}>
+          <div ref={lowerRef} className={`sd-lower flex-1 min-h-0 min-w-0 flex flex-col ${surface === 'paper' ? 'sd-lowp' : 'sd-lowd'}`}>
+            <div className={`min-h-0 flex flex-col ${wide && tallNotes ? '' : 'flex-1'}`} style={wide && tallNotes ? { flex: `0 0 ${Math.round(notesSplit * 100)}%` } : undefined}>
               <Panel daf={daf} sugya={panelSugya} segIdx={sugyaScope !== null ? null : panelIdx} tab={tab} setTab={setTab} noteN={noteN}
                 sugyaScoped={sugyaScope !== null} onBackToParagraph={() => setSugyaScope(null)}
                 chats={chats} chatInput={chatInput} setChatInput={setChatInput} chatBusy={chatBusy} onAsk={ask}
                 onCatchUp={() => setSheet({ kind: 'catchup' })} />
             </div>
             {wide && tallNotes && (
-              <div className="min-h-0 flex-[3] flex flex-col border-t-4 border-slate-800">
+              <div role="separator" aria-orientation="horizontal" aria-label="Drag to resize the two notes panels" title="Drag to resize · double-tap to reset"
+                className="shrink-0 h-3 flex items-center justify-center cursor-row-resize bg-slate-800/80 hover:bg-slate-700 touch-none"
+                onPointerDown={(e) => { notesDrag.current = true; (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId); }}
+                onPointerMove={(e) => { if (!notesDrag.current || !lowerRef.current) return; const r = lowerRef.current.getBoundingClientRect(); setNotesSplit(Math.min(0.88, Math.max(0.25, (e.clientY - r.top) / r.height))); }}
+                onPointerUp={() => { notesDrag.current = false; }} onPointerCancel={() => { notesDrag.current = false; }}
+                onDoubleClick={() => setNotesSplit(0.7)}>
+                <GripHorizontal className="w-5 h-3 text-slate-500" />
+              </div>
+            )}
+            {wide && tallNotes && (
+              <div className="min-h-0 flex-1 flex flex-col">
                 <Panel daf={daf} sugya={panelSugya} segIdx={sugyaScope !== null ? null : panelIdx} tab={tab2} setTab={setTab2} noteN={null}
                   sugyaScoped={sugyaScope !== null} onBackToParagraph={() => setSugyaScope(null)}
                   chats={chats} chatInput={chatInput} setChatInput={setChatInput} chatBusy={chatBusy} onAsk={ask}
