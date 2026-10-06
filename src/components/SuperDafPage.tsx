@@ -194,8 +194,9 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const prefs = useMemo(() => readJson<any>(PREFS_KEY, {}), []);
   const [surface, setSurface] = useState<Surface>(prefs.surface || 'paper');
   const [lang, setLang] = useState<Lang>(prefs.lang || 'both');
-  // Large screens (13-inch iPads, desktops) start a notch bigger unless you've chosen a size.
-  const [fontScale, setFontScale] = useState<number>(prefs.fontScale || (typeof window !== 'undefined' && window.matchMedia('(min-width: 1000px)').matches ? 1.1 : 1));
+  // Tablets and larger (any iPad, desktops) start a notch bigger - they're read
+  // from further away than a phone - unless you've chosen a size yourself.
+  const [fontScale, setFontScale] = useState<number>(prefs.fontScale || (typeof window !== 'undefined' && window.matchMedia('(min-width: 700px)').matches ? 1.1 : 1));
   const [mapOpen, setMapOpen] = useState<boolean>(prefs.mapOpen === true);
   // 'full' = full Hebrew paragraph + phrase-by-phrase; 'phrases' = phrase-by-phrase only (about twice as much on screen)
   const [gemaraLayout, setGemaraLayout] = useState<'full' | 'phrases'>(prefs.gemaraLayout === 'phrases' ? 'phrases' : 'full');
