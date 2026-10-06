@@ -10,6 +10,7 @@ import { DAF_API, pingDafOpen, gistText, dafPath, sefariaUrl, titleMatchesDaf, d
 import { useReadyDafs } from '../lib/useReadyDafs';
 import { downloadDaf } from '../lib/dafExport';
 import { recordDeviceDafRead } from '../lib/deviceTracker';
+import { ReaderTour, TOUR_KEY } from './ReaderTour';
 
 // ----------------------------------------------------------------------
 // Types mirroring the worker's /daf/get response
@@ -203,6 +204,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const [lowerCollapsed, setLowerCollapsed] = useState<boolean>(prefs.lowerCollapsed === true);
   const [current, setCurrent] = useState<{ ref: string; date: string } | null>(null);
   const [ref, setRef] = useState<string | null>(initialRef || null);
+  const [tour, setTour] = useState(() => { try { return new URLSearchParams(window.location.search).has('tour'); } catch { return false; } });
   const [daf, setDaf] = useState<Daf | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [focusIdx, setFocusIdx] = useState(0);
@@ -375,6 +377,14 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     const t = window.setTimeout(() => setResume(null), 6000);
     return () => window.clearTimeout(t);
   }, [resume]);
+  useEffect(() => {
+    if (!daf || daf.status !== 'ready') return;
+    let seen = false;
+    try { seen = localStorage.getItem(TOUR_KEY) === '1'; } catch { seen = true; }
+    if (seen) return;
+    const t = window.setTimeout(() => setTour(true), 1200);
+    return () => window.clearTimeout(t);
+  }, [daf?.ref, daf?.status]);
   const isCurrent = !!(daf && current && daf.ref === current.ref);
   const readyDafs = useReadyDafs();
   useEffect(() => { if (daf?.ref) pingDafOpen(daf.ref); }, [daf?.ref]);
@@ -461,6 +471,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
   return (
     <div ref={rootRef} className={`sd fixed inset-0 z-[60] flex flex-col ${t.shell} ${surface === 'dark' ? 'sd-dark' : ''}`} style={{ overscrollBehavior: 'none', height: '100dvh' }}>
+      {tour && <ReaderTour onClose={() => setTour(false)} />}
       <style>{`
         .sd .sd-ref { color: #4f46e5; text-decoration: none; border-bottom: 1px dotted rgba(79,70,229,.5); font-size: .78em; font-weight: 600; }
         .sd .sd-ref:hover { border-bottom-style: solid; }
@@ -706,6 +717,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               <div className="flex items-center justify-between"><p className="text-[11px] font-black uppercase tracking-wider text-slate-400">Text size</p><div className="flex items-center rounded-full bg-slate-800 border border-slate-700"><button onClick={() => setFontScale((f) => Math.max(0.8, +(f - 0.1).toFixed(2)))} className="p-2 text-slate-300 hover:text-white" aria-label="Smaller"><Minus className="w-4 h-4" /></button><span className="text-xs font-black text-slate-200 w-10 text-center tabular-nums">{Math.round(fontScale * 100)}%</span><button onClick={() => setFontScale((f) => Math.min(1.7, +(f + 0.1).toFixed(2)))} className="p-2 text-slate-300 hover:text-white" aria-label="Larger"><Plus className="w-4 h-4" /></button></div></div>
               <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Page</p><Segmented value={surface} onChange={(v) => setSurface(v as Surface)} options={[{ v: 'paper', l: 'Paper', icon: Sun }, { v: 'dark', l: 'Dark', icon: Moon }]} /></div>
               <div className="hidden md:block"><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Daf map</p><Segmented value={mapOpen ? 'open' : 'closed'} onChange={(v) => setMapOpen(v === 'open')} options={[{ v: 'closed', l: 'Show while scrolling' }, { v: 'open', l: 'Always pinned' }]} /></div>
+              <button onClick={() => { setSheet(null); setTimeout(() => setTour(true), 250); }} className="w-full rounded-2xl border border-indigo-400/40 bg-indigo-500/10 px-4 py-3 text-left text-sm font-black text-indigo-200 hover:bg-indigo-500/20">Show me around <span className="font-semibold text-slate-400">· a 30-second tour of Super Daf</span></button>
               <p className="text-[11px] text-slate-500">Reading the page: <strong className="text-slate-300">bold</strong> is the Gemara’s own words, lighter text is the Davidson elucidation, and the small numbers open notes in the lower half. Drag the divider to give the notes more or less room. On iPad, <strong className="text-slate-300">Add to Home Screen</strong> gives a true full screen with no browser bars.</p>
             </div>
           )}
