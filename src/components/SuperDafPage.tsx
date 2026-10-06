@@ -633,9 +633,9 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         <nav className="shrink-0 bg-slate-950 border-t border-slate-800 px-2 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5">
           <div className={`mx-auto grid gap-1 ${(daf.mishnayot || []).length ? 'max-w-2xl grid-cols-6' : 'max-w-xl grid-cols-5'}`}>
             {([
-              { id: 'sugyot', label: 'Sugyot', icon: ListTree }, { id: 'catchup', label: 'Catch me up', icon: Clock },
-              // "Our Mishnah" lives here, never floating over the text
+              // "Our Mishnah" comes first and stands out - it lives here so it never covers the text
               ...((daf.mishnayot || []).length ? [{ id: 'mishnah', label: 'Our Mishnah', icon: ScrollText, amber: true }] : []),
+              { id: 'sugyot', label: 'Sugyot', icon: ListTree }, { id: 'catchup', label: 'Catch me up', icon: Clock },
               { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
               { id: 'ask', label: 'Ask', icon: MessageSquareText }, { id: 'listen', label: 'Listen', icon: Headphones },
             ] as { id: string; label: string; icon: any; amber?: boolean }[]).map(({ id, label, icon: Icon, amber }) => {
@@ -647,7 +647,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
                   if (id === 'ask') { setTab('ask'); setLowerCollapsed(false); setSheet(null); return; }
                   if (id === 'catchup') requestSofar(focusIdx);
                   setSheet(sheet?.kind === id ? null : { kind: id } as Sheet);
-                }} className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition-colors disabled:opacity-30 ${amber ? 'text-amber-300 hover:text-amber-200 hover:bg-amber-400/10' : active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`} title={amber ? 'Our Mishnah (M)' : undefined}>
+                }} className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 transition-all disabled:opacity-30 ${amber ? 'bg-amber-400 hover:bg-amber-300 shadow-lg shadow-amber-500/25 ring-1 ring-amber-200/60 text-[11px] font-black' : active ? 'text-[10px] font-bold text-indigo-300 bg-indigo-500/10' : 'text-[10px] font-bold text-slate-400 hover:text-slate-100'}`} style={amber ? { color: '#1c1917' } : undefined} title={amber ? 'Our Mishnah (M)' : undefined}>
                   <Icon className="w-5 h-5" />{label}
                 </button>
               );
