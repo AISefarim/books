@@ -82,13 +82,34 @@ const firstSentence = (s?: string) => { const t = String(s || '').trim(); const 
 // ----------------------------------------------------------------------
 // Text helpers
 
+// Citations like "[Rashi on Bekhorot 17a:3:1, Kessef Mishneh on Mishneh Torah,
+// Firstlings 5:1:2]" become small, separate chips with short names.
+function shortRef(r: string) {
+  let m;
+  if ((m = r.match(/^(.+?) on Mishneh Torah, [^\d]*?(\d[\d:]*)$/))) return `${m[1]} ${m[2]}`;
+  if ((m = r.match(/^Mishneh Torah, (.+)$/))) return `Rambam, ${m[1]}`;
+  if ((m = r.match(/^(.+?) on [A-Z][A-Za-z' ]+? (\d+[ab]?[\d:]*)$/))) return `${m[1]} ${m[2]}`;
+  if ((m = r.match(/^[A-Z][A-Za-z' ]+? (\d+[ab]:[\d:]+)$/))) return `Gemara ${m[1]}`;
+  return r;
+}
+function splitRefs(inner: string): string[] {
+  // a ref ends in a number ("5:1", "17a:3"); split after it at a comma or semicolon
+  return inner.split(/(?<=\d[ab]?)\s*[,;]\s*/).map((x) => x.trim()).filter(Boolean);
+}
 function RefText({ text, className }: { text: string; className?: string }) {
-  const parts = String(text || '').split(/(\[[^\]]{3,120}\])/g);
+  const parts = String(text || '').split(/(\[[^\[\]]{3,500}\])/g);
   return (
     <span className={className}>
       {parts.map((p, i) => {
         const m = p.match(/^\[([^\]]+)\]$/);
-        if (m && /\d/.test(m[1])) return <a key={i} href={sefariaUrl(m[1])} target="_blank" rel="noopener noreferrer" className="sd-ref" title={m[1]} onClick={(e) => e.stopPropagation()}>{m[1]}</a>;
+        if (m && /\d/.test(m[1])) {
+          const refs = splitRefs(m[1]).filter((r) => /\d/.test(r));
+          return (
+            <span key={i} className="whitespace-nowrap">
+              {refs.map((r, k) => <a key={k} href={sefariaUrl(r)} target="_blank" rel="noopener noreferrer" className="sd-cite" title={r} onClick={(e) => e.stopPropagation()}>{shortRef(r)}</a>)}
+            </span>
+          );
+        }
         return <span key={i}>{p}</span>;
       })}
     </span>
@@ -572,6 +593,10 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         @media (prefers-reduced-motion: reduce) { .sd-mish-glow { animation: none; } }
         @keyframes sd-resume-fade { to { opacity: 0; transform: translateY(-6px); pointer-events: none; } }
         .sd-x { border-width:1px; border-radius:1rem; }
+        .sd-cite { display:inline-block; margin-left:.3em; padding:0 .45em; border-radius:9999px; font-family: system-ui, sans-serif; font-size:.68em; font-weight:700; line-height:1.6; vertical-align:.12em; text-decoration:none; white-space:nowrap; }
+        .sd-lowp .sd-cite, .sd:not(.sd-dark) .sd-cite { color:#4338ca; background:rgba(99,102,241,.10); }
+        .sd-lowd .sd-cite, .sd-dark .sd-cite { color:#c7d2fe; background:rgba(165,180,252,.14); }
+        .sd-cite:hover { filter:brightness(1.15); text-decoration:underline; }
         .sd-lowp .sd-x { background:#f7f2e7; border-color:#ddd1b8; } .sd-lowd .sd-x { background:#1b1b1e; border-color:#2e2e33; }
         .sd-lowp .sd-k-pasuk { color:#0f766e; } .sd-lowd .sd-k-pasuk { color:#5eead4; }
         .sd-lowp .sd-k-mishnah { color:#b45309; } .sd-lowd .sd-k-mishnah { color:#f5cf8e; }
@@ -1050,7 +1075,12 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
   const noteRef = useRef<HTMLDivElement>(null);
   useEffect(() => { noteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [noteN, tab, segIdx]);
   useEffect(() => { setWork(null); }, [segIdx, sugya.index]);
-  const orderedNotes = useMemo(() => { const ns = mes?.notes || []; if (noteN === null) return ns; return [...ns.filter((n) => n.n === noteN), ...ns.filter((n) => n.n !== noteN)]; }, [mes, noteN]);
+  const orderedNotes = useMemo(() => {
+    const low = (n: MNote) => /Rabbeinu Gershom/i.test(n.source || '');
+    const ns = [...(mes?.notes || []).filter((n) => !low(n)), ...(mes?.notes || []).filter(low)];
+    if (noteN === null) return ns;
+    return [...ns.filter((n) => n.n === noteN), ...ns.filter((n) => n.n !== noteN)];
+  }, [mes, noteN]);
 
   const tabs: { id: Tab; label: string; icon: any; count?: number; dim?: boolean }[] = [
     { id: 'notes', label: 'Notes', icon: NotebookPen, count: mes?.notes?.length || 0 },
