@@ -638,7 +638,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
             <Panel daf={daf} sugya={panelSugya} segIdx={sugyaScope !== null ? null : panelIdx} tab={tab} setTab={setTab} noteN={noteN}
               sugyaScoped={sugyaScope !== null} onBackToParagraph={() => setSugyaScope(null)}
               chats={chats} chatInput={chatInput} setChatInput={setChatInput} chatBusy={chatBusy} onAsk={ask}
-              onCatchUp={() => { requestSofar(panelIdx); setSheet({ kind: 'catchup' }); }} />
+              onCatchUp={() => setSheet({ kind: 'catchup' })} />
           </div>
         )}
         {toast && <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-40 rounded-full bg-slate-900 text-slate-100 border border-slate-700 px-4 py-2 text-xs font-bold shadow-xl">{toast}</div>}
@@ -647,11 +647,11 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       {/* ============ dock ============ */}
       {daf && (
         <nav className="shrink-0 bg-slate-950 border-t border-slate-800 px-2 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5">
-          <div className={`mx-auto grid gap-1 ${(daf.mishnayot || []).length ? 'max-w-2xl grid-cols-6' : 'max-w-xl grid-cols-5'}`}>
+          <div className={`mx-auto grid gap-1 ${(daf.mishnayot || []).length ? 'max-w-xl grid-cols-5' : 'max-w-lg grid-cols-4'}`}>
             {([
               // "Our Mishnah" comes first and stands out - it lives here so it never covers the text
               ...((daf.mishnayot || []).length ? [{ id: 'mishnah', label: 'Our Mishnah', icon: ScrollText, amber: true }] : []),
-              { id: 'sugyot', label: 'Sugyot', icon: ListTree }, { id: 'catchup', label: 'Catch me up', icon: Clock },
+              { id: 'catchup', label: 'Catch me up', icon: Clock },
               { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
               { id: 'ask', label: 'Ask', icon: MessageSquareText }, { id: 'listen', label: 'Listen', icon: Headphones },
             ] as { id: string; label: string; icon: any; amber?: boolean }[]).map(({ id, label, icon: Icon, amber }) => {
@@ -670,7 +670,6 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
                 <button key={id} disabled={disabled} onClick={() => {
                   if (id === 'mishnah') { window.dispatchEvent(new Event('sd-mishnah-toggle')); return; }
                   if (id === 'ask') { setTab('ask'); setLowerCollapsed(false); setSheet(null); return; }
-                  if (id === 'catchup') requestSofar(focusIdx);
                   setSheet(sheet?.kind === id ? null : { kind: id } as Sheet);
                 }} className={`flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-2 rounded-xl py-1.5 lg:py-2 text-[10px] lg:text-xs font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
                   <Icon className="w-5 h-5" />{label}
@@ -697,7 +696,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               ))}
             </div>
           )}
-          {sheet.kind === 'catchup' && <CatchUp data={sofar[daf.segments[focusIdx].ref]} segRef={short(daf.segments[focusIdx].ref, daf.book)} />}
+          {sheet.kind === 'catchup' && <CatchUp daf={daf} segIdx={focusIdx} data={sofar[daf.segments[focusIdx].ref]} segRef={short(daf.segments[focusIdx].ref, daf.book)} onDeeper={() => requestSofar(focusIdx)} />}
           {sheet.kind === 'bookmarks' && (bookmarks.length === 0 ? <p className="text-sm text-slate-400">No bookmarks yet. Tap the bookmark icon beside any paragraph to save your place.</p> : (
             <div className="space-y-2">
               {bookmarks.map((b) => (
@@ -1236,15 +1235,47 @@ function Segmented({ value, onChange, options }: { value: string; onChange: (v: 
   );
 }
 
-function CatchUp({ data, segRef }: { data?: TldrSoFar | 'loading' | { error: string }; segRef: string }) {
-  if (!data || data === 'loading') return <p className="text-sm text-slate-400 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Summarizing the sugya up to {segRef}…</p>;
-  if ('error' in data) return <p className="text-sm text-rose-300">{data.error}</p>;
+// Catch me up: an instant outline built from what the page already has (no
+// waiting), with the fuller AI catch-up one tap away.
+function CatchUp({ daf, segIdx, data, segRef, onDeeper }: { daf: Daf; segIdx: number; data?: TldrSoFar | 'loading' | { error: string }; segRef: string; onDeeper: () => void }) {
+  const sg = daf.sugyot.find((x) => x.segments.includes(segIdx)) || daf.sugyot[0];
+  const idxOf = (ref: string) => daf.segments.findIndex((x) => x.ref === ref);
+  const earlier = daf.sugyot.filter((x) => x.index < sg.index).map((x) => daf.summary?.sugyaLessons?.[x.index] || firstSentence(x.built?.synthesis?.tldr)).filter(Boolean) as string[];
+  const syn = sg.built?.synthesis && !sg.built.synthesis._error ? sg.built.synthesis : null;
+  const steps = (syn?.steps || []).filter((st) => { const i = idxOf((st.refs || [])[0]); return i >= 0 && i <= segIdx; });
+
   return (
     <div className="space-y-3">
-      <div className="rounded-xl bg-indigo-500/10 border border-indigo-500/25 px-3 py-3"><p className="text-[10px] font-black uppercase tracking-wider text-indigo-300 mb-1">The story so far</p><p className="text-sm leading-relaxed" style={{ fontFamily: EN_FONT }}>{data.sofar}</p></div>
-      <div className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-3"><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Right now</p><p className="text-sm leading-relaxed" style={{ fontFamily: EN_FONT }}>{data.nowWeAre}</p></div>
-      {data.keepInMind?.length > 0 && <div className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-3"><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Keep in mind</p><ul className="space-y-1">{data.keepInMind.map((k, i) => <li key={i} className="text-sm flex gap-2"><span className="text-indigo-300">◆</span><span>{k}</span></li>)}</ul></div>}
-      <p className="text-[11px] text-slate-500">Only up to {segRef} — nothing after it is revealed.</p>
+      {earlier.length > 0 && (
+        <div className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-3">
+          <p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1.5">Earlier on this daf</p>
+          <ul className="space-y-1">{earlier.map((l, i) => <li key={i} className="text-sm flex gap-2 leading-snug"><span className="text-indigo-300">◆</span><span>{l}</span></li>)}</ul>
+        </div>
+      )}
+      <div className="rounded-xl bg-indigo-500/10 border border-indigo-500/25 px-3 py-3">
+        <p className="text-[10px] font-black uppercase tracking-wider text-indigo-300 mb-1">This sugya so far{sg.prelude ? ` · began on ${short(sg.prelude.from, daf.book)}` : ''}</p>
+        {syn?.tldr && <p className="text-sm leading-relaxed" style={{ fontFamily: EN_FONT }}>{syn.tldr}</p>}
+        {steps.length > 0 && (
+          <ol className="mt-2 space-y-1">
+            {steps.map((st, i) => <li key={i} className="text-sm flex gap-2 leading-snug"><span className="shrink-0 font-black text-indigo-300 tabular-nums">{i + 1}.</span><span>{st.headline}</span></li>)}
+          </ol>
+        )}
+      </div>
+
+      {!data ? (
+        <button onClick={onDeeper} className="w-full rounded-xl border border-indigo-400/40 bg-indigo-500/10 hover:bg-indigo-500/20 px-3 py-2.5 text-sm font-black text-indigo-200 inline-flex items-center justify-center gap-2"><Sparkles className="w-4 h-4" /> Go deeper: the full story so far</button>
+      ) : data === 'loading' ? (
+        <p className="text-sm text-slate-400 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Writing the full story up to {segRef}…</p>
+      ) : 'error' in data ? (
+        <p className="text-sm text-rose-300">{data.error}</p>
+      ) : (
+        <div className="space-y-3 animate-in fade-in duration-200">
+          <div className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-3"><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">The full story so far</p><p className="text-sm leading-relaxed" style={{ fontFamily: EN_FONT }}>{data.sofar}</p></div>
+          <div className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-3"><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Right now</p><p className="text-sm leading-relaxed" style={{ fontFamily: EN_FONT }}>{data.nowWeAre}</p></div>
+          {data.keepInMind?.length > 0 && <div className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-3"><p className="text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">Keep in mind</p><ul className="space-y-1">{data.keepInMind.map((k, i) => <li key={i} className="text-sm flex gap-2"><span className="text-indigo-300">◆</span><span>{k}</span></li>)}</ul></div>}
+        </div>
+      )}
+      <p className="text-[11px] text-slate-500">Only up to {segRef} - nothing after it is revealed.</p>
     </div>
   );
 }
