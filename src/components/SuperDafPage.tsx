@@ -44,7 +44,7 @@ interface Sugya {
 }
 interface Daf {
   ref: string; heRef: string; book: string; daf: string; title: string; heTitle: string; next: string | null; prev: string | null;
-  mishnayot?: { ref: string; he: string; en: string; startsAt: string; fromDaf: string | null }[];
+  mishnayot?: { ref: string; he: string; en: string; startsAt: string; endsAt?: string; fromDaf: string | null; lines?: { he: string; enHtml: string }[] }[];
   segments: Seg[]; sugyot: Sugya[]; status: 'ready' | 'building'; done: number; total: number; attribution: string;
   summary?: { preview?: string[]; takeaways?: string[]; sugyaLessons?: string[] } | null;
   versions: { he: { title: string; license: string }; en: { title: string; license: string } };
@@ -784,7 +784,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                     <div key={c.ref} className={`sd-blurb rounded-lg px-2.5 py-1.5 ${t.soft}`} onClick={(e) => e.stopPropagation()}>
                       <p className="text-[13px] leading-snug" dir="ltr" style={{ textAlign: 'left', fontFamily: 'inherit' }}>
                         <span lang="he" className="sd-rashi font-bold mr-1.5" style={{ fontSize: '1rem' }}>{c.title === 'Rashi' ? 'רש״י' : 'תוס׳'}</span>
-                        <span>{c.gist ? gistText(c.title, c.gist) : firstSentence(c.en) || ''}</span>
+                        <span>{c.gist || firstSentence(c.en) || ''}</span>
                         <button onClick={() => setWords((w) => ({ ...w, [c.ref]: !w[c.ref] }))} className={`ml-2 text-[11px] font-bold ${t.accent}`}>{on ? 'hide words' : 'words'}</button>
                       </p>
                       {on && (
@@ -1393,23 +1393,11 @@ function ExtraSections({ built, seg }: { built: Built; seg: Seg | null }) {
 // "Which Mishnah am I on?" - a pill that always names the Mishnah the current
 // paragraph belongs to (even one that began dapim ago) and opens it in a card,
 // so the reader never has to scroll back to remember it. Text from Sefaria.
-const HEB_NUM = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'יא', 'יב', 'יג', 'יד', 'טו', 'טז', 'יז', 'יח', 'יט', 'כ'];
-function mishnahLabel(ref: string) {
-  const m = ref.match(/(\d+):(\d+)(?:-(\d+))?$/);
-  if (!m) return { en: ref.replace(/^Mishnah /, ''), he: '' };
-  const [, p, a, b] = m;
-  const h = (n: string) => HEB_NUM[Number(n)] || n;
-  // פ״ב מ״ו, פי״א מ״ג: gershayim before the number's last letter
-  const g = (prefix: string, n: string) => { const x = h(n); return prefix + x.slice(0, -1) + '״' + x.slice(-1); };
-  return { en: `${p}:${a}${b ? '–' + b : ''}`, he: `${g('פ', p)} ${g('מ', a)}${b ? '–' + h(b) : ''}` };
-}
-
 function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: number; onGo: (i: number) => void; surface: Surface }) {
+  // Only the Mishnah this point of the Gemara belongs to.
   const list = (daf.mishnayot || []).map((m) => ({ ...m, idx: daf.segments.findIndex((s) => s.ref === m.startsAt) }));
-  const currentI = list.reduce((acc, m, i) => (m.idx <= focusIdx ? i : acc), 0);
-  const [open, setOpen] = useState(false);
-  const [sel, setSel] = useState<number | null>(null);
-  useEffect(() => { if (!open) setSel(null); }, [open]);
+  const shown = list.reduce<(typeof list)[number] | null>((acc, m) => (m.idx <= focusIdx ? m : acc), list[0] || null);
+  const [open, setOpen] = useState(() => { try { return new URLSearchParams(window.location.search).has('mishnah'); } catch { return false; } });
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape') setOpen(false);
@@ -1418,53 +1406,40 @@ function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: num
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   }, []);
-  const shown = list[sel ?? currentI];
   if (!shown) return null;
-  const cur = mishnahLabel(list[currentI].ref);
-  const dafNum = Number(daf.daf);
-  const from = shown.idx < 0 ? (shown.startsAt.match(/(\d+)([ab])/) || []) : null;
-  const back = from && from[1] ? dafNum - Number(from[1]) : 0;
+  const from = shown.idx < 0 ? shown.startsAt.match(/(\d+)([ab])/) : null;
+  const back = from ? Number(daf.daf) - Number(from[1]) : 0;
   const paper = surface === 'paper';
-  const lab = mishnahLabel(shown.ref);
+  const lines = shown.lines?.length ? shown.lines : [{ he: shown.he, enHtml: shown.en }];
 
   return (
     <>
-      <button onClick={() => setOpen((o) => !o)} className={`absolute bottom-3 right-4 z-20 inline-flex items-center gap-2 rounded-full border px-3.5 py-2 shadow-lg backdrop-blur transition-colors ${paper ? 'bg-[#fbf3df]/95 border-amber-500/40 text-amber-900 hover:bg-[#fff6e0]' : 'bg-[#1d1a14]/95 border-amber-400/30 text-amber-100 hover:bg-[#262017]'}`} title="Open the Mishnah you're learning (M)" aria-expanded={open}>
-        <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '1.05rem', fontWeight: 700 }}>מתני׳</span>
-        <span className="text-[11px] font-black uppercase tracking-wider opacity-80">Mishnah {cur.en}</span>
+      {/* a slim tab on the edge, out of the way of the text */}
+      <button onClick={() => setOpen((o) => !o)} className={`absolute right-0 bottom-24 z-20 rounded-l-2xl border border-r-0 pl-3 pr-2.5 py-2.5 shadow-lg backdrop-blur transition-colors ${paper ? 'bg-[#fbf3df]/95 border-amber-500/40 text-amber-900 hover:bg-[#fff6e0]' : 'bg-[#1d1a14]/95 border-amber-400/30 text-amber-100 hover:bg-[#262017]'}`} title="Our Mishnah (M)" aria-expanded={open}>
+        <span className="text-[11px] font-black uppercase tracking-wider">Our Mishnah</span>
       </button>
       {open && (
-        <div className={`absolute bottom-16 right-4 left-4 sm:left-auto sm:w-[460px] z-30 max-h-[70%] flex flex-col rounded-3xl border shadow-2xl animate-in fade-in slide-in-from-bottom-3 duration-200 ${paper ? 'bg-[#fbf6ea] border-amber-500/30 text-stone-900' : 'bg-[#17150f] border-amber-400/25 text-stone-100'}`} role="dialog" aria-label="The Mishnah">
+        <div className={`absolute top-3 bottom-3 right-3 z-30 w-[calc(100%-1.5rem)] sm:w-[min(620px,92%)] flex flex-col rounded-3xl border shadow-2xl animate-in fade-in slide-in-from-right-4 duration-200 ${paper ? 'bg-[#fbf6ea] border-amber-500/30 text-stone-900' : 'bg-[#17150f] border-amber-400/25 text-stone-100'}`} role="dialog" aria-label="Our Mishnah">
           <div className={`flex items-start gap-3 px-5 pt-4 pb-3 border-b ${paper ? 'border-amber-500/20' : 'border-amber-400/15'}`}>
             <div className="min-w-0 flex-1">
-              <p className={`text-[11px] font-black uppercase tracking-[0.18em] ${paper ? 'text-amber-700' : 'text-amber-300'}`}>The Mishnah you're learning</p>
-              <p className="mt-0.5 font-black">
-                <span lang="he" className="mr-2" style={{ fontFamily: HE_FONT, fontSize: '1.15rem' }}>מַתְנִיתִין {lab.he}</span>
-                <span className="text-sm opacity-70">{shown.ref}</span>
-              </p>
+              <p className="text-lg font-black">Our Mishnah</p>
               <p className={`text-xs mt-0.5 ${paper ? 'text-stone-500' : 'text-stone-400'}`}>
-                {shown.idx < 0 ? <>Began on {shown.startsAt.replace(daf.book + ' ', '')}{back > 0 ? ` · ${back} ${back === 1 ? 'daf' : 'dapim'} back` : ''}</> : <>Begins on this daf at {shown.startsAt.replace(daf.book + ' ', '')}</>}
+                {shown.ref} · {shown.idx < 0 ? <>began on {shown.startsAt.replace(daf.book + ' ', '')}{back > 0 ? `, ${back} ${back === 1 ? 'daf' : 'dapim'} back` : ''}</> : <>on this daf at {shown.startsAt.replace(daf.book + ' ', '')}</>}
               </p>
             </div>
+            {shown.idx >= 0 && <button onClick={() => { onGo(shown.idx); setOpen(false); }} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-black ${paper ? 'bg-amber-600 text-white' : 'bg-amber-400 text-stone-900'}`}>Go to it</button>}
             <button onClick={() => setOpen(false)} className={`p-1.5 rounded-full ${paper ? 'hover:bg-amber-100' : 'hover:bg-white/10'}`} aria-label="Close"><X className="w-4 h-4" /></button>
           </div>
-          {list.length > 1 && (
-            <div className="flex flex-wrap gap-1.5 px-5 pt-3">
-              {list.map((m, i) => (
-                <button key={m.ref} onClick={() => setSel(i)} className={`rounded-full px-2.5 py-1 text-[11px] font-black border ${i === (sel ?? currentI) ? (paper ? 'bg-amber-600 text-white border-amber-600' : 'bg-amber-400 text-stone-900 border-amber-400') : (paper ? 'border-amber-500/30 text-amber-800' : 'border-amber-400/25 text-amber-200')}`}>
-                  {mishnahLabel(m.ref).en}{i === currentI ? ' · now' : ''}
-                </button>
-              ))}
-            </div>
-          )}
-          <div className="overflow-y-auto px-5 py-4 space-y-3 sd-scroll">
-            <p lang="he" dir="rtl" style={{ fontFamily: HE_FONT, fontSize: '1.25rem', lineHeight: 1.75 }}>{shown.he}</p>
-            {shown.en && <p className={paper ? 'text-stone-700' : 'text-stone-300'} style={{ fontFamily: EN_FONT, fontSize: '0.98rem', lineHeight: 1.6 }}>{shown.en}</p>}
+          {/* set like the page: Hebrew and English side by side, bold = the Mishnah's own words */}
+          <div className="overflow-y-auto sd-scroll px-4 sm:px-5 py-3">
+            {lines.map((l, i) => (
+              <div key={i} className={`grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.25fr)] gap-x-5 gap-y-1 py-2.5 ${i ? (paper ? 'border-t border-amber-500/15' : 'border-t border-amber-400/10') : ''}`}>
+                <p lang="he" dir="rtl" className="text-right" style={{ fontFamily: HE_FONT, fontSize: '1.15rem', lineHeight: 1.7 }}>{l.he}</p>
+                <Davidson text={l.enHtml.replace(/<[^>]+>/g, '')} html={l.enHtml} className={paper ? 'text-stone-800' : 'text-stone-200'} style={{ fontFamily: EN_FONT, fontSize: '0.95rem', lineHeight: 1.6 }} />
+              </div>
+            ))}
           </div>
-          <div className={`flex items-center gap-2 px-5 py-3 border-t text-xs ${paper ? 'border-amber-500/20 text-stone-500' : 'border-amber-400/15 text-stone-400'}`}>
-            {shown.idx >= 0 && <button onClick={() => { onGo(shown.idx); setOpen(false); }} className={`rounded-full px-3 py-1.5 font-black ${paper ? 'bg-amber-600 text-white' : 'bg-amber-400 text-stone-900'}`}>Go to it on the daf</button>}
-            <span className="ml-auto">Press <kbd className="font-bold">M</kbd> anytime</span>
-          </div>
+          <p className={`px-5 py-2.5 border-t text-[11px] ${paper ? 'border-amber-500/20 text-stone-500' : 'border-amber-400/15 text-stone-400'}`}><b>Bold</b> is the Mishnah's own words · press <kbd className="font-bold">M</kbd> anytime</p>
         </div>
       )}
     </>
