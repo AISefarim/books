@@ -240,6 +240,17 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     return () => mq.removeEventListener('change', on);
   }, []);
   const split = wide ? splitWide : splitTall;
+  // Tall side-by-side screens (13-inch iPad upright, big monitors): the notes
+  // column splits - the main tabs on top, a second panel (Halacha by default) below.
+  const tallQuery = '(min-width: 1000px) and (min-height: 1100px)';
+  const [tallNotes, setTallNotes] = useState<boolean>(() => typeof window !== 'undefined' && window.matchMedia(tallQuery).matches);
+  useEffect(() => {
+    const mq = window.matchMedia(tallQuery);
+    const on = () => setTallNotes(mq.matches);
+    mq.addEventListener('change', on);
+    return () => mq.removeEventListener('change', on);
+  }, []);
+  const [tab2, setTab2] = useState<Tab>('halacha');
   const setSplit = (v: number | ((x: number) => number)) => (wide ? setSplitWide : setSplitTall)(v as any);
 
   useEffect(() => {
@@ -635,10 +646,20 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
         {daf && !lowerCollapsed && panelSugya && (
           <div className={`sd-lower flex-1 min-h-0 min-w-0 flex flex-col ${surface === 'paper' ? 'sd-lowp' : 'sd-lowd'}`}>
-            <Panel daf={daf} sugya={panelSugya} segIdx={sugyaScope !== null ? null : panelIdx} tab={tab} setTab={setTab} noteN={noteN}
-              sugyaScoped={sugyaScope !== null} onBackToParagraph={() => setSugyaScope(null)}
-              chats={chats} chatInput={chatInput} setChatInput={setChatInput} chatBusy={chatBusy} onAsk={ask}
-              onCatchUp={() => setSheet({ kind: 'catchup' })} />
+            <div className={`min-h-0 flex flex-col ${wide && tallNotes ? 'flex-[7]' : 'flex-1'}`}>
+              <Panel daf={daf} sugya={panelSugya} segIdx={sugyaScope !== null ? null : panelIdx} tab={tab} setTab={setTab} noteN={noteN}
+                sugyaScoped={sugyaScope !== null} onBackToParagraph={() => setSugyaScope(null)}
+                chats={chats} chatInput={chatInput} setChatInput={setChatInput} chatBusy={chatBusy} onAsk={ask}
+                onCatchUp={() => setSheet({ kind: 'catchup' })} />
+            </div>
+            {wide && tallNotes && (
+              <div className="min-h-0 flex-[3] flex flex-col border-t-4 border-slate-800">
+                <Panel daf={daf} sugya={panelSugya} segIdx={sugyaScope !== null ? null : panelIdx} tab={tab2} setTab={setTab2} noteN={null}
+                  sugyaScoped={sugyaScope !== null} onBackToParagraph={() => setSugyaScope(null)}
+                  chats={chats} chatInput={chatInput} setChatInput={setChatInput} chatBusy={chatBusy} onAsk={ask}
+                  onCatchUp={() => setSheet({ kind: 'catchup' })} />
+              </div>
+            )}
           </div>
         )}
         {toast && <div className="absolute bottom-3 left-1/2 -translate-x-1/2 z-40 rounded-full bg-slate-900 text-slate-100 border border-slate-700 px-4 py-2 text-xs font-bold shadow-xl">{toast}</div>}

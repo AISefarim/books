@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, Search, X, ScrollText, Loader2, BookOpen, Monitor, Tablet, Smartphone, ChevronLeft, ChevronRight, Lock } from 'lucide-react';
-import { DAF_API, pingDafOpen, normalizeTractate } from '../lib/daf';
+import { ArrowLeft, ArrowRight, Search, X, ScrollText, Loader2, BookOpen, Monitor, Tablet, Smartphone, ChevronLeft, ChevronRight, Lock, Share2, Check } from 'lucide-react';
+import { DAF_API, pingDafOpen, normalizeTractate, dafPath } from '../lib/daf';
 
 // The Daf tab's front page: today's daf (huge), yesterday and tomorrow
 // beside it, then every finished daf by masechet, with a forgiving search
@@ -20,6 +20,11 @@ const norm = (s: string) => s.toLowerCase().normalize('NFKD').replace(/[֑-ׇ]/g
 const fmtDate = (d?: string, opts: Intl.DateTimeFormatOptions = { weekday: 'long', month: 'long', day: 'numeric' }) => (d ? new Date(d + 'T12:00:00').toLocaleDateString(undefined, opts) : '');
 const escapeRe = (w: string) => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const SITE = 'https://aisefarim.com';
+const bookPath = (name: string) => `/daf/${encodeURIComponent(name.replace(/ /g, '_'))}`;
+// "/daf/Bava_Metzia" -> "Bava Metzia" (a masechet link opens the page on that masechet)
+const bookFromPath = (p: string) => { const m = p.match(/^\/(?:super)?daf\/([^/]+)\/?$/); return m ? decodeURIComponent(m[1]).replace(/_/g, ' ') : null; };
+
 // Highlight the query words inside a matching point.
 function Highlight({ text, words }: { text: string; words: string[] }) {
   const latin = words.filter((w) => /[a-z]/.test(w));
@@ -35,7 +40,20 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
   const [yesterday, setYesterday] = useState<Day | null>(null);
   const [tomorrow, setTomorrow] = useState<Day | null>(null);
   const [q, setQ] = useState('');
-  const [book, setBook] = useState<string | null>(null);
+  const [book, setBook] = useState<string | null>(() => bookFromPath(window.location.pathname));
+  const [toast, setToast] = useState<string | null>(null);
+  // Share sheet on phones/tablets; copy the link elsewhere.
+  const share = async (title: string, path: string) => {
+    const url = SITE + path;
+    const text = `${title} on Super Daf - the daf, sugya by sugya. Free.`;
+    try {
+      if (navigator.share) { await navigator.share({ title, text, url }); return; }
+    } catch (e: any) { if (e?.name === 'AbortError') return; }
+    try { await navigator.clipboard.writeText(url); setToast('Link copied'); } catch { setToast(url); }
+    window.setTimeout(() => setToast(null), 2200);
+  };
+  // a masechet link (/daf/Bava_Metzia) scrolls to that masechet once the library loads
+  const [scrolledToBook, setScrolledToBook] = useState(false);
   const [hideTip, setHideTip] = useState(() => { try { return localStorage.getItem('sd_device_tip') === '1'; } catch { return false; } });
   const searchRef = useRef<HTMLInputElement>(null);
   const dafimRef = useRef<HTMLDivElement>(null);
@@ -77,6 +95,11 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
   const todayBook = today ? split(today.ref).book : null;
   const openBook = book || todayBook || books[0]?.name || null;
   const shownBook = books.find((b) => b.name === openBook) || books[0];
+  useEffect(() => {
+    if (scrolledToBook || !book || !books.some((b) => b.name === book)) return;
+    setScrolledToBook(true);
+    window.setTimeout(() => dafimRef.current?.scrollIntoView({ block: 'start' }), 300);
+  }, [book, books, scrolledToBook]);
 
   // ---- search: masechet (any spelling, English or Hebrew), daf (17, 17a, יז), or topic ----
   const words = useMemo(() => norm(q).split(' ').filter((w) => w && !STOP.has(w)), [q]);
@@ -108,7 +131,9 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
   const DafCard = ({ it, hit }: { it: DafMeta; hit?: string | null }) => {
     const isToday = it.ref === today?.ref;
     return (
-      <button onClick={() => onOpen(it.ref)} className={`group text-left rounded-2xl border p-4 transition-all hover:-translate-y-0.5 ${isToday ? 'border-indigo-400/60 bg-indigo-500/10' : 'border-slate-800 bg-slate-900 hover:border-slate-600'}`}>
+      <div className="relative">
+      <button onClick={() => share(it.ref, dafPath(it.ref))} className="absolute top-2.5 right-2.5 z-10 p-2 rounded-full text-slate-500 hover:text-white hover:bg-slate-700/70" aria-label={`Share ${it.ref}`} title={`Share ${it.ref}`}><Share2 className="w-4 h-4" /></button>
+      <button onClick={() => onOpen(it.ref)} className={`group w-full text-left rounded-2xl border p-4 pr-11 transition-all hover:-translate-y-0.5 ${isToday ? 'border-indigo-400/60 bg-indigo-500/10' : 'border-slate-800 bg-slate-900 hover:border-slate-600'}`}>
         <div className="flex items-start gap-3">
           <div className="shrink-0 w-14 h-14 rounded-xl bg-slate-800 group-hover:bg-indigo-600 transition-colors flex flex-col items-center justify-center">
             <span className="text-lg font-black leading-none" lang="he" style={{ fontFamily: HE_FONT }}>{heDaf(it.heRef)}</span>
@@ -124,6 +149,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
           </div>
         </div>
       </button>
+      </div>
     );
   };
 
@@ -180,6 +206,8 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
 
         {/* ===== today's daf: composed like a page of Gemara - the title in the
              center, today's real Rashi and Tosafot in faint columns around it ===== */}
+        <div className="relative">
+        {today && <button onClick={() => share(today.ref, dafPath(today.ref))} className="absolute bottom-6 right-6 sm:bottom-7 sm:right-8 z-10 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-3 py-1.5 text-xs font-black text-slate-200 backdrop-blur" aria-label={`Share ${today.ref}`}><Share2 className="w-3.5 h-3.5" /> Share</button>}
         <button onClick={() => today && onOpen(today.ref)} disabled={!today} className="group relative w-full overflow-hidden rounded-[28px] border border-white/10 px-6 sm:px-10 pt-6 sm:pt-7 pb-9 sm:pb-11 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] transition-transform hover:-translate-y-0.5"
           style={{ background: 'radial-gradient(120% 90% at 50% 0%, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.04) 45%, transparent 70%), linear-gradient(180deg, #121527 0%, #0d0f1c 100%)' }}>
           {/* a printed page's double rule */}
@@ -220,6 +248,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
             <Column label="רש״י" text={frame?.rashiHe} />
           </div>
         </button>
+        </div>
 
         {/* ===== yesterday & tomorrow ===== */}
         <div className="mt-3 grid grid-cols-2 gap-3">
@@ -272,7 +301,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
                 const on = b.name === shownBook?.name;
                 const first = split(b.dafim[0].ref).n, last = split(b.dafim[b.dafim.length - 1].ref).n;
                 return (
-                  <button key={b.name} onClick={() => { setBook(b.name); setTimeout(() => dafimRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }}
+                  <button key={b.name} onClick={() => { setBook(b.name); try { window.history.replaceState({}, '', bookPath(b.name)); } catch { /* ignore */ } setTimeout(() => dafimRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50); }}
                     className={`relative overflow-hidden text-left rounded-2xl border p-4 pr-6 transition-all hover:-translate-y-0.5 ${on ? 'border-[#c9a24a] ring-2 ring-[#c9a24a]/40' : 'border-[#5a3a22] hover:border-[#c9a24a]/70'}`}
                     style={{ background: 'radial-gradient(120% 120% at 20% 0%, #52261b 0%, #33160f 60%, #22100a 100%)' }}>
                     <span aria-hidden="true" className="absolute inset-y-0 right-0 w-2.5 bg-gradient-to-l from-black/40 to-transparent" />
@@ -292,6 +321,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
                   <h2 className="text-xl sm:text-2xl font-black tracking-tight">{shownBook.name}</h2>
                   {shownBook.he && <span className="text-xl text-slate-400" lang="he" style={{ fontFamily: HE_FONT }}>{shownBook.he}</span>}
                   <span className="ml-auto text-xs font-bold text-slate-500">{shownBook.dafim.length} {shownBook.dafim.length === 1 ? 'daf' : 'dapim'}</span>
+                  <button onClick={() => share(`Masechet ${shownBook.name}`, bookPath(shownBook.name))} className="self-center inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900 hover:bg-slate-800 px-3 py-1.5 text-xs font-black text-slate-200"><Share2 className="w-3.5 h-3.5" /> Share masechet</button>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {shownBook.dafim.map((it) => <DafCard key={it.ref} it={it} />)}
@@ -300,6 +330,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
             )}
           </>
         )}
+        {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-900 px-4 py-2 text-sm font-black shadow-2xl"><Check className="w-4 h-4 text-emerald-600" /> {toast}</div>}
         <p className="mt-12 text-center text-xs text-slate-600">Each new daf is prepared at noon the day before it is learned, and then stays here for everyone.</p>
       </div>
     </div>
