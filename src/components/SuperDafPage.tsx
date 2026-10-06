@@ -1414,9 +1414,10 @@ function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: num
 
   return (
     <>
-      {/* a slim tab on the edge, out of the way of the text */}
-      <button onClick={() => setOpen((o) => !o)} className={`absolute right-0 bottom-24 z-20 rounded-l-xl border border-r-0 px-1.5 py-3 shadow-lg backdrop-blur transition-colors ${paper ? 'bg-[#fbf3df]/95 border-amber-500/40 text-amber-900 hover:bg-[#fff6e0]' : 'bg-[#1d1a14]/95 border-amber-400/30 text-amber-100 hover:bg-[#262017]'}`} title="Our Mishnah (M)" aria-expanded={open}>
-        <span className="block text-[10px] font-black uppercase tracking-wider [writing-mode:vertical-rl] rotate-180">Our Mishnah</span>
+      {/* a round button in the corner: easy to find, small enough to stay out of the way */}
+      <button onClick={() => setOpen((o) => !o)} className={`absolute right-4 bottom-4 z-20 flex h-[68px] w-[68px] flex-col items-center justify-center rounded-full border-2 shadow-xl transition-transform hover:scale-105 active:scale-95 ${paper ? 'bg-amber-500 border-amber-300 text-white shadow-amber-900/25' : 'bg-amber-400 border-amber-200 text-stone-900 shadow-black/50'}`} title="Our Mishnah (M)" aria-label="Our Mishnah" aria-expanded={open}>
+        <span className="text-[10px] font-bold leading-none">Our</span>
+        <span className="mt-0.5 text-[11px] font-black uppercase leading-none tracking-wide">Mishnah</span>
       </button>
       {open && (
         <div className={`absolute top-3 bottom-3 right-3 z-30 w-[calc(100%-1.5rem)] sm:w-[min(620px,92%)] flex flex-col rounded-3xl border shadow-2xl animate-in fade-in slide-in-from-right-4 duration-200 ${paper ? 'bg-[#fbf6ea] border-amber-500/30 text-stone-900' : 'bg-[#17150f] border-amber-400/25 text-stone-100'}`} role="dialog" aria-label="Our Mishnah">
