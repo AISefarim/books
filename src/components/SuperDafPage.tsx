@@ -525,8 +525,8 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd-lowp .bg-indigo-600 { background:#4f46e5; color:#fff; }
         .sd-lowp textarea { background:#fffaf0; color:#292524; }
         .sd-resume { animation: sd-resume-fade .6s ease 5.4s forwards; }
-        .sd-mish-glow { box-shadow: 0 10px 28px -6px rgba(99,102,241,.75), 0 0 0 0 rgba(129,140,248,.45); animation: sd-mish-breathe 3.2s ease-in-out infinite; }
-        @keyframes sd-mish-breathe { 0%,100% { box-shadow: 0 10px 28px -6px rgba(99,102,241,.75), 0 0 0 0 rgba(129,140,248,.40); } 50% { box-shadow: 0 12px 34px -6px rgba(124,58,237,.85), 0 0 0 7px rgba(129,140,248,0); } }
+        .sd-mish-glow { animation: sd-mish-halo 3.2s ease-in-out infinite; }
+        @keyframes sd-mish-halo { 0%,100% { box-shadow: 0 0 0 0 rgba(129,140,248,.45); } 50% { box-shadow: 0 0 0 6px rgba(129,140,248,0); } }
         @media (prefers-reduced-motion: reduce) { .sd-mish-glow { animation: none; } }
         @keyframes sd-resume-fade { to { opacity: 0; transform: translateY(-6px); pointer-events: none; } }
         .sd-x { border-width:1px; border-radius:1rem; }
@@ -646,14 +646,11 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               const active = sheet?.kind === id || (id === 'ask' && tab === 'ask' && !lowerCollapsed);
               if (amber) return (
                 // Our Mishnah: a raised, glowing circle - the one button that invites a tap
-                <button key={id} onClick={() => window.dispatchEvent(new Event('sd-mishnah-toggle'))} className="group relative flex flex-col items-center -mt-6" title="Our Mishnah (M)" aria-label="Our Mishnah">
-                  <span className="sd-mish-glow relative flex h-[58px] w-[58px] items-center justify-center rounded-full ring-4 ring-slate-950 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:scale-105 group-active:scale-95"
-                    style={{ background: 'radial-gradient(120% 120% at 30% 20%, #a5b4fc 0%, #6366f1 38%, #4f46e5 62%, #6d28d9 100%)' }}>
-                    <span aria-hidden="true" className="absolute inset-[3px] rounded-full border border-white/25" />
-                    <span aria-hidden="true" className="absolute inset-x-3 top-1.5 h-4 rounded-full bg-white/25 blur-[3px]" />
-                    <span lang="he" className="relative text-white" style={{ fontFamily: HE_FONT, fontSize: '1.05rem', fontWeight: 700, textShadow: '0 1px 2px rgba(0,0,0,0.35)' }}>מתני׳</span>
+                <button key={id} onClick={() => window.dispatchEvent(new Event('sd-mishnah-toggle'))} className="group flex flex-col items-center gap-0.5 py-1" title="Our Mishnah (M)" aria-label="Our Mishnah">
+                  <span className="sd-mish-glow flex h-9 w-9 items-center justify-center rounded-full bg-indigo-600 ring-2 ring-indigo-400/50 transition-colors group-hover:bg-indigo-500 group-active:bg-indigo-700">
+                    <span lang="he" className="text-white" style={{ fontFamily: HE_FONT, fontSize: '0.8rem', fontWeight: 700 }}>מתני׳</span>
                   </span>
-                  <span className="mt-1 text-[10px] font-black tracking-wide" style={{ color: '#c7d2fe' }}>Our Mishnah</span>
+                  <span className="text-[10px] font-black" style={{ color: '#c7d2fe' }}>Our Mishnah</span>
                 </button>
               );
               return (
