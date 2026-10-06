@@ -647,7 +647,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       {/* ============ dock ============ */}
       {daf && (
         <nav className="shrink-0 bg-slate-950 border-t border-slate-800 px-2 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5">
-          <div className={`mx-auto grid gap-1 ${(daf.mishnayot || []).length ? 'max-w-xl grid-cols-5' : 'max-w-lg grid-cols-4'}`}>
+          <div className={`mx-auto grid gap-1 lg:flex lg:items-center lg:justify-center lg:gap-3 lg:max-w-3xl ${(daf.mishnayot || []).length ? 'max-w-xl grid-cols-5' : 'max-w-lg grid-cols-4'}`}>
             {([
               // "Our Mishnah" comes first and stands out - it lives here so it never covers the text
               ...((daf.mishnayot || []).length ? [{ id: 'mishnah', label: 'Our Mishnah', icon: ScrollText, amber: true }] : []),
@@ -659,11 +659,19 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               const active = sheet?.kind === id || (id === 'ask' && tab === 'ask' && !lowerCollapsed);
               if (amber) return (
                 // Our Mishnah: a raised, glowing circle - the one button that invites a tap
-                <button key={id} onClick={() => window.dispatchEvent(new Event('sd-mishnah-toggle'))} className="group flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-2 py-1 lg:py-1.5" title="Our Mishnah (M)" aria-label="Our Mishnah">
-                  <span className="sd-mish-glow flex h-9 w-9 lg:h-8 lg:w-8 items-center justify-center rounded-full bg-indigo-600 ring-2 ring-indigo-400/50 transition-colors group-hover:bg-indigo-500 group-active:bg-indigo-700">
-                    <span lang="he" className="text-white" style={{ fontFamily: HE_FONT, fontSize: '0.8rem', fontWeight: 700 }}>מתני׳</span>
+                <button key={id} onClick={() => window.dispatchEvent(new Event('sd-mishnah-toggle'))} className="group flex items-center justify-center py-1" title="Our Mishnah (M)" aria-label="Our Mishnah">
+                  {/* phones: a filled circle with the label under it */}
+                  <span className="flex lg:hidden flex-col items-center gap-0.5">
+                    <span className="sd-mish-glow flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 ring-2 ring-indigo-300/60 group-active:bg-indigo-700">
+                      <span lang="he" className="text-white" style={{ fontFamily: HE_FONT, fontSize: '0.85rem', fontWeight: 700 }}>מתני׳</span>
+                    </span>
+                    <span className="text-[10px] font-black" style={{ color: '#e0e7ff' }}>Our Mishnah</span>
                   </span>
-                  <span className="text-[10px] lg:text-xs font-black lg:whitespace-nowrap" style={{ color: '#c7d2fe' }}>Our Mishnah</span>
+                  {/* larger screens: a filled pill that fills its slot */}
+                  <span className="sd-mish-glow hidden lg:inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-2 ring-2 ring-indigo-300/50 transition-colors group-hover:bg-indigo-500 group-active:bg-indigo-700">
+                    <span lang="he" className="text-white" style={{ fontFamily: HE_FONT, fontSize: '1rem', fontWeight: 700 }}>מתני׳</span>
+                    <span className="text-xs font-black text-white whitespace-nowrap">Our Mishnah</span>
+                  </span>
                 </button>
               );
               return (
@@ -671,7 +679,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
                   if (id === 'mishnah') { window.dispatchEvent(new Event('sd-mishnah-toggle')); return; }
                   if (id === 'ask') { setTab('ask'); setLowerCollapsed(false); setSheet(null); return; }
                   setSheet(sheet?.kind === id ? null : { kind: id } as Sheet);
-                }} className={`flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-2 rounded-xl py-1.5 lg:py-2 text-[10px] lg:text-xs font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
+                }} className={`flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-2 rounded-xl py-1.5 lg:py-2 lg:px-3 text-[10px] lg:text-xs font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
                   <Icon className="w-5 h-5" />{label}
                 </button>
               );
