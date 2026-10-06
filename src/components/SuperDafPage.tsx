@@ -225,7 +225,9 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const pollRef = useRef<number | null>(null);
   const pinnedRef = useRef<number | null>(null);
   const dragging = useRef(false);
-  const wideQuery = '(pointer: fine) and (min-width: 1024px)';
+  // Side by side on computers, and on a tablet held sideways (iPad landscape);
+  // notes below on phones and on a tablet held upright. Rotating switches live.
+  const wideQuery = '(pointer: fine) and (min-width: 1024px), (min-width: 1024px) and (orientation: landscape)';
   const [wide, setWide] = useState<boolean>(() => typeof window !== 'undefined' && window.matchMedia(wideQuery).matches);
   useEffect(() => {
     const mq = window.matchMedia(wideQuery);
