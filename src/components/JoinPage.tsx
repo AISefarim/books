@@ -184,7 +184,7 @@ export default function JoinPage() {
                 <span className="shrink-0 rounded-full bg-emerald-500 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-white">Free</span>
               </div>
               <div className="px-3.5 sm:px-5 pt-3 pb-3.5">
-                {teaser.headline && <p className="text-center text-[12px] sm:text-[13px] font-black text-indigo-700 truncate">› {teaser.headline}</p>}
+                {teaser.headline && <p className="text-center text-[12px] sm:text-[13px] font-black text-indigo-700 truncate">{teaser.headline}</p>}
                 <div className="mt-2 rounded-xl border border-[#e3d8c1] overflow-hidden bg-white/50">
                   {teaser.units.slice(0, 3).map((u, i) => (
                     <div key={i}>

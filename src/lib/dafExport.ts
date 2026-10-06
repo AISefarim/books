@@ -40,7 +40,7 @@ export function buildDafHtml(daf: any): string {
       const core = (b.core || []).filter((c: any) => c.anchor === s.ref);
       const h = hal.filter((x) => (x.refs || []).includes(s.ref));
       parts.push(`<article>`);
-      if (step) parts.push(`<p class="step">› ${esc(step.headline)}</p>`);
+      if (step) parts.push(`<p class="step">${esc(step.headline)}</p>`);
       parts.push(`<p class="ref">${esc(short(s.ref, daf.book))}</p><p class="he" lang="he" dir="rtl">${esc(s.he)}</p>`);
       if (m?.units?.length) {
         parts.push(`<table class="inter">${m.units.map((u: any) => `<tr><td class="he" lang="he" dir="rtl">${esc(u.he)}</td><td>${u.en ? md(u.en).replace(/<b>/g, '<b>') : `<b>${esc(u.literal)}</b> <span class="el">${esc(u.elucidation || '')}</span>`}${(u.notes || []).map((n: number) => `<sup>${n}</sup>`).join('')}</td></tr>`).join('')}</table>`);
