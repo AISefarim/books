@@ -631,14 +631,14 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       {/* ============ dock ============ */}
       {daf && (
         <nav className="shrink-0 bg-slate-950 border-t border-slate-800 px-2 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5">
-          <div className={`max-w-xl mx-auto grid gap-1 ${(daf.mishnayot || []).length ? 'grid-cols-6 sm:grid-cols-5' : 'grid-cols-5'}`}>
+          <div className={`mx-auto grid gap-1 ${(daf.mishnayot || []).length ? 'max-w-2xl grid-cols-6' : 'max-w-xl grid-cols-5'}`}>
             {([
               { id: 'sugyot', label: 'Sugyot', icon: ListTree }, { id: 'catchup', label: 'Catch me up', icon: Clock },
-              // phones: "Our Mishnah" lives here instead of floating over the text
-              ...((daf.mishnayot || []).length ? [{ id: 'mishnah', label: 'Mishnah', icon: ScrollText, phoneOnly: true }] : []),
+              // "Our Mishnah" lives here, never floating over the text
+              ...((daf.mishnayot || []).length ? [{ id: 'mishnah', label: 'Our Mishnah', icon: ScrollText, amber: true }] : []),
               { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
               { id: 'ask', label: 'Ask', icon: MessageSquareText }, { id: 'listen', label: 'Listen', icon: Headphones },
-            ] as { id: string; label: string; icon: any; phoneOnly?: boolean }[]).map(({ id, label, icon: Icon, phoneOnly }) => {
+            ] as { id: string; label: string; icon: any; amber?: boolean }[]).map(({ id, label, icon: Icon, amber }) => {
               const disabled = id === 'listen' && podcasts.length === 0;
               const active = sheet?.kind === id || (id === 'ask' && tab === 'ask' && !lowerCollapsed);
               return (
@@ -647,7 +647,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
                   if (id === 'ask') { setTab('ask'); setLowerCollapsed(false); setSheet(null); return; }
                   if (id === 'catchup') requestSofar(focusIdx);
                   setSheet(sheet?.kind === id ? null : { kind: id } as Sheet);
-                }} className={`${phoneOnly ? 'flex sm:hidden' : 'flex'} flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
+                }} className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition-colors disabled:opacity-30 ${amber ? 'text-amber-300 hover:text-amber-200 hover:bg-amber-400/10' : active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`} title={amber ? 'Our Mishnah (M)' : undefined}>
                   <Icon className="w-5 h-5" />{label}
                 </button>
               );
@@ -780,7 +780,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                     </span>
                   )}
                 </div>
-                {syn?.tldr && <p className="mt-1.5" style={{ fontFamily: EN_FONT, fontSize: `${0.98 * fontScale}rem`, lineHeight: 1.55 }}><span className={`font-black text-[10px] uppercase tracking-wider mr-2 ${t.accent}`}>TL;DR</span>{firstSentence(syn.tldr)}</p>}
+                {syn?.tldr && <p className="mt-1.5" style={{ fontFamily: EN_FONT, fontSize: `${0.98 * fontScale}rem`, lineHeight: 1.55 }}><span className={`font-black text-[10px] uppercase tracking-wider mr-2 ${t.accent}`}>In brief</span>{firstSentence(syn.tldr)}</p>}
               </div>
 
               {sugya.segments.map((idx) => {
@@ -1430,12 +1430,6 @@ function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: num
 
   return (
     <>
-      {/* a solid tab on the right edge: easy to spot, never covers much text.
-          Two short horizontal lines - Safari draws vertical text in buttons badly. */}
-      <button onClick={() => setOpen((o) => !o)} className={`absolute right-0 top-1/2 -translate-y-1/2 z-20 hidden sm:flex flex-col items-center rounded-l-2xl pl-3 pr-2.5 py-2 sm:pl-3.5 sm:pr-3 sm:py-2.5 leading-none shadow-[0_8px_30px_-6px_rgba(0,0,0,0.45)] transition-colors ${paper ? 'bg-amber-600 hover:bg-amber-500' : 'bg-amber-400 hover:bg-amber-300'}`} style={{ color: paper ? '#ffffff' : '#1c1917' }} title="Our Mishnah (M)" aria-label="Our Mishnah" aria-expanded={open}>
-        <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.14em] opacity-85">Our</span>
-        <span className="mt-1 text-[12px] sm:text-[14px] font-black uppercase tracking-[0.06em]">Mishnah</span>
-      </button>
       {open && (
         <div className={`absolute top-3 bottom-3 right-3 z-30 w-[calc(100%-1.5rem)] sm:w-[min(620px,92%)] flex flex-col rounded-3xl border shadow-2xl animate-in fade-in slide-in-from-right-4 duration-200 ${paper ? 'bg-[#fbf6ea] border-amber-500/30 text-stone-900' : 'bg-[#17150f] border-amber-400/25 text-stone-100'}`} role="dialog" aria-label="Our Mishnah">
           <div className={`flex items-start gap-3 px-5 pt-4 pb-3 border-b ${paper ? 'border-amber-500/20' : 'border-amber-400/15'}`}>
