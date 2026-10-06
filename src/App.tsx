@@ -309,8 +309,10 @@ export default function App() {
           if (videoToOpen && dafRef) {
             // An AI Daf episode: open its Super Daf if one exists, else the episode page.
             recordDeviceWatch(videoToOpen.id, videoToOpen);
+            // ?watch=1 (from Super Daf's "Watch the episode") opens the episode itself
+            const wantsEpisode = new URLSearchParams(window.location.search).has('watch');
             loadReadyDafs().then((ready) => {
-              if (ready.has(dafRef)) openSuperDaf(videoToOpen);
+              if (ready.has(dafRef) && !wantsEpisode) openSuperDaf(videoToOpen);
               else { setSelectedVideo(videoToOpen); setActiveTab('videos'); setIsDirectLinkEntry(true); }
             });
           } else if (videoToOpen) {
