@@ -31,7 +31,7 @@ export function buildDafHtml(daf: any): string {
     const hal = (b.halacha?.items || []) as any[];
     if (si > 0) parts.push(`<div class="divider">❖</div>`);
     parts.push(`<section class="sugya"><p class="kind">${esc(kind[sg.kind] || sg.kind)} · ${esc(short(sg.from, daf.book))}–${esc(short(sg.to, daf.book))}</p>`);
-    if (syn?.tldr) parts.push(`<p class="tldr"><b>TL;DR</b> ${esc(syn.tldr)}</p>`);
+    if (syn?.tldr) parts.push(`<p class="tldr"><b>In brief</b> ${esc(syn.tldr)}</p>`);
 
     sg.segments.forEach((idx: number) => {
       const s = daf.segments[idx];
