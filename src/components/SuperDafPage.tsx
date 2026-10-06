@@ -589,7 +589,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
                 isBookmarked={isBookmarked} toggleBookmark={toggleBookmark} onShare={shareSeg} openOn={openOn} openSugya={openSugya}
                 canGo={canGo} onGo={(r) => { setRef(r); scrollRef.current?.scrollTo({ top: 0 }); }} />
             )}
-            {daf && <footer className={`px-6 py-6 text-[11px] ${t.faint} leading-relaxed max-w-3xl mx-auto`}>{daf.attribution} · <a className="sd-ref" href={sefariaUrl(daf.ref)} target="_blank" rel="noopener noreferrer">open on Sefaria</a></footer>}
+            {daf && <footer className={`px-6 py-6 text-[11px] ${t.faint} leading-relaxed max-w-[62rem] mx-auto`}>{daf.attribution} · <a className="sd-ref" href={sefariaUrl(daf.ref)} target="_blank" rel="noopener noreferrer">open on Sefaria</a></footer>}
           </div>
         </div>
 
@@ -701,7 +701,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
   const [words, setWords] = useState<Record<string, boolean>>({});
   return (
     <div className={`${t.page} min-h-full`}>
-      <div className="max-w-3xl mx-auto px-3 sm:px-8 pt-3 pb-8">
+      <div className="max-w-[62rem] mx-auto px-3 sm:px-5 lg:px-8 pt-3 pb-8">
         <div dir="rtl" className={`mb-1 flex items-center gap-3 ${t.muted}`} style={{ fontFamily: HE_FONT }}>
           <span className={`h-px flex-1 border-t ${t.rule}`} />
           <span className="text-lg sm:text-xl font-bold">מסכת {daf.heTitle || daf.heRef.replace(/\s+\S+$/, '')}</span>
@@ -1415,8 +1415,8 @@ function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: num
   return (
     <>
       {/* a slim tab on the edge, out of the way of the text */}
-      <button onClick={() => setOpen((o) => !o)} className={`absolute right-0 bottom-24 z-20 rounded-l-2xl border border-r-0 pl-3 pr-2.5 py-2.5 shadow-lg backdrop-blur transition-colors ${paper ? 'bg-[#fbf3df]/95 border-amber-500/40 text-amber-900 hover:bg-[#fff6e0]' : 'bg-[#1d1a14]/95 border-amber-400/30 text-amber-100 hover:bg-[#262017]'}`} title="Our Mishnah (M)" aria-expanded={open}>
-        <span className="text-[11px] font-black uppercase tracking-wider">Our Mishnah</span>
+      <button onClick={() => setOpen((o) => !o)} className={`absolute right-0 bottom-24 z-20 rounded-l-xl border border-r-0 px-1.5 py-3 shadow-lg backdrop-blur transition-colors ${paper ? 'bg-[#fbf3df]/95 border-amber-500/40 text-amber-900 hover:bg-[#fff6e0]' : 'bg-[#1d1a14]/95 border-amber-400/30 text-amber-100 hover:bg-[#262017]'}`} title="Our Mishnah (M)" aria-expanded={open}>
+        <span className="block text-[10px] font-black uppercase tracking-wider [writing-mode:vertical-rl] rotate-180">Our Mishnah</span>
       </button>
       {open && (
         <div className={`absolute top-3 bottom-3 right-3 z-30 w-[calc(100%-1.5rem)] sm:w-[min(620px,92%)] flex flex-col rounded-3xl border shadow-2xl animate-in fade-in slide-in-from-right-4 duration-200 ${paper ? 'bg-[#fbf6ea] border-amber-500/30 text-stone-900' : 'bg-[#17150f] border-amber-400/25 text-stone-100'}`} role="dialog" aria-label="Our Mishnah">
