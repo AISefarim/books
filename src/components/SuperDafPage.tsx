@@ -1424,9 +1424,11 @@ function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: num
 
   return (
     <>
-      {/* a solid tab on the right edge: easy to spot, never covers the text */}
-      <button onClick={() => setOpen((o) => !o)} className={`absolute right-0 bottom-20 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-20 rounded-l-xl sm:rounded-l-2xl px-1.5 py-3 sm:px-2.5 sm:py-5 shadow-[0_8px_30px_-6px_rgba(0,0,0,0.45)] transition-all hover:pr-3.5 ${paper ? 'bg-amber-600 text-white hover:bg-amber-500' : 'bg-amber-400 text-stone-900 hover:bg-amber-300'}`} title="Our Mishnah (M)" aria-label="Our Mishnah" aria-expanded={open}>
-        <span className="block text-[10px] sm:text-[13px] font-black uppercase tracking-[0.14em] [writing-mode:vertical-rl] rotate-180">Our Mishnah</span>
+      {/* a solid tab on the right edge: easy to spot, never covers much text.
+          Two short horizontal lines - Safari draws vertical text in buttons badly. */}
+      <button onClick={() => setOpen((o) => !o)} className={`absolute right-0 bottom-20 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-20 flex flex-col items-center rounded-l-2xl pl-3 pr-2.5 py-2 sm:pl-3.5 sm:pr-3 sm:py-2.5 leading-none shadow-[0_8px_30px_-6px_rgba(0,0,0,0.45)] transition-colors ${paper ? 'bg-amber-600 hover:bg-amber-500' : 'bg-amber-400 hover:bg-amber-300'}`} style={{ color: paper ? '#ffffff' : '#1c1917' }} title="Our Mishnah (M)" aria-label="Our Mishnah" aria-expanded={open}>
+        <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.14em] opacity-85">Our</span>
+        <span className="mt-1 text-[12px] sm:text-[14px] font-black uppercase tracking-[0.06em]">Mishnah</span>
       </button>
       {open && (
         <div className={`absolute top-3 bottom-3 right-3 z-30 w-[calc(100%-1.5rem)] sm:w-[min(620px,92%)] flex flex-col rounded-3xl border shadow-2xl animate-in fade-in slide-in-from-right-4 duration-200 ${paper ? 'bg-[#fbf6ea] border-amber-500/30 text-stone-900' : 'bg-[#17150f] border-amber-400/25 text-stone-100'}`} role="dialog" aria-label="Our Mishnah">
