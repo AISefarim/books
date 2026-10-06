@@ -194,7 +194,8 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const prefs = useMemo(() => readJson<any>(PREFS_KEY, {}), []);
   const [surface, setSurface] = useState<Surface>(prefs.surface || 'paper');
   const [lang, setLang] = useState<Lang>(prefs.lang || 'both');
-  const [fontScale, setFontScale] = useState<number>(prefs.fontScale || 1);
+  // Large screens (13-inch iPads, desktops) start a notch bigger unless you've chosen a size.
+  const [fontScale, setFontScale] = useState<number>(prefs.fontScale || (typeof window !== 'undefined' && window.matchMedia('(min-width: 1000px)').matches ? 1.1 : 1));
   const [mapOpen, setMapOpen] = useState<boolean>(prefs.mapOpen === true);
   // 'full' = full Hebrew paragraph + phrase-by-phrase; 'phrases' = phrase-by-phrase only (about twice as much on screen)
   const [gemaraLayout, setGemaraLayout] = useState<'full' | 'phrases'>(prefs.gemaraLayout === 'phrases' ? 'phrases' : 'full');
@@ -594,7 +595,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
             {daf && daf.status !== 'ready' && <span className="ml-2 inline-flex items-center gap-1 text-indigo-300"><Loader2 className="w-3 h-3 animate-spin" /> preparing {daf.done}/{daf.total}</span>}
           </div>
         </button>
-        <button disabled={!canGo(daf?.next)} onClick={() => daf?.next && canGo(daf.next) && setRef(daf.next)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Next daf" title={canGo(daf?.next) ? `Next daf · ${daf?.next}` : 'The next daf opens at noon the day before'}>{canGo(daf?.next) ? <ChevronRight className="w-5 h-5" /> : <Lock className="w-4 h-4" />}</button>
+        <button disabled={!canGo(daf?.next)} onClick={() => daf?.next && canGo(daf.next) && setRef(daf.next)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Next daf" title={canGo(daf?.next) ? `Next daf · ${daf?.next}` : 'The next daf is ready about a day and a half ahead'}>{canGo(daf?.next) ? <ChevronRight className="w-5 h-5" /> : <Lock className="w-4 h-4" />}</button>
         <button onClick={() => setSheet(sheet?.kind === 'library' ? null : { kind: 'library' })} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 sm:px-3 py-1.5 text-xs font-black ${sheet?.kind === 'library' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="All dapim" title="Browse all dapim"><Library className="w-4 h-4" /><span className="hidden sm:inline">All dapim</span></button>
         <button disabled={!daf || daf.status !== 'ready'} onClick={() => daf && downloadDaf(daf)} className="p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white disabled:opacity-30" aria-label="Download this daf for offline reading" title={daf?.status === 'ready' ? 'Download this daf (works offline, prints to PDF)' : 'Available once the daf is fully prepared'}><Download className="w-4 h-4" /></button>
         <button onClick={() => setSheet(sheet?.kind === 'settings' ? null : { kind: 'settings' })} className={`p-2 rounded-full border ${sheet?.kind === 'settings' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="Reading settings" title="Reading settings"><Type className="w-4 h-4" /></button>
@@ -1001,7 +1002,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
           ) : (
             <div className={`mt-6 rounded-2xl border ${t.card} px-5 py-4 flex items-center gap-3`}>
               <Lock className={`w-4 h-4 ${t.faint}`} />
-              <span className={`text-sm ${t.muted}`}>{daf.next} opens at noon the day before it is learned.</span>
+              <span className={`text-sm ${t.muted}`}>{daf.next} will be ready soon - each daf is prepared about a day and a half ahead.</span>
             </div>
           )
         )}
@@ -1415,7 +1416,7 @@ function DafLibrary({ ready, current, open, onPick }: { ready: Set<string>; curr
           </div>
         </div>
       ))}
-      <p className="text-[11px] text-slate-500">Each new daf is prepared at noon the day before it is learned, then stays here for everyone.</p>
+      <p className="text-[11px] text-slate-500">Each new daf is prepared about a day and a half before it is learned, then stays here for everyone.</p>
     </div>
   );
 }

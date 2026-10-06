@@ -168,7 +168,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
         <p className="text-[11px] sm:text-xs font-black uppercase tracking-[0.16em] text-indigo-300">{label}{day?.date ? <span className="text-slate-500"> · {fmtDate(day.date, { weekday: 'short', month: 'short', day: 'numeric' })}</span> : null}</p>
         <p className="mt-1 text-lg sm:text-2xl font-black text-slate-100 leading-tight">{day ? day.ref : <Loader2 className="inline w-5 h-5 animate-spin" />}</p>
         {(meta?.heRef || day?.heRef) ? <p className="text-base sm:text-lg text-indigo-200 font-bold leading-tight" lang="he" style={{ fontFamily: HE_FONT }}>{meta?.heRef || day?.heRef}</p> : null}
-        {day && !meta && <p className="mt-1 text-xs sm:text-sm text-slate-500">{dir === 'next' ? 'Opens at noon the day before' : 'Not in Super Daf yet'}</p>}
+        {day && !meta && <p className="mt-1 text-xs sm:text-sm text-slate-500">{dir === 'next' ? 'Being prepared' : 'Not in Super Daf yet'}</p>}
       </div>
     );
     const inner = dir === 'prev' ? <>{arrow}{text}</> : <>{text}{arrow}</>;
@@ -331,7 +331,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
           </>
         )}
         {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-900 px-4 py-2 text-sm font-black shadow-2xl"><Check className="w-4 h-4 text-emerald-600" /> {toast}</div>}
-        <p className="mt-12 text-center text-xs text-slate-600">Each new daf is prepared at noon the day before it is learned, and then stays here for everyone.</p>
+        <p className="mt-12 text-center text-xs text-slate-600">Each new daf is prepared about a day and a half before it is learned, and then stays here for everyone.</p>
       </div>
     </div>
   );
