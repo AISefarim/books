@@ -427,6 +427,9 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     if (daf?.ref && daf.segments.length && focusIdx >= Math.floor(daf.segments.length / 2)) recordDeviceDafRead(daf.ref);
   }, [daf?.ref, daf?.segments.length, focusIdx]);
   const canGo = (r?: string | null) => !!r && (readyDafs.has(r) || r === current?.ref);
+  const episodeHref = (id: string) => `/v/${id}?watch=1`;
+  const cameFrom = pinnedPodcastId ? media.find((m) => m.id === pinnedPodcastId) : undefined;
+  const [hideEpisode, setHideEpisode] = useState(false);
   const podcasts = useMemo(() => {
     if (!daf) return [] as MediaItem[];
     const pin = media.filter((m) => m.id === pinnedPodcastId);
@@ -628,6 +631,19 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               </div>
             )}
             {!daf && !error && <div className="mt-20 flex flex-col items-center gap-3 text-slate-500"><Loader2 className="w-6 h-6 animate-spin text-indigo-400" /><p className="text-sm font-medium">Opening the daf…</p></div>}
+            {daf && cameFrom && !hideEpisode && (
+              <div className="mx-auto max-w-[62rem] px-3 sm:px-5 lg:px-8 pt-3">
+                <div className="flex flex-wrap items-center gap-3 rounded-2xl bg-indigo-600 px-4 py-3 shadow-lg shadow-indigo-600/20" style={{ color: '#ffffff' }}>
+                  <span className="flex w-10 h-10 shrink-0 items-center justify-center rounded-full bg-white/15"><Headphones className="w-5 h-5" /></span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-black">You opened the AI Daf episode for {daf.ref}</p>
+                    <p className="text-xs opacity-80">Watch it, or learn the daf here sugya by sugya - or both.</p>
+                  </div>
+                  <a href={episodeHref(cameFrom.id)} className="inline-flex items-center gap-2 rounded-full bg-white px-4 py-2 text-sm font-black" style={{ color: '#4338ca' }}>▶ Watch the episode</a>
+                  <button onClick={() => setHideEpisode(true)} className="p-1.5 rounded-full hover:bg-white/15" style={{ color: '#e0e7ff' }} aria-label="Hide"><X className="w-4 h-4" /></button>
+                </div>
+              </div>
+            )}
             {daf && resume && (
               <div className="sd-resume sticky top-2 z-20 mx-auto w-fit max-w-[92%]">
                 <button onClick={() => { const i = daf.segments.findIndex((s) => s.ref === resume.segRef); if (i >= 0) scrollToSeg(i); setResume(null); }} className="inline-flex items-center gap-2 rounded-full bg-slate-900 text-slate-100 border border-slate-700 shadow-xl px-4 py-2 text-xs font-bold">
@@ -765,7 +781,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               ))}
             </div>
           ))}
-          {sheet.kind === 'listen' && <div className="space-y-3">{podcasts.map((p) => <div key={p.id} className="rounded-2xl bg-slate-800/60 border border-slate-700/60 p-3"><p className="text-sm font-black text-slate-100 mb-2">{p.title}</p><AudioPlayer url={p.url} title={p.title} /></div>)}</div>}
+          {sheet.kind === 'listen' && <div className="space-y-3">{podcasts.map((p) => <div key={p.id} className="rounded-2xl bg-slate-800/60 border border-slate-700/60 p-3"><p className="text-sm font-black text-slate-100 mb-2">{p.title}</p>{p.type === 'audio' || /\.(mp3|m4a|aac|wav|ogg)(\?|$)/i.test(p.url || '') ? <AudioPlayer url={p.url} title={p.title} /> : <a href={episodeHref(p.id)} className="inline-flex items-center gap-2 rounded-full bg-indigo-600 hover:bg-indigo-500 px-4 py-2 text-sm font-black text-white"><Headphones className="w-4 h-4" /> Watch the episode</a>}</div>)}</div>}
           {sheet.kind === 'settings' && (
             <div className="space-y-5">
               <div><p className="text-[11px] font-black uppercase tracking-wider text-slate-400 mb-2">Language</p><Segmented value={lang} onChange={(v) => setLang(v as Lang)} options={[{ v: 'both', l: 'Hebrew + English' }, { v: 'he', l: 'Hebrew' }, { v: 'en', l: 'English' }]} /></div>
