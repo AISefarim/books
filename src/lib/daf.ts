@@ -99,9 +99,14 @@ export function pingDafOpen(ref?: string) {
 // name: "Rashi explains that Rabbi Yochanan..." -> "Rabbi Yochanan...".
 const GIST_VERBS = 'explain|note|clarif(?:y|ie)|say|state|point out|observe|comment|add|teach|write|hold|interpret|understand|emphasize|maintain|argue|ask|raise|question|suggest|answer|resolve|infer|derive|read|gloss|define|distinguish|describe|identif(?:y|ie)';
 export function gistText(title: string, gist?: string): string {
-  let g = String(gist || '').trim();
+  const g = String(gist || '').trim();
   const t = title.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  g = g.replace(new RegExp(`^${t}\\s+(?:here\\s+|also\\s+)?(?:${GIST_VERBS})s?\\s+(?:that\\s+)?`, 'i'), '');
-  g = g.replace(new RegExp(`^${t}\\s+`, 'i'), '');
-  return g.charAt(0).toUpperCase() + g.slice(1);
+  // "Rashi explains that X" -> "X" (already a full sentence)
+  const that = g.match(new RegExp(`^${t}\\s+(?:here\\s+|also\\s+)?(?:${GIST_VERBS})s?\\s+that\\s+(.+)$`, 'i'));
+  if (that) return that[1].charAt(0).toUpperCase() + that[1].slice(1);
+  // "Rashi explains why X" -> "He explains why X" (keeps the sentence whole)
+  const pron = /^Tosafot\b/i.test(title) ? 'They' : 'He';
+  const named = g.match(new RegExp(`^${t}\\s+(.+)$`, 'i'));
+  if (named && /^[a-z]/.test(named[1])) return `${pron} ${named[1]}`;
+  return g;
 }
