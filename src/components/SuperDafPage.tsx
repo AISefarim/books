@@ -1424,15 +1424,9 @@ function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: num
 
   return (
     <>
-      {/* a small round button in the corner: quiet, but easy to find */}
-      {/* phones: a narrow tab on the edge so it never covers the text */}
-      <button onClick={() => setOpen((o) => !o)} className={`sm:hidden absolute right-0 bottom-20 z-20 rounded-l-xl px-1.5 py-3 shadow-lg ${paper ? 'bg-amber-600 text-white' : 'bg-amber-400 text-stone-900'}`} aria-label="Our Mishnah" aria-expanded={open}>
-        <span className="block text-[10px] font-black uppercase tracking-wider [writing-mode:vertical-rl] rotate-180">Our Mishnah</span>
-      </button>
-      <button onClick={() => setOpen((o) => !o)} className={`hidden sm:flex absolute right-4 bottom-4 z-20 h-16 w-16 flex-col items-center justify-center rounded-full border shadow-lg backdrop-blur transition-transform hover:-translate-y-0.5 active:scale-95 ${paper ? 'bg-[#fffaf0]/95 border-amber-700/30 text-amber-800 shadow-stone-900/15' : 'bg-[#1c1b19]/95 border-amber-300/25 text-amber-200 shadow-black/50'}`} title="Our Mishnah (M)" aria-label="Our Mishnah" aria-expanded={open}>
-        <span aria-hidden="true" className={`pointer-events-none absolute inset-1 rounded-full border ${paper ? 'border-amber-700/15' : 'border-amber-300/10'}`} />
-        <span className={`text-[9px] font-black uppercase tracking-[0.18em] ${paper ? 'text-stone-500' : 'text-stone-400'}`}>Our</span>
-        <span className="text-[14px] font-semibold italic leading-tight" style={{ fontFamily: EN_FONT }}>Mishnah</span>
+      {/* a solid tab on the right edge: easy to spot, never covers the text */}
+      <button onClick={() => setOpen((o) => !o)} className={`absolute right-0 bottom-20 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-20 rounded-l-xl sm:rounded-l-2xl px-1.5 py-3 sm:px-2.5 sm:py-5 shadow-[0_8px_30px_-6px_rgba(0,0,0,0.45)] transition-all hover:pr-3.5 ${paper ? 'bg-amber-600 text-white hover:bg-amber-500' : 'bg-amber-400 text-stone-900 hover:bg-amber-300'}`} title="Our Mishnah (M)" aria-label="Our Mishnah" aria-expanded={open}>
+        <span className="block text-[10px] sm:text-[13px] font-black uppercase tracking-[0.14em] [writing-mode:vertical-rl] rotate-180">Our Mishnah</span>
       </button>
       {open && (
         <div className={`absolute top-3 bottom-3 right-3 z-30 w-[calc(100%-1.5rem)] sm:w-[min(620px,92%)] flex flex-col rounded-3xl border shadow-2xl animate-in fade-in slide-in-from-right-4 duration-200 ${paper ? 'bg-[#fbf6ea] border-amber-500/30 text-stone-900' : 'bg-[#17150f] border-amber-400/25 text-stone-100'}`} role="dialog" aria-label="Our Mishnah">
