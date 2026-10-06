@@ -525,6 +525,9 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd-lowp .bg-indigo-600 { background:#4f46e5; color:#fff; }
         .sd-lowp textarea { background:#fffaf0; color:#292524; }
         .sd-resume { animation: sd-resume-fade .6s ease 5.4s forwards; }
+        .sd-mish-glow { box-shadow: 0 10px 28px -6px rgba(99,102,241,.75), 0 0 0 0 rgba(129,140,248,.45); animation: sd-mish-breathe 3.2s ease-in-out infinite; }
+        @keyframes sd-mish-breathe { 0%,100% { box-shadow: 0 10px 28px -6px rgba(99,102,241,.75), 0 0 0 0 rgba(129,140,248,.40); } 50% { box-shadow: 0 12px 34px -6px rgba(124,58,237,.85), 0 0 0 7px rgba(129,140,248,0); } }
+        @media (prefers-reduced-motion: reduce) { .sd-mish-glow { animation: none; } }
         @keyframes sd-resume-fade { to { opacity: 0; transform: translateY(-6px); pointer-events: none; } }
         .sd-x { border-width:1px; border-radius:1rem; }
         .sd-lowp .sd-x { background:#f7f2e7; border-color:#ddd1b8; } .sd-lowd .sd-x { background:#1b1b1e; border-color:#2e2e33; }
@@ -641,13 +644,25 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
             ] as { id: string; label: string; icon: any; amber?: boolean }[]).map(({ id, label, icon: Icon, amber }) => {
               const disabled = id === 'listen' && podcasts.length === 0;
               const active = sheet?.kind === id || (id === 'ask' && tab === 'ask' && !lowerCollapsed);
+              if (amber) return (
+                // Our Mishnah: a raised, glowing circle - the one button that invites a tap
+                <button key={id} onClick={() => window.dispatchEvent(new Event('sd-mishnah-toggle'))} className="group relative flex flex-col items-center -mt-6" title="Our Mishnah (M)" aria-label="Our Mishnah">
+                  <span className="sd-mish-glow relative flex h-[58px] w-[58px] items-center justify-center rounded-full ring-4 ring-slate-950 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:scale-105 group-active:scale-95"
+                    style={{ background: 'radial-gradient(120% 120% at 30% 20%, #a5b4fc 0%, #6366f1 38%, #4f46e5 62%, #6d28d9 100%)' }}>
+                    <span aria-hidden="true" className="absolute inset-[3px] rounded-full border border-white/25" />
+                    <span aria-hidden="true" className="absolute inset-x-3 top-1.5 h-4 rounded-full bg-white/25 blur-[3px]" />
+                    <span lang="he" className="relative text-white" style={{ fontFamily: HE_FONT, fontSize: '1.05rem', fontWeight: 700, textShadow: '0 1px 2px rgba(0,0,0,0.35)' }}>מתני׳</span>
+                  </span>
+                  <span className="mt-1 text-[10px] font-black tracking-wide" style={{ color: '#c7d2fe' }}>Our Mishnah</span>
+                </button>
+              );
               return (
                 <button key={id} disabled={disabled} onClick={() => {
                   if (id === 'mishnah') { window.dispatchEvent(new Event('sd-mishnah-toggle')); return; }
                   if (id === 'ask') { setTab('ask'); setLowerCollapsed(false); setSheet(null); return; }
                   if (id === 'catchup') requestSofar(focusIdx);
                   setSheet(sheet?.kind === id ? null : { kind: id } as Sheet);
-                }} className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 transition-all disabled:opacity-30 ${amber ? 'bg-amber-400 hover:bg-amber-300 shadow-lg shadow-amber-500/25 ring-1 ring-amber-200/60 text-[11px] font-black' : active ? 'text-[10px] font-bold text-indigo-300 bg-indigo-500/10' : 'text-[10px] font-bold text-slate-400 hover:text-slate-100'}`} style={amber ? { color: '#1c1917' } : undefined} title={amber ? 'Our Mishnah (M)' : undefined}>
+                }} className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
                   <Icon className="w-5 h-5" />{label}
                 </button>
               );
