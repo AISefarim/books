@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, type CSSProperties, 
 import {
   ArrowLeft, ChevronLeft, ChevronRight, Headphones, X, ExternalLink, Clock, Loader2, Scale, Landmark, Send, MessageSquareText,
   Minus, Plus, Lock, Bookmark, BookmarkCheck, Maximize2, Minimize2, Type, Sun, Moon, Map as MapIcon, ListTree, Check, Library,
-  Quote, Sparkles, NotebookPen, Share2, GripHorizontal, ChevronUp, ChevronDown, Download,
+  Quote, Sparkles, NotebookPen, Share2, GripHorizontal, ChevronUp, ChevronDown, Download, ScrollText,
 } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
@@ -631,19 +631,23 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       {/* ============ dock ============ */}
       {daf && (
         <nav className="shrink-0 bg-slate-950 border-t border-slate-800 px-2 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5">
-          <div className="max-w-xl mx-auto grid grid-cols-5 gap-1">
+          <div className={`max-w-xl mx-auto grid gap-1 ${(daf.mishnayot || []).length ? 'grid-cols-6 sm:grid-cols-5' : 'grid-cols-5'}`}>
             {([
-              { id: 'sugyot', label: 'Sugyot', icon: ListTree }, { id: 'catchup', label: 'Catch me up', icon: Clock }, { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
+              { id: 'sugyot', label: 'Sugyot', icon: ListTree }, { id: 'catchup', label: 'Catch me up', icon: Clock },
+              // phones: "Our Mishnah" lives here instead of floating over the text
+              ...((daf.mishnayot || []).length ? [{ id: 'mishnah', label: 'Mishnah', icon: ScrollText, phoneOnly: true }] : []),
+              { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
               { id: 'ask', label: 'Ask', icon: MessageSquareText }, { id: 'listen', label: 'Listen', icon: Headphones },
-            ] as { id: string; label: string; icon: any }[]).map(({ id, label, icon: Icon }) => {
+            ] as { id: string; label: string; icon: any; phoneOnly?: boolean }[]).map(({ id, label, icon: Icon, phoneOnly }) => {
               const disabled = id === 'listen' && podcasts.length === 0;
               const active = sheet?.kind === id || (id === 'ask' && tab === 'ask' && !lowerCollapsed);
               return (
                 <button key={id} disabled={disabled} onClick={() => {
+                  if (id === 'mishnah') { window.dispatchEvent(new Event('sd-mishnah-toggle')); return; }
                   if (id === 'ask') { setTab('ask'); setLowerCollapsed(false); setSheet(null); return; }
                   if (id === 'catchup') requestSofar(focusIdx);
                   setSheet(sheet?.kind === id ? null : { kind: id } as Sheet);
-                }} className={`flex flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
+                }} className={`${phoneOnly ? 'flex sm:hidden' : 'flex'} flex-col items-center gap-0.5 rounded-xl py-1.5 text-[10px] font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
                   <Icon className="w-5 h-5" />{label}
                 </button>
               );
@@ -1413,8 +1417,10 @@ function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: num
       if (e.key === 'Escape') setOpen(false);
       if ((e.key === 'm' || e.key === 'M') && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '')) setOpen((o) => !o);
     };
+    const onDock = () => setOpen((o) => !o);
     window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    window.addEventListener('sd-mishnah-toggle', onDock);
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('sd-mishnah-toggle', onDock); };
   }, []);
   if (!shown) return null;
   const from = shown.idx < 0 ? shown.startsAt.match(/(\d+)([ab])/) : null;
@@ -1426,7 +1432,7 @@ function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: num
     <>
       {/* a solid tab on the right edge: easy to spot, never covers much text.
           Two short horizontal lines - Safari draws vertical text in buttons badly. */}
-      <button onClick={() => setOpen((o) => !o)} className={`absolute right-0 bottom-20 sm:bottom-auto sm:top-1/2 sm:-translate-y-1/2 z-20 flex flex-col items-center rounded-l-2xl pl-3 pr-2.5 py-2 sm:pl-3.5 sm:pr-3 sm:py-2.5 leading-none shadow-[0_8px_30px_-6px_rgba(0,0,0,0.45)] transition-colors ${paper ? 'bg-amber-600 hover:bg-amber-500' : 'bg-amber-400 hover:bg-amber-300'}`} style={{ color: paper ? '#ffffff' : '#1c1917' }} title="Our Mishnah (M)" aria-label="Our Mishnah" aria-expanded={open}>
+      <button onClick={() => setOpen((o) => !o)} className={`absolute right-0 top-1/2 -translate-y-1/2 z-20 hidden sm:flex flex-col items-center rounded-l-2xl pl-3 pr-2.5 py-2 sm:pl-3.5 sm:pr-3 sm:py-2.5 leading-none shadow-[0_8px_30px_-6px_rgba(0,0,0,0.45)] transition-colors ${paper ? 'bg-amber-600 hover:bg-amber-500' : 'bg-amber-400 hover:bg-amber-300'}`} style={{ color: paper ? '#ffffff' : '#1c1917' }} title="Our Mishnah (M)" aria-label="Our Mishnah" aria-expanded={open}>
         <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-[0.14em] opacity-85">Our</span>
         <span className="mt-1 text-[12px] sm:text-[14px] font-black uppercase tracking-[0.06em]">Mishnah</span>
       </button>

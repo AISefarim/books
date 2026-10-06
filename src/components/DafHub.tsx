@@ -135,7 +135,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
         <p className="text-[11px] sm:text-xs font-black uppercase tracking-[0.16em] text-indigo-300">{label}{day?.date ? <span className="text-slate-500"> · {fmtDate(day.date, { weekday: 'short', month: 'short', day: 'numeric' })}</span> : null}</p>
         <p className="mt-1 text-lg sm:text-2xl font-black text-slate-100 leading-tight">{day ? day.ref : <Loader2 className="inline w-5 h-5 animate-spin" />}</p>
         {(meta?.heRef || day?.heRef) ? <p className="text-base sm:text-lg text-indigo-200 font-bold leading-tight" lang="he" style={{ fontFamily: HE_FONT }}>{meta?.heRef || day?.heRef}</p> : null}
-        {day && (meta ? <p className="hidden sm:block mt-1.5 text-sm text-slate-400 leading-snug line-clamp-2">{meta.preview[0]}</p> : <p className="mt-1 text-xs sm:text-sm text-slate-500">{dir === 'next' ? 'Opens at noon the day before' : 'Not in Super Daf yet'}</p>)}
+        {day && !meta && <p className="mt-1 text-xs sm:text-sm text-slate-500">{dir === 'next' ? 'Opens at noon the day before' : 'Not in Super Daf yet'}</p>}
       </div>
     );
     const inner = dir === 'prev' ? <>{arrow}{text}</> : <>{text}{arrow}</>;
@@ -171,43 +171,33 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
           </div>
         )}
 
-        {/* ===== today's daf, extremely prominent - set like a printed daf ===== */}
-        <button onClick={() => today && onOpen(today.ref)} disabled={!today} className="group relative w-full overflow-hidden text-left rounded-[28px] border border-[#d8c9a8] text-stone-900 shadow-[0_30px_80px_-30px_rgba(0,0,0,0.85)] px-5 sm:px-10 pt-5 sm:pt-6 pb-7 sm:pb-9 transition-transform hover:-translate-y-0.5" style={{ background: 'linear-gradient(180deg, #f8f2e3 0%, #f3ead4 100%)' }}>
-          <div className="pointer-events-none absolute right-6 sm:right-10 top-14 text-[110px] sm:text-[190px] leading-none font-bold text-[#3b2a17]/[0.06] select-none" style={{ fontFamily: HE_FONT }} aria-hidden>{todayHe.split(' ').pop() || 'דף'}</div>
-          {/* running head, like the top line of a page of Gemara */}
-          <div dir="rtl" className="relative flex items-baseline justify-between gap-4 text-[#3b2a17]" style={{ fontFamily: HE_FONT }}>
-            <span className="text-lg sm:text-2xl font-bold">{todayHe ? `מסכת ${todayHe.replace(/\s+\S+$/, '')}` : 'דף היומי'}</span>
-            <span className="text-lg sm:text-2xl font-bold">{todayHe ? `דף ${todayHe.split(' ').pop()}` : ''}</span>
+        {/* ===== today's daf: dark, typographic, set like the top of a printed daf ===== */}
+        <button onClick={() => today && onOpen(today.ref)} disabled={!today} className="group relative w-full overflow-hidden rounded-[28px] border border-white/10 px-6 sm:px-12 pt-6 sm:pt-7 pb-9 sm:pb-12 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] transition-transform hover:-translate-y-0.5"
+          style={{ background: 'radial-gradient(120% 90% at 50% 0%, rgba(99,102,241,0.20) 0%, rgba(99,102,241,0.04) 45%, transparent 70%), linear-gradient(180deg, #121527 0%, #0d0f1c 100%)' }}>
+          {/* running head */}
+          <div dir="rtl" className="flex items-baseline justify-between gap-4 text-[#d9ccad]/60" style={{ fontFamily: HE_FONT }}>
+            <span className="text-base sm:text-lg">{todayHe ? `מסכת ${todayHe.replace(/\s+\S+$/, '')}` : ''}</span>
+            <span className="text-base sm:text-lg">{todayHe ? `דף ${todayHe.split(' ').pop()}` : ''}</span>
           </div>
-          <div className="relative mt-2 h-px bg-[#3b2a17]/25" />
-          <div className="relative mt-5">
-            <p className="inline-flex items-center gap-2 rounded-full bg-indigo-600 px-3 py-1 text-[11px] sm:text-xs font-black uppercase tracking-[0.2em] text-white">
-              <span className="w-2 h-2 rounded-full bg-emerald-300 animate-pulse" /> Today’s Daf Yomi{dateLabel ? ` · ${dateLabel}` : ''}
-            </p>
-            {today ? (
-              <>
-                <h1 className="mt-4 text-4xl sm:text-6xl font-black tracking-tight text-stone-900 leading-[1.05]">{today.ref}</h1>
-                {todayMeta?.preview?.length ? (
-                  <div className="mt-6 max-w-2xl">
-                    <p className="text-[11px] font-black uppercase tracking-[0.18em] text-indigo-700 mb-2">On this daf we’ll learn</p>
-                    <ol className="space-y-2">
-                      {todayMeta.preview.map((p, i) => (
-                        <li key={i} className="flex gap-3 text-[16px] sm:text-[19px] text-stone-800 leading-snug" style={{ fontFamily: "'Source Serif 4', Georgia, serif" }}><span className="shrink-0 w-6 h-6 rounded-full bg-[#3b2a17] text-[#f6efdd] text-xs font-black flex items-center justify-center mt-0.5" style={{ fontFamily: 'inherit' }}>{i + 1}</span>{p}</li>
-                      ))}
-                    </ol>
-                  </div>
-                ) : (
-                  <p className="mt-5 text-stone-600 text-sm sm:text-base">Gemara, Rashi, Tosafot, Mesivta notes, the Rambam and halacha, sugya by sugya.</p>
-                )}
-                <span className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 text-white px-6 py-3.5 text-base sm:text-lg font-black shadow-xl shadow-indigo-600/25 group-hover:gap-3 transition-all">
-                  {todayMeta ? 'Start learning' : 'Open today’s daf'} <ArrowRight className="w-5 h-5" />
-                </span>
-                {todayMeta?.sugyot ? <span className="ml-4 text-sm font-semibold text-stone-600">{todayMeta.sugyot} sugyot</span> : null}
-              </>
-            ) : (
-              <div className="mt-6 flex items-center gap-2 text-stone-600"><Loader2 className="w-5 h-5 animate-spin" /> Finding today’s daf…</div>
-            )}
-          </div>
+          <div className="mt-2 h-px bg-gradient-to-r from-transparent via-[#d9ccad]/25 to-transparent" />
+          <p className="mt-7 inline-flex items-center gap-2 text-[11px] sm:text-xs font-black uppercase tracking-[0.24em] text-indigo-200/80">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Today’s Daf Yomi{dateLabel ? ` · ${dateLabel}` : ''}
+          </p>
+          {today ? (
+            <>
+              <p lang="he" dir="rtl" className="mt-4 text-[64px] sm:text-[104px] leading-none text-[#f1e9d6]" style={{ fontFamily: HE_FONT, fontWeight: 700 }}>{todayHe || today.ref}</p>
+              <p className="mt-3 text-lg sm:text-2xl font-semibold tracking-[0.08em] text-slate-300">{today.ref}</p>
+              <div className="mx-auto mt-6 flex w-40 items-center gap-3 text-[#d9ccad]/50" aria-hidden="true">
+                <span className="h-px flex-1 bg-current" /><span className="text-[10px]">◆</span><span className="h-px flex-1 bg-current" />
+              </div>
+              <span className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 text-white px-7 py-3.5 text-base sm:text-lg font-black shadow-xl shadow-indigo-600/30 group-hover:gap-3 group-hover:bg-indigo-500 transition-all">
+                Start learning <ArrowRight className="w-5 h-5" />
+              </span>
+              {todayMeta?.sugyot ? <p className="mt-3 text-xs font-semibold text-slate-500">{todayMeta.sugyot} sugyot</p> : null}
+            </>
+          ) : (
+            <div className="mt-8 flex justify-center items-center gap-2 text-slate-400"><Loader2 className="w-5 h-5 animate-spin" /> Finding today’s daf…</div>
+          )}
         </button>
 
         {/* ===== yesterday & tomorrow ===== */}
