@@ -5,7 +5,7 @@ import {
   Quote, Sparkles, NotebookPen, Share2, GripHorizontal, ChevronUp, ChevronDown, Download, ScrollText, Compass } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
-import { RefText, plain, CiteLink, shortRef, workName } from './RefText';
+import { RefText, plain, CiteLink, shortRef, workName, displayRef } from './RefText';
 import { DAF_API, pingDafOpen, gistText, dafPath, sefariaUrl, superDafSpot, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
 import { useReadyDafs } from '../lib/useReadyDafs';
 import { downloadDaf } from '../lib/dafExport';
@@ -98,8 +98,20 @@ const sourceName = (s: string) => (s || '').split(' / ').map((x) => SOURCE_NAMES
 
 function SourceLink({ r }: { r: string }) {
   const inDaf = !!superDafSpot(r);
-  return <CiteLink r={r} className="sd-ref inline-flex items-center gap-1">{r} {!inDaf && <ExternalLink className="w-3 h-3 opacity-60" />}</CiteLink>;
+  return <CiteLink r={r} className="sd-ref inline-flex items-center gap-1">{displayRef(r)} {!inDaf && <ExternalLink className="w-3 h-3 opacity-60" />}</CiteLink>;
 }
+// Inline markup for short AI text: **bold**, <b>, <i>/<em> become real bold/italics; any other tag is dropped.
+function Inline({ text }: { text: string }) {
+  const clean = String(text || '').replace(/<br\s*\/?>/gi, ' ').replace(/<(?!\/?(?:b|i|em)>)[^>]+>/gi, '').replace(/\s{2,}/g, ' ').trim();
+  const parts = clean.split(/(\*\*[^*]+\*\*|<b>[^<]*<\/b>|<(?:i|em)>[^<]*<\/(?:i|em)>)/gi);
+  return <>{parts.map((p, i) => {
+    if (/^\*\*[^*]+\*\*$/.test(p)) return <strong key={i}>{p.slice(2, -2)}</strong>;
+    if (/^<b>/i.test(p)) return <strong key={i}>{p.replace(/<\/?b>/gi, '')}</strong>;
+    if (/^<(i|em)>/i.test(p)) return <em key={i}>{p.replace(/<\/?(?:i|em)>/gi, '')}</em>;
+    return <span key={i}>{p.replace(/<\/?(?:b|i|em)>/gi, '')}</span>;
+  })}</>;
+}
+
 function Rich({ text, className, style }: { text: string; className?: string; style?: CSSProperties }) {
   const clean = String(text || '').replace(/<\/?(?:i|em|br)\s*\/?>/gi, '').replace(/<(?!\/?b>)[^>]+>/g, '');
   const parts = clean.split(/(\*\*[^*]+\*\*|<b>[^<]*<\/b>)/g);
@@ -980,9 +992,10 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                   return (
                     <div key={c.ref} className={`sd-blurb rounded-lg px-2.5 py-1.5 ${t.soft}`} onClick={(e) => e.stopPropagation()}>
                       <p className="text-[13px] leading-snug" dir="ltr" style={{ textAlign: 'left', fontFamily: 'inherit' }}>
-                        <span lang="he" className="sd-rashi font-bold mr-1.5" style={{ fontSize: '1rem' }}>{c.title === 'Rashi' ? 'רש״י' : 'תוס׳'}</span>
-                        <span>{plain(c.gist || m?.notes?.find((n) => n.ref === c.ref)?.point) || firstSentence(c.en) || ''}</span>
-                        <button onClick={() => setWords((w) => ({ ...w, [c.ref]: !w[c.ref] }))} className={`ml-2 text-[11px] font-bold ${t.accent}`}>{on ? 'hide words' : 'words'}</button>
+                        <span lang="he" dir="rtl" className="sd-rashi font-bold" style={{ fontSize: '1rem', unicodeBidi: 'isolate' }}>{c.title === 'Rashi' ? 'רש״י' : 'תוס׳'}</span>{' '}
+                        <span className="ml-1"><Inline text={c.gist || m?.notes?.find((n) => n.ref === c.ref)?.point || firstSentence(c.en) || ''} /></span>{' '}
+                        <span className={`${t.faint} mx-1`} aria-hidden="true">·</span>{' '}
+                        <button onClick={() => setWords((w) => ({ ...w, [c.ref]: !w[c.ref] }))} className={`text-[11px] font-bold whitespace-nowrap ${t.accent}`}>{on ? 'hide the words' : 'read the words'}</button>
                       </p>
                       {on && (
                         <div className="mt-1.5 animate-in fade-in duration-150">

@@ -30,6 +30,8 @@ export function workName(source: string, ref?: string) {
   }
   return known(String(source || '').split(/\s(?:\/|&|and)\s/)[0].trim());
 }
+// A full ref with the work shown by its known name: "Chidushei Halachot on Bekhorot 19a:2" -> "Maharsha on Bekhorot 19a:2".
+export function displayRef(r: string) { let x = String(r || ''); for (const [re, name] of REF_NAMES) x = x.replace(re, name); return x.replace(/^Rambam(?=,)/, 'Rambam'); }
 export function shortRef(r0: string) {
   let r = r0; for (const [re, name] of REF_NAMES) r = r.replace(re, name);
   let m;
