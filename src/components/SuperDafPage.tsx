@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
+import { RefText, plain } from './RefText';
 import { DAF_API, pingDafOpen, gistText, dafPath, sefariaUrl, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
 import { useReadyDafs } from '../lib/useReadyDafs';
 import { downloadDaf } from '../lib/dafExport';
@@ -77,48 +78,11 @@ const KIND_LABEL: Record<Sugya['kind'], { he: string; en: string }> = {
   mishnah: { he: 'משנה', en: 'Mishnah' }, gemara: { he: 'גמרא', en: 'Gemara' }, topic: { he: 'סוגיא', en: 'New topic' }, continued: { he: 'המשך', en: 'Continued' },
 };
 const short = (ref: string, book: string) => ref.replace(book + ' ', '');
-const plain = (s?: string) => String(s || '').replace(/\*\*/g, '');
 const firstSentence = (s?: string) => { const t = plain(s).trim(); const m = t.match(/^(.+?[.!?])(\s|$)/); return m ? m[1] : t; };
 
 // ----------------------------------------------------------------------
 // Text helpers
 
-// Citations like "[Rashi on Bekhorot 17a:3:1, Kessef Mishneh on Mishneh Torah,
-// Firstlings 5:1:2]" become small, separate chips with short names.
-function shortRef(r: string) {
-  let m;
-  if ((m = r.match(/^(.+?) on Mishneh Torah, [^\d]*?(\d[\d:]*)$/))) return `${m[1]} ${m[2]}`;
-  if ((m = r.match(/^Mishneh Torah, (.+)$/))) return `Rambam, ${m[1]}`;
-  if ((m = r.match(/^(.+?) on [A-Z][A-Za-z' ]+? (\d+[ab]?[\d:]*)$/))) return `${m[1]} ${m[2]}`;
-  if ((m = r.match(/^[A-Z][A-Za-z' ]+? (\d+[ab]:[\d:]+)$/))) return `Gemara ${m[1]}`;
-  return r;
-}
-function splitRefs(inner: string): string[] {
-  // a ref ends in a number ("5:1", "17a:3"); split after it at a comma or semicolon
-  return inner.split(/(?<=\d[ab]?)\s*[,;]\s*/).map((x) => x.trim()).filter(Boolean);
-}
-function RefText({ text, className }: { text: string; className?: string }) {
-  // **phrase** marks a note's one key phrase
-  const keys = String(text || '').split(/(\*\*[^*]+\*\*)/g);
-  if (keys.length > 1) return <span className={className}>{keys.map((k, i) => /^\*\*[^*]+\*\*$/.test(k) ? <strong key={i} className="sd-key"><RefText text={k.slice(2, -2)} /></strong> : <RefText key={i} text={k} />)}</span>;
-  const parts = String(text || '').split(/(\[[^\[\]]{3,500}\])/g);
-  return (
-    <span className={className}>
-      {parts.map((p, i) => {
-        const m = p.match(/^\[([^\]]+)\]$/);
-        if (m && /\d/.test(m[1])) {
-          const refs = splitRefs(m[1]).filter((r) => /\d/.test(r));
-          return (
-            <span key={i} className="whitespace-nowrap">
-              {refs.map((r, k) => <a key={k} href={sefariaUrl(r)} target="_blank" rel="noopener noreferrer" className="sd-cite" title={r} onClick={(e) => e.stopPropagation()}>{shortRef(r)}</a>)}
-            </span>
-          );
-        }
-        return <span key={i}>{p}</span>;
-      })}
-    </span>
-  );
-}
 function SourceLink({ r }: { r: string }) {
   return <a href={sefariaUrl(r)} target="_blank" rel="noopener noreferrer" className="sd-ref inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>{r} <ExternalLink className="w-3 h-3 opacity-60" /></a>;
 }
