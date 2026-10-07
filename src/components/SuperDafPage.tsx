@@ -1602,11 +1602,47 @@ function useVilna(book: string) {
   return ok;
 }
 
+type Regions = Record<string, number[][]>;
+const regionCache = new Map<string, Promise<Regions>>();
+function useRegions(book: string, daf: string) {
+  const [r, setR] = useState<{ a: Regions; b: Regions }>({ a: {}, b: {} });
+  useEffect(() => {
+    let live = true;
+    const get = (amud: 'a' | 'b') => { const k = `${book}/${daf}${amud}`; if (!regionCache.has(k)) regionCache.set(k, fetch(`${VILNA_BASE}/${encodeURIComponent(book)}/${daf}${amud}.json`).then((x) => (x.ok ? x.json() : { segments: {} })).then((j) => j.segments || {}).catch(() => ({}))); return regionCache.get(k)!; };
+    Promise.all([get('a'), get('b')]).then(([a, b]) => { if (live) setR({ a, b }); });
+    return () => { live = false; };
+  }, [book, daf]);
+  return r;
+}
+// The living page: each Gemara passage's place on the real page, drawn over the scan.
+function PageOverlay({ regions, daf, focusIdx, hover, setHover, onPick, outerRight }: { regions: Regions; daf: Daf; focusIdx: number; hover: number | null; setHover: (i: number | null) => void; onPick: (i: number) => void; outerRight: boolean }) {
+  const idx = useMemo(() => new Map(daf.segments.map((s, i) => [s.ref, i])), [daf]);
+  const entries = Object.entries(regions).map(([ref, rects]) => ({ i: idx.get(ref) ?? -1, rects })).filter((e) => e.i >= 0);
+  const focus = entries.find((e) => e.i === focusIdx);
+  return (
+    <svg viewBox="0 0 1 1" preserveAspectRatio="none" className="absolute inset-0 w-full h-full" onMouseLeave={() => setHover(null)}>
+      {entries.map(({ i, rects }) => {
+        const on = i === focusIdx, hv = i === hover;
+        return (
+          <g key={i} onMouseEnter={() => setHover(i)} onClick={(e) => { e.stopPropagation(); onPick(i); }} style={{ cursor: 'pointer' }}>
+            {rects.map(([x, y, w, h], k) => <rect key={k} x={x - 0.004} y={y - 0.002} width={w + 0.008} height={h + 0.004} rx={0.003}
+              fill={on ? 'rgba(79,70,229,.24)' : hv ? 'rgba(217,119,6,.20)' : 'rgba(0,0,0,0)'} stroke={on ? 'rgba(79,70,229,.85)' : hv ? 'rgba(217,119,6,.8)' : 'none'} strokeWidth={0.0025} vectorEffect="non-scaling-stroke" />)}
+          </g>
+        );
+      })}
+      {focus && (() => { const y = focus.rects[0][1]; const x = outerRight ? 0.985 : 0.0; return <g pointerEvents="none"><rect x={x} y={0} width={0.015} height={y + 0.01} fill="rgba(79,70,229,.9)" /><path d={`M ${x} ${y + 0.01} h 0.015 v 0.012 l -0.0075 -0.005 l -0.0075 0.005 z`} fill="rgba(79,70,229,.9)" /></g>; })()}
+    </svg>
+  );
+}
+
 function Minimap(props: { daf: Daf; focusIdx: number; onJump: (i: number) => void; bookmarks: BookmarkItem[]; surface: Surface }) {
   const { daf, focusIdx, surface } = props;
   const real = useVilna(daf.book);
   const [mode, setMode] = useState<'page' | 'outline'>(() => { try { return (localStorage.getItem('sd-map-mode') as 'page' | 'outline') || 'page'; } catch { return 'page'; } });
   const [viewer, setViewer] = useState<'a' | 'b' | null>(null);
+  const [hover, setHover] = useState<number | null>(null);
+  const regions = useRegions(daf.book, daf.daf);
+  const headline = useMemo(() => { const m = new Map<string, string>(); for (const sg of daf.sugyot) for (const st of sg.built?.synthesis?.steps || []) for (const r of st.refs || []) if (!m.has(r)) m.set(r, st.headline); return m; }, [daf]);
   const paper = surface === 'paper';
   const col = paper ? { text: '#8a7f6a', bg: '#efe7d6', ring: '#4f46e5', chip: '#fbf6ea', border: '#d9cdb3' } : { text: '#8a898e', bg: '#0c0c0e', ring: '#a5b4fc', chip: '#1c1b1f', border: '#2e2e33' };
   const pick = (m: 'page' | 'outline') => { setMode(m); try { localStorage.setItem('sd-map-mode', m); } catch {} };
@@ -1632,18 +1668,21 @@ function Minimap(props: { daf: Daf; focusIdx: number; onJump: (i: number) => voi
         </div>
       )}
       {(['a', 'b'] as const).map((amud) => (
-        <button key={amud} onClick={() => setViewer(amud)} className="relative shrink-0 rounded-[4px] overflow-hidden transition-transform hover:scale-[1.02]" style={{ width: 128, boxShadow: here === amud ? `0 0 0 2.5px ${col.ring}, 0 6px 16px -6px rgba(0,0,0,.45)` : '0 3px 10px -4px rgba(0,0,0,.4)' }} title={`Open ${daf.title} ${amud === 'a' ? 'amud aleph' : 'amud beis'} as printed`}>
-          <img src={vilnaUrl(daf.book, daf.daf, amud, 's')} alt={`${daf.title} ${daf.daf}${amud}, Vilna edition`} width={128} height={203} loading="lazy" className="block w-full h-auto" style={{ filter: paper ? 'none' : 'brightness(.88) contrast(1.05)' }} />
-          <span className="absolute left-1 bottom-1 rounded px-1.5 py-0.5 text-[9px] font-black" style={{ background: here === amud ? col.ring : 'rgba(0,0,0,.55)', color: '#fff' }}>{here === amud ? `You're here · ${amud === 'a' ? 'aleph' : 'beis'}` : amud === 'a' ? 'amud aleph' : 'amud beis'}</span>
-        </button>
+        <div key={amud} role="button" tabIndex={0} onClick={() => setViewer(amud)} onKeyDown={(e) => { if (e.key === 'Enter') setViewer(amud); }} className="relative shrink-0 rounded-[4px] overflow-hidden cursor-zoom-in" style={{ width: 128, boxShadow: here === amud ? `0 0 0 2.5px ${col.ring}, 0 6px 16px -6px rgba(0,0,0,.45)` : '0 3px 10px -4px rgba(0,0,0,.4)' }} title={`Tap a passage to go to it · tap elsewhere to open ${amud === 'a' ? 'amud aleph' : 'amud beis'} large`}>
+          <img src={vilnaUrl(daf.book, daf.daf, amud, 's')} alt={`${daf.title} ${daf.daf}${amud}, Vilna edition`} width={128} height={203} loading="lazy" className="block w-full h-auto" style={{ filter: paper ? 'none' : 'invert(.88) hue-rotate(180deg) brightness(1.05)' }} />
+          <PageOverlay regions={regions[amud]} daf={daf} focusIdx={focusIdx} hover={hover} setHover={setHover} onPick={props.onJump} outerRight={amud === 'b'} />
+          <span className="absolute left-1 bottom-1 rounded px-1.5 py-0.5 text-[9px] font-black pointer-events-none" style={{ background: here === amud ? col.ring : 'rgba(0,0,0,.55)', color: '#fff' }}>{here === amud ? `You're here · ${amud === 'a' ? 'aleph' : 'beis'}` : amud === 'a' ? 'amud aleph' : 'amud beis'}</span>
+        </div>
       ))}
-      <p className="px-2 text-[9px] leading-snug text-center" style={{ color: col.text }}>The Vilna Shas as printed (Romm, 1880s). Tap a page to read it large.</p>
-      {viewer && <VilnaViewer daf={daf} amud={viewer} setAmud={setViewer} onClose={() => setViewer(null)} />}
+      {hover !== null && headline.get(daf.segments[hover]?.ref) ? <p className="px-2 text-[10px] font-bold leading-snug text-center" style={{ color: col.ring }}>{headline.get(daf.segments[hover].ref)}</p> : null}
+      <p className="px-2 text-[9px] leading-snug text-center" style={{ color: col.text }}>The Vilna Shas as printed (Romm, 1880s). {Object.keys(regions.a).length + Object.keys(regions.b).length ? 'Tap a passage to go to it; tap the page to read it large.' : 'Tap a page to read it large.'}</p>
+      {viewer && <VilnaViewer daf={daf} amud={viewer} setAmud={setViewer} onClose={() => setViewer(null)} regions={regions[viewer]} focusIdx={focusIdx} headline={headline} onJump={(i) => { setViewer(null); props.onJump(i); }} />}
     </aside>
   );
 }
 
-function VilnaViewer({ daf, amud, setAmud, onClose }: { daf: Daf; amud: 'a' | 'b'; setAmud: (a: 'a' | 'b') => void; onClose: () => void }) {
+function VilnaViewer({ daf, amud, setAmud, onClose, regions, focusIdx, headline, onJump }: { daf: Daf; amud: 'a' | 'b'; setAmud: (a: 'a' | 'b') => void; onClose: () => void; regions: Regions; focusIdx: number; headline: Map<string, string>; onJump: (i: number) => void }) {
+  const [hover, setHover] = useState<number | null>(null);
   const [zoom, setZoom] = useState(false);
   const [loaded, setLoaded] = useState(false);
   useEffect(() => { setLoaded(false); }, [amud, zoom]);
@@ -1664,8 +1703,12 @@ function VilnaViewer({ daf, amud, setAmud, onClose }: { daf: Daf; amud: 'a' | 'b
       </div>
       <div className={`flex-1 overflow-auto ${zoom ? '' : 'flex items-center justify-center'} px-4 pb-4`} onClick={(e) => e.stopPropagation()}>
         {!loaded && <p className="text-white/70 text-sm inline-flex items-center gap-2 absolute left-1/2 top-1/2 -translate-x-1/2"><Loader2 className="w-4 h-4 animate-spin" /> Loading the page…</p>}
-        <img key={`${amud}-${zoom}`} src={vilnaUrl(daf.book, daf.daf, amud, zoom ? 'l' : 'm')} alt={`${daf.title} ${daf.daf}${amud}, Vilna edition`} onLoad={() => setLoaded(true)} onDoubleClick={() => setZoom((z) => !z)}
-          className={`${zoom ? 'max-w-none w-[1500px] mx-auto' : 'max-h-full max-w-full object-contain'} rounded shadow-2xl bg-[#efe6d2] transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`} />
+        <div className={`relative ${zoom ? 'w-[1500px] mx-auto' : 'h-full'} `} style={zoom ? {} : { aspectRatio: '3399 / 5397', maxWidth: '100%' }}>
+          <img key={`${amud}-${zoom}`} src={vilnaUrl(daf.book, daf.daf, amud, zoom ? 'l' : 'm')} alt={`${daf.title} ${daf.daf}${amud}, Vilna edition`} onLoad={() => setLoaded(true)} onDoubleClick={() => setZoom((z) => !z)}
+            className={`block w-full h-full object-contain rounded shadow-2xl bg-[#fbf6ea] transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`} />
+          {loaded && <PageOverlay regions={regions} daf={daf} focusIdx={focusIdx} hover={hover} setHover={setHover} onPick={onJump} outerRight={amud === 'b'} />}
+          {hover !== null && <div className="absolute left-1/2 -translate-x-1/2 bottom-3 rounded-lg bg-black/80 text-white px-3 py-1.5 text-[12px] font-bold pointer-events-none whitespace-nowrap max-w-[90%] overflow-hidden text-ellipsis">{short(daf.segments[hover].ref, daf.book)}{headline.get(daf.segments[hover].ref) ? ` · ${headline.get(daf.segments[hover].ref)}` : ''} — tap to go there</div>}
+        </div>
       </div>
       <p className="pb-3 text-center text-[11px] text-white/50" onClick={(e) => e.stopPropagation()}>Vilna Shas (Romm, Vilna, 1880s) · scan from the Internet Archive · public domain</p>
     </div>
