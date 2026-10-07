@@ -1423,7 +1423,7 @@ function layoutAmud(gem: { i: number; n: number }[], rashi: { i: number; n: numb
   return { blocks, rows: rows.length };
 }
 
-function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focusIdx: number; onJump: (i: number) => void; bookmarks: BookmarkItem[]; surface: Surface }) {
+function OutlineMap({ daf, focusIdx, onJump, bookmarks, surface, top }: { daf: Daf; focusIdx: number; onJump: (i: number) => void; bookmarks: BookmarkItem[]; surface: Surface; top?: ReactNode }) {
   const W = 124, PAD = 7, HEAD = 17, IW = W - PAD * 2;
   const paper = surface === 'paper';
   const fill = paper
@@ -1464,6 +1464,7 @@ function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focu
   return (
     <aside className="relative flex h-full shrink-0 w-[148px] flex-col items-center gap-3 py-3 overflow-y-auto sd-scroll border-r border-black/5" style={{ background: fill.bg }} aria-label="Where you are on the daf" onMouseLeave={() => setLens(null)}>
       <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider" style={{ color: fill.text }}><MapIcon className="w-3 h-3" /> The daf</div>
+      {top}
       {mishnayot.length > 0 && (
         <div className="w-full px-2 flex flex-col gap-1">
           {mishnayot.map((i, k) => (
@@ -1559,7 +1560,7 @@ function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focu
         );
       })}
       <div className="px-2 text-[9px] leading-snug" style={{ color: fill.text }}>
-        <p className="text-center">Set like a Vilna page: Gemara in the centre, Rashi on the inner margin, Tosafot on the outer</p>
+        <p className="text-center">An outline of the daf drawn from its text (not the printed page): Gemara in the centre, Rashi on the inner margin, Tosafot on the outer</p>
         <p className="mt-1 flex flex-wrap justify-center gap-x-2 gap-y-0.5"><span style={{ color: fill.ein }}>⚖ Rambam / halacha</span><span style={{ color: fill.pasuk }}>● pasuk</span><span style={{ color: fill.biur }}>◆ Biur</span></p>
       </div>
       {lens && (() => {
@@ -1581,6 +1582,93 @@ function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focu
         );
       })()}
     </aside>
+  );
+}
+
+// ----------------------------------------------------------------------
+// The real daf: the Vilna Shas page images (Romm, 1880s; public domain, via the Internet Archive),
+// served by the worker's /vilna route. Falls back to the outline for masechtot not yet calibrated.
+const VILNA_BASE = DAF_API.replace(/\/daf$/, '') + '/vilna';
+const vilnaUrl = (book: string, daf: string, amud: 'a' | 'b', size: 's' | 'm' | 'l') => `${VILNA_BASE}/${encodeURIComponent(book)}/${daf}${amud}.jpg?size=${size}`;
+const vilnaAvail = new Map<string, Promise<boolean>>();
+function useVilna(book: string) {
+  const [ok, setOk] = useState<boolean | null>(null);
+  useEffect(() => {
+    let live = true;
+    if (!vilnaAvail.has(book)) vilnaAvail.set(book, fetch(`${VILNA_BASE}/info?book=${encodeURIComponent(book)}`).then((r) => r.json()).then((j) => !!j.available).catch(() => false));
+    vilnaAvail.get(book)!.then((v) => { if (live) setOk(v); });
+    return () => { live = false; };
+  }, [book]);
+  return ok;
+}
+
+function Minimap(props: { daf: Daf; focusIdx: number; onJump: (i: number) => void; bookmarks: BookmarkItem[]; surface: Surface }) {
+  const { daf, focusIdx, surface } = props;
+  const real = useVilna(daf.book);
+  const [mode, setMode] = useState<'page' | 'outline'>(() => { try { return (localStorage.getItem('sd-map-mode') as 'page' | 'outline') || 'page'; } catch { return 'page'; } });
+  const [viewer, setViewer] = useState<'a' | 'b' | null>(null);
+  const paper = surface === 'paper';
+  const col = paper ? { text: '#8a7f6a', bg: '#efe7d6', ring: '#4f46e5', chip: '#fbf6ea', border: '#d9cdb3' } : { text: '#8a898e', bg: '#0c0c0e', ring: '#a5b4fc', chip: '#1c1b1f', border: '#2e2e33' };
+  const pick = (m: 'page' | 'outline') => { setMode(m); try { localStorage.setItem('sd-map-mode', m); } catch {} };
+  const toggle = real ? (
+    <div className="flex rounded-full p-0.5 text-[10px] font-bold" style={{ background: col.chip, border: `1px solid ${col.border}` }}>
+      {(['page', 'outline'] as const).map((m) => <button key={m} onClick={() => pick(m)} className="rounded-full px-2 py-0.5" style={mode === m ? { background: col.ring, color: '#fff' } : { color: col.text }}>{m === 'page' ? 'The page' : 'Outline'}</button>)}
+    </div>
+  ) : null;
+  if (!real || mode === 'outline') return <OutlineMap {...props} top={toggle} />;
+  const here = daf.segments[focusIdx]?.amud?.endsWith('b') ? 'b' : 'a';
+  const mishnayot = daf.segments.map((s, i) => (s.startsMishnah ? i : -1)).filter((i) => i >= 0);
+  return (
+    <aside className="relative flex h-full shrink-0 w-[148px] flex-col items-center gap-3 py-3 overflow-y-auto sd-scroll border-r border-black/5" style={{ background: col.bg }} aria-label="The daf as printed">
+      <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider" style={{ color: col.text }}><MapIcon className="w-3 h-3" /> The daf</div>
+      {toggle}
+      {mishnayot.length > 0 && (
+        <div className="w-full px-2 flex flex-col gap-1">
+          {mishnayot.map((i, k) => (
+            <button key={i} onClick={() => props.onJump(i)} className="w-full rounded-lg px-2 py-1 text-left text-[10px] font-black leading-tight" style={{ background: paper ? '#e8c279' : '#6b5a3a', color: paper ? '#5b3a06' : '#f5e3c0' }} title={`Jump to this Mishnah (${daf.segments[i].ref})`}>
+              <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '0.8rem' }}>מתני׳</span> {mishnayot.length > 1 ? `${k + 1} · ` : ''}{daf.segments[i].amud}
+            </button>
+          ))}
+        </div>
+      )}
+      {(['a', 'b'] as const).map((amud) => (
+        <button key={amud} onClick={() => setViewer(amud)} className="relative shrink-0 rounded-[4px] overflow-hidden transition-transform hover:scale-[1.02]" style={{ width: 128, boxShadow: here === amud ? `0 0 0 2.5px ${col.ring}, 0 6px 16px -6px rgba(0,0,0,.45)` : '0 3px 10px -4px rgba(0,0,0,.4)' }} title={`Open ${daf.title} ${amud === 'a' ? 'amud aleph' : 'amud beis'} as printed`}>
+          <img src={vilnaUrl(daf.book, daf.daf, amud, 's')} alt={`${daf.title} ${daf.daf}${amud}, Vilna edition`} width={128} height={203} loading="lazy" className="block w-full h-auto" style={{ filter: paper ? 'none' : 'brightness(.88) contrast(1.05)' }} />
+          <span className="absolute left-1 bottom-1 rounded px-1.5 py-0.5 text-[9px] font-black" style={{ background: here === amud ? col.ring : 'rgba(0,0,0,.55)', color: '#fff' }}>{here === amud ? `You're here · ${amud === 'a' ? 'aleph' : 'beis'}` : amud === 'a' ? 'amud aleph' : 'amud beis'}</span>
+        </button>
+      ))}
+      <p className="px-2 text-[9px] leading-snug text-center" style={{ color: col.text }}>The Vilna Shas as printed (Romm, 1880s). Tap a page to read it large.</p>
+      {viewer && <VilnaViewer daf={daf} amud={viewer} setAmud={setViewer} onClose={() => setViewer(null)} />}
+    </aside>
+  );
+}
+
+function VilnaViewer({ daf, amud, setAmud, onClose }: { daf: Daf; amud: 'a' | 'b'; setAmud: (a: 'a' | 'b') => void; onClose: () => void }) {
+  const [zoom, setZoom] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  useEffect(() => { setLoaded(false); }, [amud, zoom]);
+  useEffect(() => {
+    const k = (e: KeyboardEvent) => { if (e.key === 'Escape') onClose(); if (e.key === 'ArrowLeft') setAmud('b'); if (e.key === 'ArrowRight') setAmud('a'); };
+    window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
+  }, [onClose, setAmud]);
+  return (
+    <div className="fixed inset-0 z-[60] flex flex-col bg-black/85 backdrop-blur-sm" onClick={onClose}>
+      <div className="flex items-center gap-2 px-4 py-2.5 text-white" onClick={(e) => e.stopPropagation()}>
+        <span lang="he" className="text-lg font-bold" style={{ fontFamily: HE_FONT }}>{daf.heTitle} {daf.heRef ? daf.heRef.replace(daf.heTitle, '').trim() : ''}{amud === 'a' ? '.' : ':'}</span>
+        <span className="text-xs text-white/60">{daf.title} {daf.daf}{amud} · Vilna edition</span>
+        <span className="flex-1" />
+        <button onClick={() => setAmud('b')} disabled={amud === 'b'} className="rounded-full border border-white/25 px-3 py-1 text-xs font-bold disabled:opacity-30">‹ amud beis</button>
+        <button onClick={() => setAmud('a')} disabled={amud === 'a'} className="rounded-full border border-white/25 px-3 py-1 text-xs font-bold disabled:opacity-30">amud aleph ›</button>
+        <button onClick={() => setZoom((z) => !z)} className="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">{zoom ? 'Fit to screen' : 'Zoom in'}</button>
+        <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/10" aria-label="Close"><X className="w-5 h-5" /></button>
+      </div>
+      <div className={`flex-1 overflow-auto ${zoom ? '' : 'flex items-center justify-center'} px-4 pb-4`} onClick={(e) => e.stopPropagation()}>
+        {!loaded && <p className="text-white/70 text-sm inline-flex items-center gap-2 absolute left-1/2 top-1/2 -translate-x-1/2"><Loader2 className="w-4 h-4 animate-spin" /> Loading the page…</p>}
+        <img key={`${amud}-${zoom}`} src={vilnaUrl(daf.book, daf.daf, amud, zoom ? 'l' : 'm')} alt={`${daf.title} ${daf.daf}${amud}, Vilna edition`} onLoad={() => setLoaded(true)} onDoubleClick={() => setZoom((z) => !z)}
+          className={`${zoom ? 'max-w-none w-[1500px] mx-auto' : 'max-h-full max-w-full object-contain'} rounded shadow-2xl bg-[#efe6d2] transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`} />
+      </div>
+      <p className="pb-3 text-center text-[11px] text-white/50" onClick={(e) => e.stopPropagation()}>Vilna Shas (Romm, Vilna, 1880s) · scan from the Internet Archive · public domain</p>
+    </div>
   );
 }
 
