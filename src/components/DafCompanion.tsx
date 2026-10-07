@@ -24,10 +24,10 @@ export type Companion = {
   words: { he: string; translit: string; meaning: string; note: string; ref: string }[];
   iyun: Iyun | null;
   review: Review | null;
-  articles?: { rambam?: Article; halacha?: Article; tosafot?: Article; machloket?: Article };
+  articles?: { rambam?: Article; halacha?: Article; tosafot?: Article; machloket?: Article; sod?: Article };
 };
 
-export type GemId = 'iyun' | 'remember' | 'halacha' | 'rambam' | 'tosafot' | 'machloket' | 'words' | 'review' | 'shas';
+export type GemId = 'iyun' | 'remember' | 'halacha' | 'rambam' | 'tosafot' | 'machloket' | 'sod' | 'words' | 'review' | 'shas';
 
 const HE_FONT = "'Frank Ruhl Libre', 'David Libre', 'Noto Serif Hebrew', serif";
 const EN_FONT = "'Source Serif 4', 'Iowan Old Style', Georgia, serif";
@@ -69,16 +69,17 @@ function gemsOf(c: Companion): GemId[] {
   if (a.rambam) out.push('rambam');
   if (a.tosafot) out.push('tosafot');
   if (a.machloket) out.push('machloket');
+  if (a.sod) out.push('sod'); // only on dapim Sefaria links to Kabbalistic / Chassidic readers
   if (c.words?.length) out.push('words');
   if (c.review?.chapters?.length) out.push('review');
   if (c.shas?.length) out.push('shas');
   return out;
 }
-const LABEL: Record<GemId, string> = { iyun: 'Iyun of the day', remember: '3 to remember', halacha: 'Halachot', rambam: 'The Rambam’s view', tosafot: 'Tosafot', machloket: 'Machloket', words: 'Words to know', review: 'Masechet so far', shas: 'Elsewhere in Shas' };
+const LABEL: Record<GemId, string> = { iyun: 'Iyun of the day', remember: '3 to remember', halacha: 'Halachot', rambam: 'The Rambam’s view', tosafot: 'Tosafot', machloket: 'Machloket', sod: 'The inner dimension', words: 'Words to know', review: 'Masechet so far', shas: 'Elsewhere in Shas' };
 const titleOf = (c: Companion, id: GemId) => {
   const a = c.articles || {};
   if (id === 'iyun') return plain(c.iyun?.title);
-  if (id === 'halacha' || id === 'rambam' || id === 'tosafot' || id === 'machloket') return plain(a[id]?.title);
+  if (id === 'halacha' || id === 'rambam' || id === 'tosafot' || id === 'machloket' || id === 'sod') return plain(a[id]?.title);
   if (id === 'remember') return 'The three things to take from the daf';
   if (id === 'words') return 'Five terms that unlock the daf';
   if (id === 'review') return `${splitRef(c.ref).book}, chapter by chapter`;
@@ -119,14 +120,23 @@ export function GemsSection({ refs, initialRef, onGem }: { refs: string[]; initi
         <p className="py-8 text-sm" style={{ color: P.muted }}>The gems for this daf are still being prepared.</p>
       ) : (
         <div className={`mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 transition-opacity ${loading ? 'opacity-60' : ''}`}>
-          {gems.map((id) => <GemCard key={id} id={id} c={data} onClick={() => onGem(data.ref, id)} />)}
+          {gems.map((id, k) => <GemCard key={id} id={id} c={data} onClick={() => onGem(data.ref, id)} extra={k === gems.length - 1 ? fillRow(gems) : ''} />)}
         </div>
       )}
     </section>
   );
 }
 
-function GemCard({ id, c, onClick }: { id: GemId; c: Companion; onClick: () => void }) {
+// The last card stretches to close its row (the iyun takes a 2x2 block).
+const MD_SPAN = ['', 'md:col-span-1', 'md:col-span-2', 'md:col-span-3', 'md:col-span-4'];
+function fillRow(gems: GemId[]) {
+  const singles = gems.filter((g) => g !== 'iyun').length;
+  const mobile = singles % 2 ? 'col-span-2' : '';
+  const lastRow = gems.includes('iyun') ? (singles <= 4 ? 0 : (singles - 4) % 4) : singles % 4;
+  return `${mobile} ${lastRow ? MD_SPAN[4 - lastRow + 1] : ''}`;
+}
+
+function GemCard({ id, c, onClick, extra = '' }: { id: GemId; c: Companion; onClick: () => void; extra?: string }) {
   if (id === 'iyun' && c.iyun) {
     return (
       <button onClick={onClick} className="group relative col-span-2 md:row-span-2 overflow-hidden text-left rounded-2xl p-5 sm:p-6 flex flex-col min-h-[240px] transition-transform hover:-translate-y-0.5 shadow-[0_18px_40px_-22px_rgba(35,29,21,0.8)]" style={{ background: 'radial-gradient(110% 80% at 90% 0%, #3a2f1f 0%, #231d15 55%, #1a150f 100%)', color: '#f1e9d6' }}>
@@ -146,6 +156,16 @@ function GemCard({ id, c, onClick }: { id: GemId; c: Companion; onClick: () => v
       </button>
     );
   }
+  if (id === 'sod') {
+    return (
+      <button onClick={onClick} className={`${extra} group relative overflow-hidden text-left rounded-2xl p-4 flex flex-col min-h-[150px] transition-all hover:-translate-y-0.5 shadow-[0_14px_30px_-20px_rgba(20,18,50,0.9)]`} style={{ background: 'radial-gradient(90% 70% at 80% 10%, #3b3a78 0%, #1d1c44 55%, #141332 100%)', color: '#ece8ff' }}>
+        <span aria-hidden="true" className="pointer-events-none absolute inset-0 opacity-60" style={{ backgroundImage: 'radial-gradient(1px 1px at 20% 30%, #fff8 50%, transparent), radial-gradient(1px 1px at 70% 60%, #fff6 50%, transparent), radial-gradient(1.5px 1.5px at 85% 25%, #e8cf8f 50%, transparent), radial-gradient(1px 1px at 40% 80%, #fff5 50%, transparent)' }} />
+        <span className="relative text-[10.5px] font-black uppercase tracking-[0.16em] text-[#c8c2ff]/80">Sod · {LABEL.sod}</span>
+        <span className="relative flex-1 flex items-center py-3"><span lang="he" className="text-[38px] leading-none font-bold text-[#e8cf8f]" style={{ fontFamily: HE_FONT }}>סוד</span></span>
+        <span className="relative text-[14px] leading-snug font-semibold line-clamp-2" style={{ fontFamily: EN_FONT }}>{titleOf(c, id)}</span>
+      </button>
+    );
+  }
   let visual: ReactNode = null;
   let line = titleOf(c, id);
   if (id === 'remember') visual = <span className="text-[52px] leading-none font-bold" style={{ fontFamily: EN_FONT, color: P.gold }}>3</span>;
@@ -157,7 +177,7 @@ function GemCard({ id, c, onClick }: { id: GemId; c: Companion; onClick: () => v
   if (id === 'review') { const { book, n } = splitRef(c.ref); visual = <Ring n={n} last={LAST_DAF[book] || 0} />; }
   if (id === 'shas') { visual = <Link2 className="w-9 h-9" style={{ color: P.gold }} strokeWidth={1.5} />; line = `${c.shas.length} places in Shas that share this daf’s ideas`; }
   return (
-    <button onClick={onClick} className="group text-left rounded-2xl border p-4 flex flex-col min-h-[150px] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-20px_rgba(35,29,21,0.6)]" style={{ background: P.card, borderColor: P.rule, color: P.ink }}>
+    <button onClick={onClick} className={`${extra} group text-left rounded-2xl border p-4 flex flex-col min-h-[150px] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-20px_rgba(35,29,21,0.6)]`} style={{ background: P.card, borderColor: P.rule, color: P.ink }}>
       <span className="text-[10.5px] font-black uppercase tracking-[0.16em]" style={{ color: P.muted }}>{LABEL[id]}</span>
       <span className="flex-1 flex items-center py-3">{visual}</span>
       <span className="text-[14px] leading-snug font-semibold line-clamp-2" style={{ fontFamily: EN_FONT }}>{line}</span>
@@ -236,7 +256,7 @@ export function GemPage({ refName, id, onClose, onGem, onOpenDaf }: { refName: s
             <Hero c={data} id={id} words={words} />
             <div className="mt-10">
               {id === 'iyun' && data.iyun && <IyunBody iyun={data.iyun} />}
-              {(id === 'halacha' || id === 'rambam' || id === 'tosafot' || id === 'machloket') && data.articles?.[id] && <ArticleBody a={data.articles[id]!} />}
+              {(id === 'halacha' || id === 'rambam' || id === 'tosafot' || id === 'machloket' || id === 'sod') && data.articles?.[id] && <ArticleBody a={data.articles[id]!} />}
               {id === 'remember' && <RememberBody c={data} />}
               {id === 'words' && <WordsBody c={data} />}
               {id === 'review' && data.review && <ReviewBody r={data.review} />}
