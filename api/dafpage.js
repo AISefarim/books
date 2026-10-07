@@ -117,7 +117,8 @@ export default async function handler(req, res) {
   const protocol = host.includes('localhost') ? 'http' : 'https';
   let html = '';
   try {
-    html = await (await fetch(`${protocol}://${host}/index.html`)).text();
+    // Always the shell of the live deployment: bypass any cached copy so a fresh build's scripts are used.
+    html = await (await fetch(`${protocol}://${host}/index.html?v=${process.env.VERCEL_DEPLOYMENT_ID || Date.now()}`, { cache: 'no-store' })).text();
   } catch {
     res.status(500).send('Unavailable');
     return;
@@ -166,6 +167,7 @@ export default async function handler(req, res) {
     console.error('dafpage', e);
   }
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
-  res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=3600, stale-while-revalidate=86400');
+  // Short edge cache: after a deploy, daf pages must not keep pointing at the previous build's scripts.
+  res.setHeader('Cache-Control', 'public, max-age=0, s-maxage=600, stale-while-revalidate=60');
   res.status(200).send(html);
 }
