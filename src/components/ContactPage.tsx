@@ -2,7 +2,9 @@ import { MessageSquare, Mail, MessageCircle } from 'lucide-react';
 
 const PHONE_DISPLAY = '908-309-2031';
 const PHONE_TEL = '+19083092031';
-const EMAIL = 'abrahamserouya@gmail.com';
+const EMAIL_USER = 'abrahamserouya';
+const EMAIL_HOST = ['gmail', 'com'].join('.');
+const openEmail = () => { window.location.href = `mailto:${EMAIL_USER}@${EMAIL_HOST}`; };
 
 export function ContactPage() {
   const card = 'group flex items-center gap-4 p-5 rounded-3xl bg-slate-900 border border-slate-800 hover:border-indigo-500/60 hover:bg-slate-900/80 transition-all active:scale-[0.99]';
@@ -31,13 +33,13 @@ export function ContactPage() {
           </span>
         </a>
 
-        <a href={`mailto:${EMAIL}`} className={card}>
+        <button type="button" onClick={openEmail} className={`${card} w-full text-left`}>
           <span className="p-3 rounded-2xl bg-indigo-600/20 text-indigo-300 shrink-0"><Mail className="w-6 h-6" /></span>
           <span className="min-w-0">
             <span className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Email</span>
-            <span className="block text-lg sm:text-xl font-bold text-slate-50 group-hover:text-indigo-300 transition-colors break-all">{EMAIL}</span>
+            <span className="block text-xl font-bold text-slate-50 group-hover:text-indigo-300 transition-colors">Send us an email</span>
           </span>
-        </a>
+        </button>
       </div>
 
       <p className="mt-6 text-sm text-slate-500">
