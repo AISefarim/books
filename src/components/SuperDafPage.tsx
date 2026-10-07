@@ -1443,13 +1443,15 @@ function useVilna(book: string) {
   return ok;
 }
 
-type Regions = Record<string, number[][]>;
+type Zones = Record<string, { Rashi?: number[][]; Tosafot?: number[][] }>;
+type Regions = { segments: Record<string, number[][]>; zones: Zones };
+const EMPTY_REGIONS: Regions = { segments: {}, zones: {} };
 const regionCache = new Map<string, Promise<Regions>>();
 function useRegions(book: string, daf: string) {
-  const [r, setR] = useState<{ a: Regions; b: Regions }>({ a: {}, b: {} });
+  const [r, setR] = useState<{ a: Regions; b: Regions }>({ a: EMPTY_REGIONS, b: EMPTY_REGIONS });
   useEffect(() => {
     let live = true;
-    const get = (amud: 'a' | 'b') => { const k = `${book}/${daf}${amud}`; if (!regionCache.has(k)) regionCache.set(k, fetch(`${VILNA_BASE}/${encodeURIComponent(book)}/${daf}${amud}.json`).then((x) => (x.ok ? x.json() : { segments: {} })).then((j) => j.segments || {}).catch(() => ({}))); return regionCache.get(k)!; };
+    const get = (amud: 'a' | 'b') => { const k = `${book}/${daf}${amud}`; if (!regionCache.has(k)) regionCache.set(k, fetch(`${VILNA_BASE}/${encodeURIComponent(book)}/${daf}${amud}.json`).then((x) => (x.ok ? x.json() : {})).then((j: Partial<Regions>) => ({ segments: j.segments || {}, zones: j.zones || {} })).catch(() => EMPTY_REGIONS)); return regionCache.get(k)!; };
     Promise.all([get('a'), get('b')]).then(([a, b]) => { if (live) setR({ a, b }); });
     return () => { live = false; };
   }, [book, daf]);
@@ -1458,10 +1460,30 @@ function useRegions(book: string, daf: string) {
 // The living page: each Gemara passage's place on the real page, drawn over the scan.
 function PageOverlay({ regions, daf, focusIdx, hover, setHover, onPick, outerRight }: { regions: Regions; daf: Daf; focusIdx: number; hover: number | null; setHover: (i: number | null) => void; onPick: (i: number) => void; outerRight: boolean }) {
   const idx = useMemo(() => new Map(daf.segments.map((s, i) => [s.ref, i])), [daf]);
-  const entries = Object.entries(regions).map(([ref, rects]) => ({ i: idx.get(ref) ?? -1, rects })).filter((e) => e.i >= 0);
+  const entries = Object.entries(regions.segments).map(([ref, rects]) => ({ i: idx.get(ref) ?? -1, rects })).filter((e) => e.i >= 0);
+  // The general area of Rashi and Tosafot on a passage, joined to it by a guide line (shown for your passage and the one you hover)
+  const ZC = { Rashi: { fill: 'rgba(22,163,74,.12)', line: 'rgba(22,163,74,.85)' }, Tosafot: { fill: 'rgba(219,39,119,.11)', line: 'rgba(219,39,119,.8)' } } as const;
+  const areas = (i: number, strong: boolean) => {
+    const ref = daf.segments[i]?.ref; const z = ref ? regions.zones[ref] : null; const g = entries.find((e) => e.i === i)?.rects?.[0];
+    if (!z || !g) return null;
+    return (['Rashi', 'Tosafot'] as const).map((who) => {
+      const rs = z[who]; if (!rs?.length) return null;
+      const [zx, zy, zw] = rs[0]; const toRight = zx > g[0] + g[2] / 2;
+      const x1 = toRight ? g[0] + g[2] : g[0], y1 = g[1] + g[3] / 2, x2 = toRight ? zx : zx + zw, y2 = zy + 0.006;
+      return (
+        <g key={`${i}-${who}`} onMouseEnter={() => setHover(i)} onClick={(e) => { e.stopPropagation(); onPick(i); }} style={{ cursor: 'pointer' }}>
+          {rs.map(([x, y, w, h], k) => <rect key={k} x={x - 0.003} y={y - 0.002} width={w + 0.006} height={h + 0.004} rx={0.004} fill={ZC[who].fill} stroke={ZC[who].line} strokeOpacity={strong ? 0.9 : 0.55} strokeWidth={1} vectorEffect="non-scaling-stroke" />)}
+          <path d={`M ${x1} ${y1} C ${(x1 + x2) / 2} ${y1}, ${(x1 + x2) / 2} ${y2}, ${x2} ${y2}`} fill="none" stroke={ZC[who].line} strokeWidth={1.8} strokeDasharray="5 3" strokeOpacity={strong ? 0.95 : 0.6} vectorEffect="non-scaling-stroke" pointerEvents="none" />
+          <title>{who} on {short(ref, daf.book)}</title>
+        </g>
+      );
+    });
+  };
   const focus = entries.find((e) => e.i === focusIdx);
   return (
     <svg viewBox="0 0 1 1" preserveAspectRatio="none" className="absolute inset-0 w-full h-full" onMouseLeave={() => setHover(null)}>
+      {areas(focusIdx, hover === null || hover === focusIdx)}
+      {hover !== null && hover !== focusIdx ? areas(hover, true) : null}
       {entries.map(({ i, rects }) => {
         const on = i === focusIdx, hv = i === hover;
         return (
@@ -1516,7 +1538,7 @@ function Minimap(props: { daf: Daf; focusIdx: number; onJump: (i: number) => voi
         </div>
       ))}
       {hover !== null && headline.get(daf.segments[hover]?.ref) ? <p className="px-2 text-[10px] font-bold leading-snug text-center" style={{ color: col.ring }}>{headline.get(daf.segments[hover].ref)}</p> : null}
-      <p className="px-2 text-[9px] leading-snug text-center" style={{ color: col.text }}>The Vilna Shas as printed (Romm, 1880s). {Object.keys(regions.a).length + Object.keys(regions.b).length ? 'Tap a passage to go to it; tap the page to read it large.' : 'Tap a page to read it large.'}</p>
+      <p className="px-2 text-[9px] leading-snug text-center" style={{ color: col.text }}>The Vilna Shas as printed (Romm, 1880s). {Object.keys(regions.a.segments).length + Object.keys(regions.b.segments).length ? 'Tap a passage to go to it; tap the page to read it large.' : 'Tap a page to read it large.'}</p>
       {viewer && createPortal(<VilnaViewer paper={paper} daf={daf} amud={viewer} setAmud={setViewer} onClose={() => setViewer(null)} regions={regions[viewer]} focusIdx={focusIdx} headline={headline} onJump={(i) => { setViewer(null); props.onJump(i); }} />, document.body)}
     </aside>
   );
