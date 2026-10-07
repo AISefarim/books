@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Search, X, ScrollText, Loader2, BookOpen, Monitor, Tablet, Smartphone, ChevronLeft, ChevronRight, Lock, Share2, Check } from 'lucide-react';
 import { DAF_API, pingDafOpen, normalizeTractate, dafPath } from '../lib/daf';
+import { DafCompanion } from './DafCompanion';
 
 // The Daf tab's front page: today's daf (huge), yesterday and tomorrow
 // beside it, then every finished daf by masechet, with a forgiving search
@@ -93,6 +94,9 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
       .sort((a, b) => order(a.name) - order(b.name) || a.name.localeCompare(b.name));
   }, [items]);
   const todayBook = today ? split(today.ref).book : null;
+  // "From the daf" opens on today's daf, else the latest one learned
+  const allRefs = useMemo(() => books.flatMap((b) => b.dafim.map((d) => d.ref)), [books]);
+  const companionRef = today && byRef.has(today.ref) ? today.ref : yesterday && byRef.has(yesterday.ref) ? yesterday.ref : allRefs[allRefs.length - 1] || null;
   const openBook = book || todayBook || books[0]?.name || null;
   const shownBook = books.find((b) => b.name === openBook) || books[0];
   useEffect(() => {
@@ -255,6 +259,9 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
           <SideDay label="Yesterday" day={yesterday} dir="prev" />
           <SideDay label="Tomorrow" day={tomorrow} dir="next" />
         </div>
+
+        {/* ===== from the daf: halachot, iyun, Tosafot, review... ===== */}
+        {items && <DafCompanion refs={allRefs} initialRef={companionRef} onOpen={onOpen} />}
 
         {/* ===== WhatsApp community ===== */}
         {whatsappUrl && (
