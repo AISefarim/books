@@ -9,6 +9,26 @@
       "destination": "/api/preview?book=:id"
     },
     {
+      "source": "/sitemap.xml",
+      "destination": "/api/sitemap"
+    },
+    {
+      "source": "/daf",
+      "destination": "/api/dafpage"
+    },
+    {
+      "source": "/daf/:book",
+      "destination": "/api/dafpage?book=:book"
+    },
+    {
+      "source": "/daf/:book/:n",
+      "destination": "/api/dafpage?book=:book&n=:n"
+    },
+    {
+      "source": "/daf/:book/:n/gems/:gem",
+      "destination": "/api/dafpage?book=:book&n=:n&gem=:gem"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
