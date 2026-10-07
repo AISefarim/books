@@ -1133,7 +1133,15 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
   const halAll = (built?.halacha?.items || []) as HalachaItem[];
   const hal = seg ? halAll.filter((h) => (h.refs || []).includes(seg.ref)) : halAll;
   const srcs = seg ? all.filter((c) => c.anchor === seg.ref) : all;
-  const rambamHere = !seg || (built?.rambamSources || []).some((r) => r.anchor === seg.ref);
+  // The full Rambam card shows where he is relevant: a paragraph Sefaria links to the Rambam or his
+  // commentators, a paragraph whose step of the sugya brings the Rambam, or one with a Rambam ruling in
+  // Halacha. Everywhere else in the sugya a one-line opener keeps it a tap away.
+  const rambamHere = !seg || (() => {
+    const linked = new Set((built?.rambamSources || []).map((r) => r.anchor));
+    if (linked.has(seg.ref)) return true;
+    if (step && ((step.refs || []).some((r) => linked.has(r)) || /Rambam|Mishneh Torah|Kessef Mishneh|Maggid Mishneh/.test([step.explanation, step.deeper, ...(step.layers || []).map((l) => `${l.title} ${l.body}`)].join(' ')))) return true;
+    return halAll.some((h) => h.rambam && (h.refs || []).includes(seg.ref));
+  })();
   const [work, setWork] = useState<string | null>(null);
   const [focusBiur, setFocusBiur] = useState<string | null>(null);
   const biurAll = (built?.biurim?.entries || []) as Biur[];
@@ -1195,7 +1203,12 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
               </div>
             ) : seg && built.mesivta ? <p className="text-slate-500">No commentary on Sefaria is anchored to this paragraph.</p> : seg ? <p className="text-slate-500 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Notes on their way.</p> : null}
             <ExtraSections built={built} seg={seg} />
-            {syn?.rambam && rambamHere && (
+            {syn?.rambam && !rambamHere && !words.__rambamOpen && (
+              <button onClick={() => setWords((o) => ({ ...o, __rambamOpen: true }))} className="w-full text-left rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 flex items-center gap-2 text-[12px] font-bold text-amber-800 hover:bg-amber-500/20">
+                <Landmark className="w-4 h-4" /> The Rambam on this sugya <span className="font-semibold text-slate-400">· not tied to this line</span><ChevronDown className="w-3.5 h-3.5 ml-auto" />
+              </button>
+            )}
+            {syn?.rambam && (rambamHere || words.__rambamOpen) && (
               <div className="rounded-2xl border-2 border-amber-500/50 bg-amber-500/10 px-3.5 py-3">
                 <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-700"><Landmark className="w-4 h-4" /> The Rambam</p>
                 <p className="mt-1.5 leading-relaxed text-slate-100" style={{ fontFamily: EN_FONT, fontSize: '0.98rem' }}><RefText text={syn.rambam.reading} /></p>
