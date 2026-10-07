@@ -7,8 +7,8 @@ interface NavbarProps {
   onToggleAdmin: () => void;
   onHome: () => void;
   logoUrl?: string;
-  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf';
-  onTabChange: (tab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf') => void;
+  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'contact';
+  onTabChange: (tab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'contact') => void;
   whatsappUrl?: string;
   totalBooks?: number;
   totalVideos?: number;
@@ -74,7 +74,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
               }`}
             >
               <Video className="w-3.5 h-3.5 shrink-0" />
-              Media
+              Shiurim
             </button>
           </div>
         </div>
@@ -169,7 +169,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                 <Video className="w-4 h-4 shrink-0" />
                 <Headphones className="w-3.5 h-3.5 shrink-0 opacity-90" />
               </div>
-              <span>Media</span>
+              <span>Shiurim</span>
             </button>
             <button
               onClick={() => {

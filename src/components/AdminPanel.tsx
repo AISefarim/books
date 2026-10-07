@@ -10,7 +10,7 @@ import { BatchAddMedia } from './BatchAddMedia';
 interface AdminPanelProps {
   onStatusMessage: (message: string, type: 'success' | 'error') => void;
   onOpenSettings: () => void;
-  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'images' | 'audio' | 'media' | 'chat' | 'daf';
+  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'images' | 'audio' | 'media' | 'chat' | 'daf' | 'contact';
   videoCategories: string[];
   videos?: Video[];
   books?: Book[];
