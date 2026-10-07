@@ -4,7 +4,7 @@ const sections = [
   {
     icon: BookOpen,
     title: 'Sefarim',
-    body: 'A free, growing library of sefarim you can read online, many of them generated with AI. Physical copies, where offered, are printed and sold strictly at cost.',
+    body: 'A free, growing library of sefarim you can read online, many of them generated with AI. The books can also be purchased in print, at cost: printed and sold with no profit.',
   },
   {
     icon: Headphones,
