@@ -16,7 +16,20 @@ export const plain = (s?: string) => sephardi(String(s || '').replace(/\*\*/g, '
 // "[Rashi on Bekhorot 17a:3:1, Kessef Mishneh on Mishneh Torah, Firstlings 5:1:2]"
 // -> separate chips with short names.
 // Sefaria files some classics under book names; label them as learners know them.
-const REF_NAMES: [RegExp, string][] = [[/^Chidushei Halachot\b/, 'Maharsha'], [/^Chidushei Agadot\b/, 'Maharsha (Aggadah)'], [/^Haggahot Ya'avetz\b/, "Ya'avetz"], [/^Chiddushei Ramban\b/, 'Ramban']];
+const REF_NAMES: [RegExp, string][] = [[/^Mishneh Torah$/, 'Rambam'], [/^Mishneh Torah$/, 'Rambam'], [/^Chidushei Halachot\b/, 'Maharsha'], [/^Chidushei Agadot\b/, 'Maharsha (Aggadah)'], [/^Haggahot Ya'avetz\b/, "Ya'avetz"], [/^Chiddushei Ramban\b/, 'Ramban']];
+// One name per note. The AI sometimes labels a note "Rashi / Rabbeinu Gershom"; a note cites one
+// source, so take its name from the ref (the work before " on ...") and show the name learners know.
+export function workName(source: string, ref?: string) {
+  const known = (t: string) => { let x = t; for (const [re, name] of REF_NAMES) x = x.replace(re, name); return x; };
+  const combined = /\s(?:\/|&|and)\s/.test(source || '');
+  if (!combined && source) return known(source.trim());
+  if (ref) {
+    if (/^Mishneh Torah,/.test(ref)) return 'Rambam';
+    const m = ref.match(/^(.+?) on /);
+    if (m) return known(m[1]);
+  }
+  return known(String(source || '').split(/\s(?:\/|&|and)\s/)[0].trim());
+}
 export function shortRef(r0: string) {
   let r = r0; for (const [re, name] of REF_NAMES) r = r.replace(re, name);
   let m;
