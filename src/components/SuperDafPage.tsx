@@ -3,6 +3,7 @@ import {
   ArrowLeft, ChevronLeft, ChevronRight, Headphones, X, ExternalLink, Clock, Loader2, Scale, Landmark, Send, MessageSquareText,
   Minus, Plus, Lock, Bookmark, BookmarkCheck, Maximize2, Minimize2, Type, Sun, Moon, Map as MapIcon, ListTree, Check, Library,
   Quote, Sparkles, NotebookPen, Share2, GripHorizontal, ChevronUp, ChevronDown, Download, ScrollText, Compass } from 'lucide-react';
+import { createPortal } from 'react-dom';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
 import { RefText, plain, CiteLink, shortRef, workName, displayRef } from './RefText';
@@ -1508,20 +1509,20 @@ function Minimap(props: { daf: Daf; focusIdx: number; onJump: (i: number) => voi
         </div>
       )}
       {(['a', 'b'] as const).map((amud) => (
-        <div key={amud} role="button" tabIndex={0} onClick={() => setViewer(amud)} onKeyDown={(e) => { if (e.key === 'Enter') setViewer(amud); }} className="relative shrink-0 rounded-[4px] overflow-hidden cursor-zoom-in" style={{ width: 128, boxShadow: here === amud ? `0 0 0 2.5px ${col.ring}, 0 6px 16px -6px rgba(0,0,0,.45)` : '0 3px 10px -4px rgba(0,0,0,.4)' }} title={`Tap a passage to go to it · tap elsewhere to open ${amud === 'a' ? 'amud aleph' : 'amud beis'} large`}>
-          <img src={vilnaUrl(daf.book, daf.daf, amud, 's')} alt={`${daf.title} ${daf.daf}${amud}, Vilna edition`} width={128} height={203} loading="lazy" className="block w-full h-auto" style={{ filter: paper ? 'none' : 'invert(.88) hue-rotate(180deg) brightness(1.05)' }} />
+        <div key={amud} role="button" tabIndex={0} onClick={() => setViewer(amud)} onKeyDown={(e) => { if (e.key === 'Enter') setViewer(amud); }} className="relative shrink-0 rounded-[4px] overflow-hidden cursor-zoom-in" style={{ width: 128, boxShadow: here === amud ? `0 0 0 2.5px ${col.ring}` : `0 0 0 1px ${col.border}` }} title={`Tap a passage to go to it · tap elsewhere to open ${amud === 'a' ? 'Amud Alef' : 'Amud Bet'} large`}>
+          <img src={vilnaUrl(daf.book, daf.daf, amud, 's')} alt={`${daf.title} ${daf.daf}${amud}, Vilna edition`} width={128} height={203} loading="lazy" className="block w-full h-auto" style={paper ? { mixBlendMode: 'multiply' } : { filter: 'invert(.88) hue-rotate(180deg) brightness(1.05)' }} />
           <PageOverlay regions={regions[amud]} daf={daf} focusIdx={focusIdx} hover={hover} setHover={setHover} onPick={props.onJump} outerRight={amud === 'b'} />
-          <span className="absolute left-1 bottom-1 rounded px-1.5 py-0.5 text-[9px] font-black pointer-events-none" style={{ background: here === amud ? col.ring : 'rgba(0,0,0,.55)', color: '#fff' }}>{here === amud ? `You're here · ${amud === 'a' ? 'aleph' : 'beis'}` : amud === 'a' ? 'amud aleph' : 'amud beis'}</span>
+          <span className="absolute left-1 bottom-1 rounded px-1.5 py-0.5 text-[9px] font-black pointer-events-none" style={{ background: here === amud ? col.ring : 'rgba(0,0,0,.55)', color: '#fff' }}>{here === amud ? `You're here · ${amud === 'a' ? 'Alef' : 'Bet'}` : amud === 'a' ? 'Amud Alef' : 'Amud Bet'}</span>
         </div>
       ))}
       {hover !== null && headline.get(daf.segments[hover]?.ref) ? <p className="px-2 text-[10px] font-bold leading-snug text-center" style={{ color: col.ring }}>{headline.get(daf.segments[hover].ref)}</p> : null}
       <p className="px-2 text-[9px] leading-snug text-center" style={{ color: col.text }}>The Vilna Shas as printed (Romm, 1880s). {Object.keys(regions.a).length + Object.keys(regions.b).length ? 'Tap a passage to go to it; tap the page to read it large.' : 'Tap a page to read it large.'}</p>
-      {viewer && <VilnaViewer daf={daf} amud={viewer} setAmud={setViewer} onClose={() => setViewer(null)} regions={regions[viewer]} focusIdx={focusIdx} headline={headline} onJump={(i) => { setViewer(null); props.onJump(i); }} />}
+      {viewer && createPortal(<VilnaViewer paper={paper} daf={daf} amud={viewer} setAmud={setViewer} onClose={() => setViewer(null)} regions={regions[viewer]} focusIdx={focusIdx} headline={headline} onJump={(i) => { setViewer(null); props.onJump(i); }} />, document.body)}
     </aside>
   );
 }
 
-function VilnaViewer({ daf, amud, setAmud, onClose, regions, focusIdx, headline, onJump }: { daf: Daf; amud: 'a' | 'b'; setAmud: (a: 'a' | 'b') => void; onClose: () => void; regions: Regions; focusIdx: number; headline: Map<string, string>; onJump: (i: number) => void }) {
+function VilnaViewer({ paper, daf, amud, setAmud, onClose, regions, focusIdx, headline, onJump }: { paper: boolean; daf: Daf; amud: 'a' | 'b'; setAmud: (a: 'a' | 'b') => void; onClose: () => void; regions: Regions; focusIdx: number; headline: Map<string, string>; onJump: (i: number) => void }) {
   const [hover, setHover] = useState<number | null>(null);
   const [zoom, setZoom] = useState(false);
   const [loaded, setLoaded] = useState(false);
@@ -1531,26 +1532,26 @@ function VilnaViewer({ daf, amud, setAmud, onClose, regions, focusIdx, headline,
     window.addEventListener('keydown', k); return () => window.removeEventListener('keydown', k);
   }, [onClose, setAmud]);
   return (
-    <div className="fixed inset-0 z-[60] flex flex-col bg-black/85 backdrop-blur-sm" onClick={onClose}>
-      <div className="flex items-center gap-2 px-4 py-2.5 text-white" onClick={(e) => e.stopPropagation()}>
+    <div className={`fixed inset-0 z-[60] flex flex-col backdrop-blur-sm ${paper ? 'bg-[#f3ede0]/97 text-slate-900 sd-viewer-paper' : 'bg-black/85 text-white'}`} onClick={onClose}>
+      <div className={`flex items-center gap-2 px-4 py-2.5 ${paper ? 'text-slate-900' : 'text-white'}`} onClick={(e) => { if ((e.target as HTMLElement).closest('button')) e.stopPropagation(); }}>
         <span lang="he" className="text-lg font-bold" style={{ fontFamily: HE_FONT }}>{daf.heTitle} {daf.heRef ? daf.heRef.replace(daf.heTitle, '').trim() : ''}{amud === 'a' ? '.' : ':'}</span>
-        <span className="text-xs text-white/60">{daf.title} {daf.daf}{amud} · Vilna edition</span>
+        <span className="text-xs opacity-60">{daf.title} {daf.daf}{amud} · Vilna edition</span>
         <span className="flex-1" />
-        <button onClick={() => setAmud('b')} disabled={amud === 'b'} className="rounded-full border border-white/25 px-3 py-1 text-xs font-bold disabled:opacity-30">‹ amud beis</button>
-        <button onClick={() => setAmud('a')} disabled={amud === 'a'} className="rounded-full border border-white/25 px-3 py-1 text-xs font-bold disabled:opacity-30">amud aleph ›</button>
-        <button onClick={() => setZoom((z) => !z)} className="rounded-full border border-white/25 px-3 py-1 text-xs font-bold">{zoom ? 'Fit to screen' : 'Zoom in'}</button>
-        <button onClick={onClose} className="p-1.5 rounded-full hover:bg-white/10" aria-label="Close"><X className="w-5 h-5" /></button>
+        <button onClick={() => setAmud('b')} disabled={amud === 'b'} className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold disabled:opacity-30">‹ Amud Bet</button>
+        <button onClick={() => setAmud('a')} disabled={amud === 'a'} className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold disabled:opacity-30">Amud Alef ›</button>
+        <button onClick={() => setZoom((z) => !z)} className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold">{zoom ? 'Fit to screen' : 'Zoom in'}</button>
+        <button onClick={onClose} className="p-1.5 rounded-full hover:bg-black/10" aria-label="Close"><X className="w-5 h-5" /></button>
       </div>
-      <div className={`flex-1 overflow-auto ${zoom ? '' : 'flex items-center justify-center'} px-4 pb-4`} onClick={(e) => e.stopPropagation()}>
-        {!loaded && <p className="text-white/70 text-sm inline-flex items-center gap-2 absolute left-1/2 top-1/2 -translate-x-1/2"><Loader2 className="w-4 h-4 animate-spin" /> Loading the page…</p>}
-        <div className={`relative ${zoom ? 'w-[1500px] mx-auto' : 'h-full'} `} style={zoom ? {} : { aspectRatio: '3399 / 5397', maxWidth: '100%' }}>
+      <div className={`flex-1 overflow-auto ${zoom ? '' : 'flex items-center justify-center'} px-4 pb-4 cursor-zoom-out`} onClick={onClose} title="Tap outside the page to close">
+        {!loaded && <p className="opacity-70 text-sm inline-flex items-center gap-2 absolute left-1/2 top-1/2 -translate-x-1/2"><Loader2 className="w-4 h-4 animate-spin" /> Loading the page…</p>}
+        <div className={`relative cursor-default shrink-0 ${zoom ? 'w-[1500px] mx-auto' : ''}`} style={zoom ? {} : { height: 'calc(100dvh - 7.5rem)', aspectRatio: '3399 / 5397', maxWidth: '100%' }} onClick={(e) => e.stopPropagation()}>
           <img key={`${amud}-${zoom}`} src={vilnaUrl(daf.book, daf.daf, amud, zoom ? 'l' : 'm')} alt={`${daf.title} ${daf.daf}${amud}, Vilna edition`} onLoad={() => setLoaded(true)} onDoubleClick={() => setZoom((z) => !z)}
-            className={`block w-full h-full object-contain rounded shadow-2xl bg-[#fbf6ea] transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`} />
+            className={`block w-full h-full object-contain transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`} style={paper ? { mixBlendMode: 'multiply' } : { filter: 'invert(.88) hue-rotate(180deg) brightness(1.05)' }} />
           {loaded && <PageOverlay regions={regions} daf={daf} focusIdx={focusIdx} hover={hover} setHover={setHover} onPick={onJump} outerRight={amud === 'b'} />}
           {hover !== null && <div className="absolute left-1/2 -translate-x-1/2 bottom-3 rounded-lg bg-black/80 text-white px-3 py-1.5 text-[12px] font-bold pointer-events-none whitespace-nowrap max-w-[90%] overflow-hidden text-ellipsis">{short(daf.segments[hover].ref, daf.book)}{headline.get(daf.segments[hover].ref) ? ` · ${headline.get(daf.segments[hover].ref)}` : ''} — tap to go there</div>}
         </div>
       </div>
-      <p className="pb-3 text-center text-[11px] text-white/50" onClick={(e) => e.stopPropagation()}>Vilna Shas (Romm, Vilna, 1880s) · scan from the Internet Archive · public domain</p>
+      <p className="pb-3 text-center text-[11px] opacity-50" onClick={(e) => e.stopPropagation()}>Vilna Shas (Romm, Vilna, 1880s) · scan from the Internet Archive · public domain</p>
     </div>
   );
 }
