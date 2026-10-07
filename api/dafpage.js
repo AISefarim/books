@@ -7,7 +7,7 @@
 
 const WORKER = 'https://aisefarim-chat.abrahamserouya.workers.dev/daf';
 const SITE = 'https://aisefarim.com';
-const GEM_LABEL = { iyun: 'Iyun of the day', remember: '3 to remember', pasuk: 'The Passuk', halacha: 'Halachot', rambam: 'The Rambam’s view', tosafot: 'Tosafot', machloket: 'Machloket', sod: 'The inner dimension', words: 'Words to know', review: 'Masechet so far', shas: 'Elsewhere in Shas' };
+const GEM_LABEL = { iyun: 'Iyun of the day', prep: 'Daf prep', remember: '3 to remember', pasuk: 'The Passuk', halacha: 'Halachot', rambam: 'The Rambam’s view', tosafot: 'Tosafot', machloket: 'Machloket', sod: 'The inner dimension', words: 'Words to know', review: 'Masechet so far', shas: 'Elsewhere in Shas' };
 
 const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 // AI text -> plain prose: no [citations], no ** / * marks
@@ -24,14 +24,14 @@ async function api(path) {
 
 function gemsOf(c) {
   const a = c.articles || {};
-  return ['iyun', 'remember', 'pasuk', 'halacha', 'rambam', 'tosafot', 'machloket', 'sod', 'words', 'review', 'shas'].filter((g) =>
-    g === 'iyun' ? c.iyun : g === 'remember' ? c.takeaways?.length : g === 'words' ? c.words?.length : g === 'review' ? c.review?.chapters?.length : g === 'shas' ? c.shas?.length : a[g]);
+  return ['iyun', 'prep', 'remember', 'pasuk', 'halacha', 'rambam', 'tosafot', 'machloket', 'sod', 'words', 'review', 'shas'].filter((g) =>
+    g === 'iyun' ? c.iyun : g === 'prep' ? c.prep : g === 'remember' ? c.takeaways?.length : g === 'words' ? c.words?.length : g === 'review' ? c.review?.chapters?.length : g === 'shas' ? c.shas?.length : a[g]);
 }
 function gemTitle(c, g) {
   const a = c.articles || {};
   if (g === 'iyun') return clean(c.iyun?.title);
   if (a[g]) return clean(a[g].title);
-  return { remember: `${c.ref}: three things to remember`, words: `${c.ref}: words to know`, review: 'The masechet so far, chapter by chapter', shas: `${c.ref} elsewhere in Shas` }[g] || GEM_LABEL[g];
+  return { prep: `Before you learn ${c.ref}`, remember: `${c.ref}: three things to remember`, words: `${c.ref}: words to know`, review: 'The masechet so far, chapter by chapter', shas: `${c.ref} elsewhere in Shas` }[g] || GEM_LABEL[g];
 }
 
 // ---- page bodies (simple, readable HTML) ----
@@ -68,6 +68,9 @@ function gemBody(c, g) {
       (i.sources || []).map((s) => `<h3>${esc(s.who)} (${esc(s.stage)})</h3>${s.quote ? `<blockquote lang="he" dir="rtl">${esc(s.quote)}</blockquote>` : ''}<p>${esc(clean(s.point))}</p>`).join('') +
       ((i.approaches || []).length ? `<h2>Ways to understand it</h2>${(i.approaches || []).map((x) => `<h3>${esc(clean(x.name))}</h3><p>${esc(clean(x.sevara))}</p>`).join('')}` : '') +
       (i.conclusion ? `<h2>Where it lands</h2><p>${esc(clean(i.conclusion))}</p>` : '') + (i.takeaway ? `<p><strong>${esc(clean(i.takeaway))}</strong></p>` : '');
+  } else if (g === 'prep' && c.prep) {
+    const p = c.prep;
+    inner = `<h2>Where we left off</h2><p>${esc(clean(p.leftOff))}</p><h2>The question going in</h2><p>${esc(clean(p.question))}</p><h2>Know before you start</h2>${list((p.concepts || []).map((x) => `<span lang="he">${esc(x.he)}</span> (${esc(x.name)}): ${esc(clean(x.explain))}`))}<h2>Who's who</h2>${list((p.people || []).map((x) => `${esc(x.name)} (<span lang="he">${esc(x.he)}</span>, ${esc(x.era)}): ${esc(clean(x.role))}`))}`;
   } else if (a[g]) {
     inner = `<p><em>${esc(clean(a[g].dek))}</em></p>${articleHtml(a[g])}`;
   } else if (g === 'remember') {
@@ -132,7 +135,7 @@ export default async function handler(req, res) {
         if (gem && GEM_LABEL[gem] && gemsOf(c).includes(gem)) {
           const title = `${gemTitle(c, gem)} – ${GEM_LABEL[gem]}, ${c.ref} | Super Daf`;
           const a = (c.articles || {})[gem];
-          const desc = clip(gem === 'iyun' ? `${c.iyun.hook} ${c.iyun.question}` : a ? a.dek : gem === 'remember' ? c.takeaways.join(' ') : gem === 'review' ? c.review.overview : `${GEM_LABEL[gem]} for ${c.ref} (${c.heRef}) on Super Daf.`);
+          const desc = clip(gem === 'prep' ? `Before learning ${c.ref}: ${c.prep.question}` : gem === 'iyun' ? `${c.iyun.hook} ${c.iyun.question}` : a ? a.dek : gem === 'remember' ? c.takeaways.join(' ') : gem === 'review' ? c.review.overview : `${GEM_LABEL[gem]} for ${c.ref} (${c.heRef}) on Super Daf.`);
           const path = `${dafUrl(c.ref)}/gems/${gem}`;
           page = { title, desc, path, type: 'article', body: gemBody(c, gem), jsonld: [
             { '@context': 'https://schema.org', '@type': 'Article', headline: gemTitle(c, gem), description: desc, inLanguage: 'en', url: SITE + path, about: `${c.ref} (Talmud Bavli)`, publisher: { '@type': 'Organization', name: 'AI Sefarim', url: SITE } },

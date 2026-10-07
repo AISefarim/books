@@ -13,8 +13,8 @@ async function api(path) {
 
 function gemsOf(c) {
   const a = c.articles || {};
-  return ['iyun', 'remember', 'pasuk', 'halacha', 'rambam', 'tosafot', 'machloket', 'sod', 'words', 'review', 'shas'].filter((g) =>
-    g === 'iyun' ? c.iyun : g === 'remember' ? c.takeaways?.length : g === 'words' ? c.words?.length : g === 'review' ? c.review?.chapters?.length : g === 'shas' ? c.shas?.length : a[g]);
+  return ['iyun', 'prep', 'remember', 'pasuk', 'halacha', 'rambam', 'tosafot', 'machloket', 'sod', 'words', 'review', 'shas'].filter((g) =>
+    g === 'iyun' ? c.iyun : g === 'prep' ? c.prep : g === 'remember' ? c.takeaways?.length : g === 'words' ? c.words?.length : g === 'review' ? c.review?.chapters?.length : g === 'shas' ? c.shas?.length : a[g]);
 }
 
 export default async function handler(req, res) {

@@ -11,6 +11,7 @@ type Rule = { ref: string; short: string; ruling: string } | null;
 type Source = { stage: string; who: string; ref: string; quote: string; point: string };
 type Iyun = { title: string; heTitle: string; hook: string; background?: string[]; question: string; sources: Source[]; approaches: { name: string; who: string[]; sevara: string }[]; conclusion: string; takeaway: string; sugya?: { index: number; from: string; to: string } };
 type Review = { overview: string; today: string; chapters: { n: number; title: string; summary: string; points: string[]; he: string; name: string; current: boolean }[] };
+type Prep = { leftOff: string; question: string; prev?: string | null; concepts: { he: string; name: string; explain: string; ref: string }[]; people: { name: string; he: string; era: string; role: string }[] };
 type Article = { title: string; heTitle?: string; dek: string; verse?: { ref: string; he: string; en: string; anchor: string }; sections: { heading: string; paragraphs: string[]; source: { ref: string; quote: string; translation: string } | null }[]; takeaway: string };
 export type Companion = {
   available?: false;
@@ -23,11 +24,12 @@ export type Companion = {
   tosafot: { ref: string; anchor: string; dh: string; headline: string; bothers: string; answer: string; why: string }[];
   words: { he: string; translit: string; meaning: string; note: string; ref: string }[];
   iyun: Iyun | null;
+  prep?: Prep | null;
   review: Review | null;
   articles?: { rambam?: Article; halacha?: Article; tosafot?: Article; machloket?: Article; sod?: Article; pasuk?: Article };
 };
 
-export type GemId = 'iyun' | 'remember' | 'pasuk' | 'halacha' | 'rambam' | 'tosafot' | 'machloket' | 'sod' | 'words' | 'review' | 'shas';
+export type GemId = 'iyun' | 'prep' | 'remember' | 'pasuk' | 'halacha' | 'rambam' | 'tosafot' | 'machloket' | 'sod' | 'words' | 'review' | 'shas';
 
 const HE_FONT = "'Frank Ruhl Libre', 'David Libre', 'Noto Serif Hebrew', serif";
 const EN_FONT = "'Source Serif 4', 'Iowan Old Style', Georgia, serif";
@@ -64,6 +66,7 @@ function gemsOf(c: Companion): GemId[] {
   const a = c.articles || {};
   const out: GemId[] = [];
   if (c.iyun) out.push('iyun');
+  if (c.prep) out.push('prep'); // what to know before learning
   if (c.takeaways?.length) out.push('remember');
   if (a.pasuk) out.push('pasuk'); // only when Sefaria links a verse to the daf
   if (a.halacha) out.push('halacha');
@@ -76,11 +79,12 @@ function gemsOf(c: Companion): GemId[] {
   if (c.shas?.length) out.push('shas');
   return out;
 }
-const LABEL: Record<GemId, string> = { iyun: 'Iyun of the day', remember: '3 to remember', pasuk: 'The Passuk', halacha: 'Halachot', rambam: 'The Rambam’s view', tosafot: 'Tosafot', machloket: 'Machloket', sod: 'The inner dimension', words: 'Words to know', review: 'Masechet so far', shas: 'Elsewhere in Shas' };
+const LABEL: Record<GemId, string> = { iyun: 'Iyun of the day', prep: 'Daf prep', remember: '3 to remember', pasuk: 'The Passuk', halacha: 'Halachot', rambam: 'The Rambam’s view', tosafot: 'Tosafot', machloket: 'Machloket', sod: 'The inner dimension', words: 'Words to know', review: 'Masechet so far', shas: 'Elsewhere in Shas' };
 const titleOf = (c: Companion, id: GemId) => {
   const a = c.articles || {};
   if (id === 'iyun') return plain(c.iyun?.title);
   if (id === 'halacha' || id === 'rambam' || id === 'tosafot' || id === 'machloket' || id === 'sod' || id === 'pasuk') return plain(a[id]?.title);
+  if (id === 'prep') return `Before you learn ${c.ref}`;
   if (id === 'remember') return 'The three things to take from the daf';
   if (id === 'words') return 'Five terms that unlock the daf';
   if (id === 'review') return `${splitRef(c.ref).book}, chapter by chapter`;
@@ -155,7 +159,7 @@ function fillRow(gems: GemId[]) {
 // The compact card for a phone's collapsed strip: label and title only.
 function MiniGem({ id, c, onClick }: { id: GemId; c: Companion; onClick: () => void }) {
   const dark = id === 'iyun' || id === 'sod';
-  const he = id === 'iyun' ? c.iyun?.heTitle : id === 'sod' ? 'סוד' : id === 'pasuk' ? 'פסוק' : id === 'rambam' ? 'רמב״ם' : id === 'tosafot' ? 'תוספות' : id === 'machloket' ? 'מחלוקת' : id === 'halacha' ? 'הלכה' : id === 'words' ? c.words[0]?.he : '';
+  const he = id === 'iyun' ? c.iyun?.heTitle : id === 'prep' ? c.prep?.concepts[0]?.he : id === 'sod' ? 'סוד' : id === 'pasuk' ? 'פסוק' : id === 'rambam' ? 'רמב״ם' : id === 'tosafot' ? 'תוספות' : id === 'machloket' ? 'מחלוקת' : id === 'halacha' ? 'הלכה' : id === 'words' ? c.words[0]?.he : '';
   return (
     <button onClick={onClick} className="snap-start shrink-0 w-[150px] h-[104px] text-left rounded-2xl border p-3 flex flex-col"
       style={dark ? { background: id === 'sod' ? 'linear-gradient(160deg, #2c2b62, #141332)' : 'linear-gradient(160deg, #3a2f1f, #1a150f)', borderColor: 'transparent', color: '#f1e9d6' } : id === 'pasuk' ? { background: SAGE.card, borderColor: SAGE.rule, color: SAGE.ink } : { background: P.card, borderColor: P.rule, color: P.ink }}>
@@ -199,6 +203,7 @@ function GemCard({ id, c, onClick, extra = '' }: { id: GemId; c: Companion; onCl
   let visual: ReactNode = null;
   let line = titleOf(c, id);
   if (id === 'remember') visual = <ThreeLines />;
+  if (id === 'prep' && c.prep) visual = <PrepChips terms={c.prep.concepts.map((x) => x.he)} />;
   if (id === 'pasuk' && c.articles?.pasuk?.verse) visual = <VerseLine v={c.articles.pasuk.verse} />;
   if (id === 'halacha') visual = <HalachaPath />;
   if (id === 'rambam') visual = <span lang="he" className="text-[34px] leading-none font-bold" style={{ fontFamily: HE_FONT, color: P.gold }}>רמב״ם</span>;
@@ -219,6 +224,20 @@ function GemCard({ id, c, onClick, extra = '' }: { id: GemId; c: Companion; onCl
 // ---- small drawings for the gem cards (gold line-work on parchment)
 
 const noTeamim = (s: string) => s.replace(/[\u0591-\u05AF\u05BD\u05C0]/g, '').replace(/[{}]/g, '');
+
+// the ideas to know first, as a short checklist
+function PrepChips({ terms }: { terms: string[] }) {
+  return (
+    <span className="flex w-full flex-col gap-1.5" aria-hidden="true">
+      {terms.slice(0, 3).map((t, i) => (
+        <span key={i} className="flex items-center gap-2">
+          <span className="flex w-4 h-4 shrink-0 items-center justify-center rounded-full border" style={{ borderColor: P.gold }}><span className="w-1.5 h-1.5 rounded-full" style={{ background: P.gold }} /></span>
+          <span lang="he" dir="rtl" className="truncate text-[16px] font-bold leading-tight" style={{ fontFamily: HE_FONT, color: P.ink }}>{t}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
 
 // the verse's opening words, set between a scroll's two rollers
 function VerseLine({ v }: { v: { ref: string; he: string } }) {
@@ -374,6 +393,7 @@ export function GemPage({ refName, id, onClose, onGem, onOpenDaf }: { refName: s
             <div className="mt-10">
               {id === 'iyun' && data.iyun && <IyunBody iyun={data.iyun} />}
               {(id === 'halacha' || id === 'rambam' || id === 'tosafot' || id === 'machloket' || id === 'sod' || id === 'pasuk') && data.articles?.[id] && <ArticleBody a={data.articles[id]!} />}
+              {id === 'prep' && data.prep && <PrepBody p={data.prep} />}
               {id === 'remember' && <RememberBody c={data} />}
               {id === 'words' && <WordsBody c={data} />}
               {id === 'review' && data.review && <ReviewBody r={data.review} />}
@@ -410,6 +430,7 @@ function readingWords(c: Companion, id: GemId) {
   const a = c.articles?.[id as 'rambam'];
   if (a) return count(a.dek) + a.sections.reduce((n, s) => n + s.paragraphs.reduce((m, p) => m + count(p), 0), 0);
   if (id === 'iyun' && c.iyun) return count(c.iyun.hook) + (c.iyun.background || []).reduce((n, p) => n + count(p), 0) + count(c.iyun.question) + c.iyun.sources.reduce((n, s) => n + count(s.point), 0) + c.iyun.approaches.reduce((n, x) => n + count(x.sevara), 0) + count(c.iyun.conclusion);
+  if (id === 'prep' && c.prep) return count(c.prep.leftOff) + count(c.prep.question) + c.prep.concepts.reduce((n, x) => n + count(x.explain), 0) + c.prep.people.reduce((n, x) => n + count(x.role), 0);
   if (id === 'review' && c.review) return count(c.review.overview) + c.review.chapters.reduce((n, ch) => n + count(ch.summary) + ch.points.reduce((m, p) => m + count(p), 0), 0);
   return 0;
 }
@@ -418,7 +439,7 @@ function Hero({ c, id, words }: { c: Companion; id: GemId; words: number }) {
   const a = c.articles?.[id as 'rambam'];
   const he = id === 'iyun' ? c.iyun?.heTitle : a?.heTitle || '';
   const title = titleOf(c, id);
-  const dek = id === 'iyun' ? c.iyun?.hook : a ? a.dek : id === 'review' ? c.review?.overview : id === 'remember' ? `What a learner should walk away knowing from ${c.ref}.` : id === 'words' ? 'The Aramaic words and Talmudic terms you will meet on this daf.' : 'Passages elsewhere in the Talmud that Sefaria links to this daf.';
+  const dek = id === 'prep' ? 'What to know before you open the Gemara: where we left off, the background it assumes, and who’s who.' : id === 'iyun' ? c.iyun?.hook : a ? a.dek : id === 'review' ? c.review?.overview : id === 'remember' ? `What a learner should walk away knowing from ${c.ref}.` : id === 'words' ? 'The Aramaic words and Talmudic terms you will meet on this daf.' : 'Passages elsewhere in the Talmud that Sefaria links to this daf.';
   const mins = words ? Math.max(2, Math.round(words / 220)) : 0;
   return (
     <header className="text-center">
@@ -555,6 +576,50 @@ function IyunBody({ iyun }: { iyun: Iyun }) {
         </>
       )}
       {iyun.takeaway && <Takeaway text={iyun.takeaway} />}
+    </div>
+  );
+}
+
+function PrepBody({ p }: { p: Prep }) {
+  return (
+    <div>
+      {p.leftOff && <><Label>Where we left off</Label><Para text={p.leftOff} drop /></>}
+      {p.question && (
+        <div className="my-12 text-center px-2">
+          <p className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--accent)' }}>The question going in</p>
+          <p className="mt-4 text-[24px] sm:text-[28px] leading-[1.45] font-semibold" style={{ fontFamily: EN_FONT }}><RefText text={p.question} /></p>
+        </div>
+      )}
+      {p.concepts?.length ? (
+        <>
+          <Label>Know before you start</Label>
+          <div className="space-y-4">
+            {p.concepts.map((c, i) => (
+              <div key={i} className="rounded-2xl border px-5 sm:px-7 py-5 sm:flex sm:gap-7" style={{ borderColor: 'var(--rule)', background: 'var(--card)' }}>
+                <div className="sm:w-44 shrink-0 sm:text-center">
+                  <p lang="he" dir="rtl" className="text-[28px] leading-tight font-bold" style={{ fontFamily: HE_FONT, color: 'var(--quote)' }}>{c.he}</p>
+                  {c.name && <p className="mt-1 text-[15px] italic" style={{ fontFamily: EN_FONT, color: 'var(--accent)' }}>{c.name}</p>}
+                </div>
+                <div className="mt-2 sm:mt-0 min-w-0"><Para text={c.explain} />{c.ref && <p className="mt-1 text-sm"><Chip r={c.ref} /></p>}</div>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
+      {p.people?.length ? (
+        <>
+          <Label>Who’s who</Label>
+          <div className="grid sm:grid-cols-2 gap-3">
+            {p.people.map((x, i) => (
+              <div key={i} className="rounded-2xl border px-5 py-4" style={{ borderColor: 'var(--rule)', background: 'var(--card)' }}>
+                <p className="flex items-baseline gap-2"><span lang="he" className="text-[22px] font-bold" style={{ fontFamily: HE_FONT, color: 'var(--quote)' }}>{x.he}</span><span className="text-[10px] font-black uppercase tracking-wider" style={{ color: 'var(--accent)' }}>{x.era}</span></p>
+                <p className="text-[15px] font-bold" style={{ fontFamily: EN_FONT }}>{x.name}</p>
+                <p className="mt-1.5 text-[16.5px] leading-relaxed" style={{ fontFamily: EN_FONT }}><RefText text={x.role} /></p>
+              </div>
+            ))}
+          </div>
+        </>
+      ) : null}
     </div>
   );
 }
