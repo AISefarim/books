@@ -743,8 +743,8 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
                 // The Rambam: the same shape as Our Mishnah, in bronze
                 <button key={id} onClick={() => window.dispatchEvent(new Event('sd-rambam-toggle'))} className="group flex items-center justify-center py-1" title="The Rambam (R)" aria-label="The Rambam">
                   <span className="flex lg:hidden flex-col items-center">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#8a5418] ring-2 ring-amber-300/50 group-active:bg-[#6f4313]">
-                      <span lang="he" className="text-[#fdf3dc]" style={{ fontFamily: HE_FONT, fontSize: '0.78rem', fontWeight: 700 }}>רמב״ם</span>
+                    <span className="flex h-12 w-12 items-center justify-center rounded-full bg-[#8a5418] ring-2 ring-amber-300/50 group-active:bg-[#6f4313]">
+                      <span lang="he" className="text-[#fdf3dc]" style={{ fontFamily: HE_FONT, fontSize: '0.88rem', fontWeight: 700 }}>רמב״ם</span>
                     </span>
                   </span>
                   <span className="hidden lg:inline-flex items-center justify-center rounded-full bg-[#8a5418] px-5 py-2 ring-2 ring-amber-300/40 transition-colors group-hover:bg-[#9b601d] group-active:bg-[#6f4313]">
@@ -756,11 +756,10 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
                 // Our Mishnah: a raised, glowing circle - the one button that invites a tap
                 <button key={id} onClick={() => window.dispatchEvent(new Event('sd-mishnah-toggle'))} className="group flex items-center justify-center py-1" title="Our Mishnah (M)" aria-label="Our Mishnah">
                   {/* phones: a filled circle with the label under it */}
-                  <span className="flex lg:hidden flex-col items-center gap-0.5">
-                    <span className="sd-mish-glow flex h-10 w-10 items-center justify-center rounded-full bg-indigo-600 ring-2 ring-indigo-300/60 group-active:bg-indigo-700">
-                      <span lang="he" className="text-white" style={{ fontFamily: HE_FONT, fontSize: '0.85rem', fontWeight: 700 }}>מתני׳</span>
+                  <span className="flex lg:hidden flex-col items-center">
+                    <span className="sd-mish-glow flex h-12 w-12 items-center justify-center rounded-full bg-indigo-600 ring-2 ring-indigo-300/60 group-active:bg-indigo-700">
+                      <span lang="he" className="text-white" style={{ fontFamily: HE_FONT, fontSize: '0.95rem', fontWeight: 700 }}>מתני׳</span>
                     </span>
-                    <span className="text-[10px] font-black" style={{ color: '#e0e7ff' }}>Our Mishnah</span>
                   </span>
                   {/* larger screens: a filled pill that fills its slot */}
                   <span className="sd-mish-glow hidden lg:inline-flex items-center justify-center gap-2 rounded-full bg-indigo-600 px-4 py-2 ring-2 ring-indigo-300/50 transition-colors group-hover:bg-indigo-500 group-active:bg-indigo-700">
