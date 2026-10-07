@@ -37,7 +37,11 @@ interface PasukNote { ref: string; anchor: string; use?: string; talmudCount?: n
 interface SodNote { source: string; ref: string; anchor?: string; point: string }
 interface SodText { ref: string; title: string; heTitle?: string; he: string; en: string; anchor: string; viaMishnah?: string | null }
 interface Extras { pasuk?: PasukNote[]; sod?: SodNote[]; sodTexts?: SodText[] }
-interface Built { partial?: boolean; core: Comm[]; rishonim: Comm[]; acharonim: Comm[]; other: Comm[]; rambamSources: Comm[]; halachaSources: Comm[]; synthesis: Synthesis | null; halacha: Halacha | null; mesivta: Mesivta | null; pasukSources?: Comm[]; mishnahSources?: Comm[]; sodSources?: Comm[]; extras?: Extras | null }
+interface BiurPos { who: string; view: string; refs: string[] }
+interface BiurAns { who: string; answer: string; refs: string[] }
+interface Biur { id: string; title: string; heTitle?: string; anchor: string | null; notes: { ref: string; n: number }[]; question: string | null; shitos: BiurPos[]; yesod: string | null; answers: BiurAns[]; body: string[]; lemaaseh: string | null; open: string | null; refs: string[]; sources: string[] }
+interface Biurim { entries?: Biur[]; thin?: boolean; _error?: string }
+interface Built { biurim?: Biurim | null; partial?: boolean; core: Comm[]; rishonim: Comm[]; acharonim: Comm[]; other: Comm[]; rambamSources: Comm[]; halachaSources: Comm[]; synthesis: Synthesis | null; halacha: Halacha | null; mesivta: Mesivta | null; pasukSources?: Comm[]; mishnahSources?: Comm[]; sodSources?: Comm[]; extras?: Extras | null }
 interface Sugya {
   index: number; kind: 'mishnah' | 'gemara' | 'topic' | 'continued'; heading: string; from: string; to: string; segments: number[];
   prelude?: { from: string; to: string; segments: Seg[] }; continuation?: { from: string; to: string; segments: Seg[] }; continuesOn?: string;
@@ -63,7 +67,7 @@ interface BookmarkItem { ref: string; segRef: string; heRef: string; snippet: st
 
 type Surface = 'paper' | 'dark';
 type Lang = 'both' | 'he' | 'en';
-type Tab = 'notes' | 'halacha' | 'sources' | 'big' | 'disputes' | 'ask';
+type Tab = 'notes' | 'halacha' | 'biurim' | 'sources' | 'big' | 'disputes' | 'ask';
 type Sheet = { kind: 'library' } | { kind: 'sugyot' } | { kind: 'catchup' } | { kind: 'bookmarks' } | { kind: 'listen' } | { kind: 'settings' } | null;
 
 const HE_FONT = "'Frank Ruhl Libre', 'David Libre', 'Noto Serif Hebrew', serif";
@@ -88,6 +92,9 @@ const firstSentence = (s?: string) => { const t = plain(s).trim(); const m = t.m
 
 // ----------------------------------------------------------------------
 // Text helpers
+
+const SOURCE_NAMES: Record<string, string> = { 'Chidushei Halachot': 'Maharsha', 'Chidushei Agadot': 'Maharsha (Aggadah)', "Haggahot Ya'avetz": "Ya'avetz", 'Maharam Schiff': 'Maharam Shif', 'Shita Mekubetzet': 'Shitah Mekubetzet', 'Chiddushei Ramban': 'Ramban' };
+const sourceName = (s: string) => (s || '').split(' / ').map((x) => SOURCE_NAMES[x.trim()] || x.trim()).join(' / ');
 
 function SourceLink({ r }: { r: string }) {
   const inDaf = !!superDafSpot(r);
@@ -950,6 +957,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                       {btn('Rambam', () => openSugya(sugya.index, 'notes'), Landmark, !syn?.rambam)}
                       {btn('Sources', () => openSugya(sugya.index, 'sources'), Library)}
                       {btn('Disputes', () => openSugya(sugya.index, 'disputes'), Quote, !(syn?.machlokes?.length || syn?.questions?.length))}
+                      {built.biurim?.entries?.length ? btn('Biurim', () => openSugya(sugya.index, 'biurim'), ScrollText) : null}
                     </span>
                   )}
                 </div>
@@ -1127,6 +1135,12 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
   const srcs = seg ? all.filter((c) => c.anchor === seg.ref) : all;
   const rambamHere = !seg || (built?.rambamSources || []).some((r) => r.anchor === seg.ref);
   const [work, setWork] = useState<string | null>(null);
+  const [focusBiur, setFocusBiur] = useState<string | null>(null);
+  const biurAll = (built?.biurim?.entries || []) as Biur[];
+  const biurHere = seg ? biurAll.filter((b) => b.anchor === seg.ref || b.notes.some((x) => x.ref === seg.ref)) : biurAll;
+  const biurFor = (n: number) => (seg ? biurAll.find((b) => b.notes.some((x) => x.ref === seg.ref && x.n === n)) : undefined);
+  const biurRef = useRef<HTMLDivElement>(null);
+  useEffect(() => { if (tab === 'biurim' && focusBiur) biurRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [focusBiur, tab]);
   const [words, setWords] = useState<Record<string, boolean>>({});
   const noteRef = useRef<HTMLDivElement>(null);
   useEffect(() => { noteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [noteN, tab, segIdx]);
@@ -1141,6 +1155,7 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
   const tabs: { id: Tab; label: string; icon: any; count?: number; dim?: boolean }[] = [
     { id: 'notes', label: 'Notes', icon: NotebookPen, count: mes?.notes?.length || 0 },
     { id: 'halacha', label: 'Halacha', icon: Scale, count: hal.length, dim: !hal.length },
+    { id: 'biurim', label: 'Biurim', icon: ScrollText, count: biurHere.length || biurAll.length, dim: !biurAll.length },
     { id: 'big', label: 'Big picture', icon: Sparkles, dim: !syn?.bigPicture },
     { id: 'disputes', label: 'Disputes', icon: Quote, dim: !(syn?.machlokes?.length || syn?.questions?.length) },
     { id: 'ask', label: 'Ask', icon: MessageSquareText },
@@ -1169,8 +1184,12 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
               <div className="space-y-2">
                 {orderedNotes.map((n) => (
                   <div key={n.n} ref={noteN === n.n ? noteRef : undefined} className={`rounded-xl border px-3 py-2.5 ${noteN === n.n ? 'border-indigo-400/60 bg-indigo-500/10' : 'border-slate-700/60 bg-slate-800/50'}`}>
-                    <p className="flex items-center gap-2 mb-1"><span className="sd-note on" style={{ verticalAlign: 'baseline' }}>{n.n}</span><span className="text-[11px] font-black text-indigo-200">{n.source}</span><span className="ml-auto"><SourceLink r={n.ref} /></span></p>
+                    <p className="flex items-center gap-2 mb-1"><span className="sd-note on" style={{ verticalAlign: 'baseline' }}>{n.n}</span><span className="text-[11px] font-black text-indigo-200">{sourceName(n.source)}</span><span className="ml-auto"><SourceLink r={n.ref} /></span></p>
                     <p className="leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.96rem' }}><RefText text={n.point} /></p>
+                    {(() => { const b = biurFor(n.n); return b ? (
+                      <button onClick={() => { setFocusBiur(b.id); setTab('biurim'); }} className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-500/20">
+                        <ScrollText className="w-3.5 h-3.5" /> Further analysis: {b.title} <ChevronRight className="w-3.5 h-3.5" />
+                      </button>) : null; })()}
                   </div>
                 ))}
               </div>
@@ -1210,6 +1229,15 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
             <button onClick={onCatchUp} className="inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-800 px-3 py-1.5 text-[11px] font-bold text-slate-200 hover:bg-slate-700"><Clock className="w-3.5 h-3.5" /> Catch me up to here</button>
           </div>
         )}
+
+        {tab === 'biurim' && built && (biurAll.length ? (
+          <div className="space-y-4">
+            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-700 flex items-center gap-2"><ScrollText className="w-4 h-4" /> <span lang="he" dir="rtl" style={{ fontFamily: HE_FONT, fontSize: '0.95rem', letterSpacing: 0 }}>ילקוט ביאורים</span> · in-depth analysis of the sugya</p>
+            {seg && !biurHere.length ? <p className="text-slate-400 text-xs">Nothing here is centred on this paragraph. These are the topics of the whole sugya:</p> : null}
+            {(seg && biurHere.length ? biurHere : biurAll).map((b) => <BiurCard key={b.id} b={b} focused={focusBiur === b.id} innerRef={focusBiur === b.id ? biurRef : undefined} book={daf.book} />)}
+            <p className="text-[11px] text-slate-500">Written only from the commentaries Sefaria links to this sugya; every point is cited. Tap a source to read it.</p>
+          </div>
+        ) : <p className="text-slate-400">{built.biurim?.thin ? 'Sefaria links too little commentary to this sugya for an in-depth Biurim section.' : built.biurim ? 'The commentaries linked to this sugya do not raise an in-depth topic beyond the notes.' : daf.status === 'building' ? 'Biurim are being written for this sugya.' : 'Biurim are written for dapim from Bechoros 19 onward.'}</p>)}
 
         {tab === 'halacha' && built && (hal.length ? (
           <div className="space-y-4">
@@ -1533,6 +1561,40 @@ function quotedWords(verseHe: string, segHe: string): Set<number> {
   const out = new Set<number>();
   verseHe.split(/\s+/).forEach((w, i) => { const k = heSkel(w); if (k.length >= 2 && seg.has(k)) out.add(i); });
   return out;
+}
+
+function BiurCard({ b, focused, innerRef, book }: { b: Biur; focused: boolean; innerRef?: React.RefObject<HTMLDivElement>; book: string }) {
+  const label = (en: string, he: string) => <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 mb-1">{en} <span lang="he" style={{ fontFamily: HE_FONT, letterSpacing: 0, textTransform: 'none' }}>· {he}</span></p>;
+  return (
+    <div ref={innerRef} className={`rounded-2xl border px-3.5 py-3 ${focused ? 'border-amber-500/70 bg-amber-500/10' : 'border-slate-700/60 bg-slate-800/50'}`}>
+      {b.heTitle ? <p lang="he" dir="rtl" className="text-slate-100" style={{ fontFamily: HE_FONT, fontSize: '1.15rem', fontWeight: 700 }}>{b.heTitle}</p> : null}
+      <p className="font-bold text-slate-100">{b.title}{b.anchor ? <span className="ml-2 text-[11px] font-semibold text-slate-500">{short(b.anchor, book)}</span> : null}</p>
+      {b.question && <div className="mt-2.5">{label('The question', 'הקושיא')}<p className="leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.97rem' }}><RefText text={b.question} /></p></div>}
+      {b.shitos.length ? (
+        <div className="mt-3">{label('The shitos side by side', 'השיטות')}
+          <div className={`grid gap-2 ${b.shitos.length > 1 ? 'sm:grid-cols-2' : ''}`}>
+            {b.shitos.map((x, i) => (
+              <div key={i} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2">
+                <p className="mb-1"><span className="rounded-md px-1.5 py-0.5 text-[10px] font-black border border-indigo-400/40 text-indigo-200 bg-indigo-500/10">{sourceName(x.who)}</span></p>
+                <p className="text-slate-200 leading-relaxed"><RefText text={x.view} /></p>
+                <p className="mt-1 flex flex-wrap gap-x-2 gap-y-1">{x.refs.map((r) => <SourceLink key={r} r={r} />)}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
+      {b.yesod && <div className="mt-3 rounded-xl border-l-4 border-amber-500/70 bg-amber-500/10 px-3 py-2">{label('What it turns on', 'יסוד הדברים')}<p className="text-slate-100 leading-relaxed"><RefText text={b.yesod} /></p></div>}
+      {b.answers.length ? (
+        <div className="mt-3">{label('Answers', 'תירוצים')}
+          <ul className="space-y-1.5">{b.answers.map((x, i) => <li key={i} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-slate-600 bg-slate-800 text-slate-200 h-fit">{sourceName(x.who)}</span><span className="text-slate-200"><RefText text={x.answer} /> {x.refs.map((r) => <span key={r} className="ml-1"><SourceLink r={r} /></span>)}</span></li>)}</ul>
+        </div>
+      ) : null}
+      {b.body.length ? <div className="mt-3 space-y-2">{b.body.map((p, i) => <p key={i} className="leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.97rem' }}><RefText text={p} /></p>)}</div> : null}
+      {b.lemaaseh && <div className="mt-3">{label('Halacha l\'maaseh', 'למעשה')}<p className="text-slate-200"><RefText text={b.lemaaseh} /></p></div>}
+      {b.open && <div className="mt-3">{label('Left open', 'צריך עיון')}<p className="text-slate-300 italic"><RefText text={b.open} /></p></div>}
+      {b.sources.length ? <p className="mt-3 text-[11px] text-slate-500">Sources: {b.sources.map(sourceName).join(' · ')}</p> : null}
+    </div>
+  );
 }
 
 function ExtraSections({ built, seg }: { built: Built; seg: Seg | null }) {
