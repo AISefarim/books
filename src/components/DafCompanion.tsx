@@ -90,6 +90,8 @@ const titleOf = (c: Companion, id: GemId) => {
 // ====================================================================== hub
 
 const P = { paper: '#f4ede0', card: '#fbf7ef', ink: '#231d15', muted: '#75675a', rule: '#e2d5bb', gold: '#9a7a35' };
+// the Passuk card: a soft sage green
+const SAGE = { card: '#eef3e6', rule: '#cfdcc0', ink: '#2f3f24', muted: '#5f7550', accent: '#5e7d47' };
 
 export function GemsSection({ refs, initialRef, onGem }: { refs: string[]; initialRef: string | null; onGem: (ref: string, id: GemId) => void }) {
   const [cur, setCur] = useState<string | null>(initialRef);
@@ -156,9 +158,9 @@ function MiniGem({ id, c, onClick }: { id: GemId; c: Companion; onClick: () => v
   const he = id === 'iyun' ? c.iyun?.heTitle : id === 'sod' ? 'סוד' : id === 'pasuk' ? 'פסוק' : id === 'rambam' ? 'רמב״ם' : id === 'tosafot' ? 'תוספות' : id === 'machloket' ? 'מחלוקת' : id === 'halacha' ? 'הלכה' : id === 'words' ? c.words[0]?.he : '';
   return (
     <button onClick={onClick} className="snap-start shrink-0 w-[150px] h-[104px] text-left rounded-2xl border p-3 flex flex-col"
-      style={dark ? { background: id === 'sod' ? 'linear-gradient(160deg, #2c2b62, #141332)' : 'linear-gradient(160deg, #3a2f1f, #1a150f)', borderColor: 'transparent', color: '#f1e9d6' } : { background: P.card, borderColor: P.rule, color: P.ink }}>
-      <span className="text-[9.5px] font-black uppercase tracking-[0.14em] truncate" style={{ color: dark ? '#e8cf8fcc' : P.muted }}>{LABEL[id]}</span>
-      {he ? <span lang="he" dir="rtl" className="mt-1 block truncate text-[19px] font-bold leading-tight" style={{ fontFamily: HE_FONT, color: dark ? '#f1e9d6' : P.gold }}>{he}</span> : null}
+      style={dark ? { background: id === 'sod' ? 'linear-gradient(160deg, #2c2b62, #141332)' : 'linear-gradient(160deg, #3a2f1f, #1a150f)', borderColor: 'transparent', color: '#f1e9d6' } : id === 'pasuk' ? { background: SAGE.card, borderColor: SAGE.rule, color: SAGE.ink } : { background: P.card, borderColor: P.rule, color: P.ink }}>
+      <span className="text-[9.5px] font-black uppercase tracking-[0.14em] truncate" style={{ color: dark ? '#e8cf8fcc' : id === 'pasuk' ? SAGE.muted : P.muted }}>{LABEL[id]}</span>
+      {he ? <span lang="he" dir="rtl" className="mt-1 block truncate text-[19px] font-bold leading-tight" style={{ fontFamily: HE_FONT, color: dark ? '#f1e9d6' : id === 'pasuk' ? SAGE.accent : P.gold }}>{he}</span> : null}
       <span className="mt-auto text-[12.5px] font-semibold leading-snug line-clamp-2" style={{ fontFamily: EN_FONT }}>{titleOf(c, id)}</span>
     </button>
   );
@@ -206,8 +208,8 @@ function GemCard({ id, c, onClick, extra = '' }: { id: GemId; c: Companion; onCl
   if (id === 'review') { const { book, n } = splitRef(c.ref); visual = <Ring n={n} last={LAST_DAF[book] || 0} />; }
   if (id === 'shas') { visual = <ShasWeb names={c.shas.map((s) => s.ref.replace(/^Jerusalem Talmud /, 'Y. ').replace(/ \d.*$/, ''))} />; line = `${c.shas.length} places in Shas that share this daf’s ideas`; }
   return (
-    <button onClick={onClick} className={`${extra} group text-left rounded-2xl border p-4 flex flex-col min-h-[150px] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-20px_rgba(35,29,21,0.6)]`} style={{ background: P.card, borderColor: P.rule, color: P.ink }}>
-      <span className="text-[10.5px] font-black uppercase tracking-[0.16em]" style={{ color: P.muted }}>{LABEL[id]}</span>
+    <button onClick={onClick} className={`${extra} group text-left rounded-2xl border p-4 flex flex-col min-h-[150px] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-20px_rgba(35,29,21,0.6)]`} style={id === 'pasuk' ? { background: SAGE.card, borderColor: SAGE.rule, color: SAGE.ink } : { background: P.card, borderColor: P.rule, color: P.ink }}>
+      <span className="text-[10.5px] font-black uppercase tracking-[0.16em]" style={{ color: id === 'pasuk' ? SAGE.muted : P.muted }}>{LABEL[id]}</span>
       <span className="flex-1 flex items-center py-3">{visual}</span>
       <span className="text-[14px] leading-snug font-semibold line-clamp-2" style={{ fontFamily: EN_FONT }}>{line}</span>
     </button>
@@ -223,12 +225,12 @@ function VerseLine({ v }: { v: { ref: string; he: string } }) {
   const words = noTeamim(v.he).split(/\s+/).slice(0, 5).join(' ');
   return (
     <span className="flex w-full items-center gap-2" aria-hidden="true">
-      <span className="w-1.5 self-stretch rounded-full" style={{ background: `${P.gold}99` }} />
+      <span className="w-1.5 self-stretch rounded-full" style={{ background: `${SAGE.accent}99` }} />
       <span className="min-w-0 flex-1 text-center">
-        <span lang="he" dir="rtl" className="block truncate text-[19px] font-bold leading-snug" style={{ fontFamily: HE_FONT, color: P.ink }}>{words}…</span>
-        <span className="mt-1 block text-[11px] font-black uppercase tracking-[0.14em]" style={{ color: P.gold }}>{v.ref}</span>
+        <span lang="he" dir="rtl" className="block truncate text-[19px] font-bold leading-snug" style={{ fontFamily: HE_FONT, color: SAGE.ink }}>{words}…</span>
+        <span className="mt-1 block text-[11px] font-black uppercase tracking-[0.14em]" style={{ color: SAGE.accent }}>{v.ref}</span>
       </span>
-      <span className="w-1.5 self-stretch rounded-full" style={{ background: `${P.gold}99` }} />
+      <span className="w-1.5 self-stretch rounded-full" style={{ background: `${SAGE.accent}99` }} />
     </span>
   );
 }
