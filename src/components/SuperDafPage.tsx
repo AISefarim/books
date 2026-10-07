@@ -1260,7 +1260,12 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
           <div className="space-y-4">
             <p className="text-[10px] font-black uppercase tracking-[0.16em] text-amber-700 flex items-center gap-2"><ScrollText className="w-4 h-4" /> <span lang="he" dir="rtl" style={{ fontFamily: HE_FONT, fontSize: '0.95rem', letterSpacing: 0 }}>ילקוט ביאורים</span> · in-depth analysis of the sugya</p>
             {seg && !biurHere.length ? <p className="text-slate-400 text-xs">Nothing here is centred on this paragraph. These are the topics of the whole sugya:</p> : null}
-            {(seg && biurHere.length ? biurHere : biurAll).map((b) => <BiurCard key={b.id} b={b} focused={focusBiur === b.id} innerRef={focusBiur === b.id ? biurRef : undefined} book={daf.book} />)}
+            {(seg && biurHere.length ? biurHere : biurAll).map((b, k) => (
+              <div key={b.id}>
+                {k > 0 && <div className="my-5 flex items-center gap-3 text-amber-700/70" aria-hidden="true"><span className="h-px flex-1 bg-current" /><span className="text-[10px]">◆</span><span className="h-px flex-1 bg-current" /></div>}
+                <BiurCard b={b} n={k + 1} focused={focusBiur === b.id} innerRef={focusBiur === b.id ? biurRef : undefined} book={daf.book} />
+              </div>
+            ))}
             <p className="text-[11px] text-slate-500">Written only from the commentaries Sefaria links to this sugya; every point is cited. Tap a source to read it.</p>
           </div>
         ) : <p className="text-slate-400">{built.biurim?.thin ? 'Sefaria links too little commentary to this sugya for an in-depth Biurim section.' : built.biurim ? 'The commentaries linked to this sugya do not raise an in-depth topic beyond the notes.' : daf.status === 'building' ? 'Biurim are being written for this sugya.' : 'Biurim are written for dapim from Bechoros 19 onward.'}</p>)}
@@ -1365,56 +1370,216 @@ function Words({ comms, words, setWords }: { comms: Comm[]; words: Record<string
 }
 
 // ----------------------------------------------------------------------
-// Minimap: the daf drawn as pages, one per amud.
+// Minimap: each amud drawn the way a Vilna page is set - the Gemara in the
+// centre, Rashi on the inner margin (right on amud aleph, left on amud beis),
+// Tosafot on the outer margin. Column sizes come from how much text each really
+// has, so where a commentary runs out the Gemara widens into its place (and the
+// reverse), giving each amud its true shape. Mishnah starts (מתני׳), the return
+// to the Gemara (גמ׳) and perek breaks (הדרן) are marked; every block jumps to its line.
+
+const heLen = (s: string) => s.replace(/[֑-ׇ]/g, '').replace(/<[^>]+>/g, '').length;
+type MapBlock = { kind: 'G' | 'R' | 'T'; x: number; y: number; w: number; h: number; seg: number };
+
+function layoutAmud(gem: { i: number; n: number }[], rashi: { i: number; n: number }[], tos: { i: number; n: number }[], rashiRight: boolean, IW: number) {
+  // chars per line per unit width: the Gemara's square letters are larger than Rashi script
+  const KG = 0.55, KC = 0.95, GAP = 3;
+  const q = { G: gem.map((x) => ({ ...x })), R: rashi.map((x) => ({ ...x })), T: tos.map((x) => ({ ...x })) };
+  const left = (k: 'G' | 'R' | 'T') => q[k].reduce((a, x) => a + x.n, 0);
+  const rows: { y: number; cols: { kind: 'G' | 'R' | 'T'; x: number; w: number; seg: number }[] }[] = [];
+  let y = 0, guard = 0;
+  while ((left('G') > 0 || left('R') > 0 || left('T') > 0) && guard++ < 4000) {
+    const g = left('G') > 0, r = left('R') > 0, t = left('T') > 0;
+    let wR = 0, wT = 0;
+    if (g) { wR = r ? IW * 0.27 : 0; wT = t ? IW * 0.27 : 0; }
+    else if (r && t) { wR = (IW - GAP) / 2; wT = (IW - GAP) / 2; }
+    else { wR = r ? IW : 0; wT = t ? IW : 0; }
+    const wG = g ? IW - wR - wT - (r ? GAP : 0) - (t ? GAP : 0) : 0;
+    // inner (Rashi) side: right on amud aleph, left on amud beis
+    const order: ['G' | 'R' | 'T', number][] = rashiRight ? [['T', wT], ['G', wG], ['R', wR]] : [['R', wR], ['G', wG], ['T', wT]];
+    let x = 0; const cols: { kind: 'G' | 'R' | 'T'; x: number; w: number; seg: number }[] = [];
+    for (const [kind, w] of order) {
+      if (w <= 0) continue;
+      const head = q[kind][0];
+      cols.push({ kind, x, w, seg: head.i });
+      let cap = w * (kind === 'G' ? KG : KC);
+      while (cap > 0 && q[kind].length) { const h0 = q[kind][0]; const take = Math.min(cap, h0.n); h0.n -= take; cap -= take; if (h0.n <= 0) { q[kind].shift(); break; } } // a new segment starts on a new line
+      x += w + GAP;
+    }
+    rows.push({ y, cols }); y += 1;
+  }
+  // merge consecutive rows with the same column, segment and geometry into blocks
+  const blocks: MapBlock[] = [];
+  const open: Record<string, MapBlock> = {};
+  for (const row of rows) {
+    const seen = new Set<string>();
+    for (const c of row.cols) {
+      const key = `${c.kind}:${c.seg}:${Math.round(c.x)}:${Math.round(c.w)}`;
+      seen.add(key);
+      if (open[key] && open[key].y + open[key].h === row.y) open[key].h += 1;
+      else { open[key] = { kind: c.kind, x: c.x, y: row.y, w: c.w, h: 1, seg: c.seg }; blocks.push(open[key]); }
+    }
+    for (const k of Object.keys(open)) if (!seen.has(k)) delete open[k];
+  }
+  return { blocks, rows: rows.length };
+}
 
 function Minimap({ daf, focusIdx, onJump, bookmarks, surface }: { daf: Daf; focusIdx: number; onJump: (i: number) => void; bookmarks: BookmarkItem[]; surface: Surface }) {
-  const W = 104, PAD = 6, COL = 20, GAP = 4, GEM = W - PAD * 2 - (COL + GAP) * 2;
-  const amudim = useMemo(() => { const g: Record<string, number[]> = {}; daf.segments.forEach((s, i) => { (g[s.amud] = g[s.amud] || []).push(i); }); return Object.entries(g); }, [daf]);
+  const W = 124, PAD = 7, HEAD = 17, IW = W - PAD * 2;
+  const paper = surface === 'paper';
+  const fill = paper
+    ? { page: '#fbf6ea', page2: '#f3ead6', stroke: '#d9cdb3', gem: '#3b3227', rashi: '#6b5e4c', tos: '#55604f', mishnah: '#a8640b', focus: '#4f46e5', text: '#8a7f6a', bg: '#efe7d6', hadran: '#8b5a1b', ein: '#7c4a12', pasuk: '#3f6b4f', biur: '#b45309' }
+    : { page: '#1c1b1f', page2: '#151417', stroke: '#2e2e33', gem: '#cfc8ba', rashi: '#9c9588', tos: '#93a08e', mishnah: '#e0b25c', focus: '#a5b4fc', text: '#8a898e', bg: '#0c0c0e', hadran: '#d9a85b', ein: '#d6a35f', pasuk: '#8fc4a2', biur: '#f0b15a' };
+  const [lens, setLens] = useState<{ i: number; kind: 'G' | 'R' | 'T'; top: number; left: number } | null>(null);
   const core = daf.sugyot.flatMap((s) => s.built?.core || []);
-  const count = (segRef: string, title: string) => core.filter((c) => c.anchor === segRef && c.title === title).length;
   const marked = new Set(bookmarks.filter((b) => b.ref === daf.ref).map((b) => b.segRef));
   const mishnayot = daf.segments.map((s, i) => (s.startsMishnah ? i : -1)).filter((i) => i >= 0);
-  const fill = surface === 'paper' ? { page: '#fbf7ee', stroke: '#d9cdb3', block: '#cfc3a9', mishnah: '#e8c279', side: '#ddd3bd', focus: '#4f46e5', text: '#8a7f6a', bg: '#efe7d6' } : { page: '#18181b', stroke: '#2e2e33', block: '#3a3a40', mishnah: '#6b5a3a', side: '#2e2e33', focus: '#a5b4fc', text: '#8a898e', bg: '#0c0c0e' };
+  // what each line carries, for the margins and the lens
+  const info = useMemo(() => {
+    const m = new Map<string, { ein: boolean; pasuk: boolean; biur: string | null; headline: string; rashi: number; tos: number }>();
+    const get = (r: string) => { let x = m.get(r); if (!x) { x = { ein: false, pasuk: false, biur: null, headline: '', rashi: 0, tos: 0 }; m.set(r, x); } return x; };
+    for (const sg of daf.sugyot) {
+      const b = sg.built; if (!b) continue;
+      for (const c of [...(b.rambamSources || []), ...(b.halachaSources || [])]) get(c.anchor).ein = true;
+      for (const c of b.pasukSources || []) get(c.anchor).pasuk = true;
+      for (const e of b.biurim?.entries || []) if (e.anchor) get(e.anchor).biur = get(e.anchor).biur || e.title;
+      for (const st of b.synthesis?.steps || []) for (const r of st.refs || []) if (!get(r).headline) get(r).headline = st.headline;
+      for (const c of b.core) { if (c.title === 'Rashi') get(c.anchor).rashi++; if (c.title === 'Tosafot') get(c.anchor).tos++; }
+    }
+    return m;
+  }, [daf]);
+  const amudim = useMemo(() => {
+    const g: Record<string, number[]> = {};
+    daf.segments.forEach((s, i) => { (g[s.amud] = g[s.amud] || []).push(i); });
+    return Object.entries(g).map(([amud, idxs]) => {
+      const comm = (title: string) => idxs.flatMap((i) => core.filter((c) => c.title === title && c.anchor === daf.segments[i].ref).map((c) => ({ i, n: Math.max(30, heLen(c.he || '')) })));
+      const gem = idxs.map((i) => ({ i, n: Math.max(25, heLen(daf.segments[i].he)) }));
+      return { amud, idxs, ...layoutAmud(gem, comm('Rashi'), comm('Tosafot'), amud.endsWith('a'), IW - 10) };
+    });
+  }, [daf, core.length]);
+  const H = Math.round(W * 1.48);
+  const bare = (he: string) => he.replace(/[֑-ׇ]/g, '').replace(/<[^>]+>/g, '').replace(/[^א-ת'"״׳ ]/g, ' ').replace(/\s+/g, ' ').trim();
+  const firstWord = (he: string) => (bare(he).split(' ').find((w) => w.length > 1 && !/^(מתני|גמ|מתניתין|גמרא)/.test(w)) || '').slice(0, 9);
+  const show = (e: React.MouseEvent, i: number, kind: 'G' | 'R' | 'T') => { const r = (e.currentTarget as Element).closest('aside')!.getBoundingClientRect(); setLens({ i, kind, top: Math.min(window.innerHeight - 190, Math.max(70, e.clientY - 40)), left: r.right + 8 }); };
+  const heNum = daf.heRef ? daf.heRef.replace(daf.heTitle, '').trim() : '';
   return (
-    <aside className="flex h-full shrink-0 w-[128px] flex-col items-center gap-3 py-3 overflow-y-auto sd-scroll border-r border-black/5" style={{ background: fill.bg }} aria-label="Where you are on the daf">
+    <aside className="relative flex h-full shrink-0 w-[148px] flex-col items-center gap-3 py-3 overflow-y-auto sd-scroll border-r border-black/5" style={{ background: fill.bg }} aria-label="Where you are on the daf" onMouseLeave={() => setLens(null)}>
       <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider" style={{ color: fill.text }}><MapIcon className="w-3 h-3" /> The daf</div>
       {mishnayot.length > 0 && (
         <div className="w-full px-2 flex flex-col gap-1">
           {mishnayot.map((i, k) => (
-            <button key={i} onClick={() => onJump(i)} className="w-full rounded-lg px-2 py-1 text-left text-[10px] font-black leading-tight transition-colors" style={{ background: fill.mishnah, color: surface === 'paper' ? '#5b3a06' : '#f5e3c0' }} title={`Jump to this Mishnah (${daf.segments[i].ref})`}>
+            <button key={i} onClick={() => onJump(i)} className="w-full rounded-lg px-2 py-1 text-left text-[10px] font-black leading-tight transition-colors" style={{ background: paper ? '#e8c279' : '#6b5a3a', color: paper ? '#5b3a06' : '#f5e3c0' }} title={`Jump to this Mishnah (${daf.segments[i].ref})`}>
               <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '0.8rem' }}>מתני׳</span> {mishnayot.length > 1 ? `${k + 1} · ` : ''}{daf.segments[i].amud}
             </button>
           ))}
         </div>
       )}
-      {amudim.map(([amud, idxs]) => {
-        const total = idxs.reduce((a, i) => a + Math.max(40, daf.segments[i].he.length), 0);
-        const H = Math.min(440, Math.max(160, Math.round(total / 9)));
-        let y = PAD + 14;
-        const rows = idxs.map((i) => { const h = Math.max(5, Math.round((Math.max(40, daf.segments[i].he.length) / total) * (H - PAD * 2 - 14)) - 2); const r = { i, y, h }; y += h + 2; return r; });
+      {amudim.map(({ amud, idxs, blocks, rows }) => {
+        const isA = amud.endsWith('a');
+        const gutterLeft = !isA; // binding: right edge on amud aleph, left on amud beis
+        const ox = PAD + (gutterLeft ? 6 : 4); // body offset leaves room for the outer margin marks
+        const bodyH = H - HEAD - PAD - 4;
+        const sy = rows ? bodyH / rows : 1;
+        const Y = (r: number) => HEAD + 2 + r * sy;
+        const pid = `wd-${amud}`, pidC = `wc-${amud}`, gid = `gut-${amud}`;
+        const lineH = Math.max(1.7, sy * 1.25), lineHC = Math.max(1.35, sy);
+        const focusOnAmud = idxs.includes(focusIdx);
+        const firstG = new Map<number, MapBlock>();
+        for (const b of blocks) if (b.kind === 'G' && !firstG.has(b.seg)) firstG.set(b.seg, b);
+        const focusBlock = firstG.get(focusIdx);
+        const outerX = gutterLeft ? W - PAD + 1 : PAD - 3; // Ein Mishpat / Torah Or column on the outer edge
         return (
-          <svg key={amud} width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="shrink-0 drop-shadow-sm">
-            <rect x={0.5} y={0.5} width={W - 1} height={H - 1} rx={6} fill={fill.page} stroke={fill.stroke} />
-            <text x={W / 2} y={11} textAnchor="middle" fontSize={8} fontWeight={800} fill={fill.text} style={{ fontFamily: HE_FONT }}>{daf.heTitle} {amud.endsWith('a') ? 'ע״א' : 'ע״ב'}</text>
-            {rows.map(({ i, y, h }) => {
-              const s = daf.segments[i]; const isFocus = i === focusIdx;
-              const sugyaStart = daf.sugyot.some((sg) => sg.segments[0] === i && sg.kind !== 'continued');
-              const rashi = count(s.ref, 'Rashi'), tos = count(s.ref, 'Tosafot');
-              return (
-                <g key={i} onClick={() => onJump(i)} className="cursor-pointer">
-                  {sugyaStart && <line x1={PAD} x2={W - PAD} y1={y - 1.5} y2={y - 1.5} stroke={fill.focus} strokeOpacity={0.5} strokeWidth={1} />}
-                  {s.startsMishnah && <line x1={2} x2={W - 2} y1={y - 1.5} y2={y - 1.5} stroke="#d97706" strokeWidth={2.5} strokeLinecap="round" />}
-                  <rect x={PAD} y={y} width={COL} height={Math.min(h, 4 + tos * 6)} rx={1.5} fill={fill.side} opacity={tos ? 0.9 : 0.25} />
-                  <rect x={PAD + COL + GAP} y={y} width={GEM} height={h} rx={2} fill={isFocus ? fill.focus : s.isMishnah ? fill.mishnah : fill.block} opacity={isFocus ? 1 : 0.85} />
-                  <rect x={W - PAD - COL} y={y} width={COL} height={Math.min(h, 4 + rashi * 6)} rx={1.5} fill={fill.side} opacity={rashi ? 0.9 : 0.25} />
-                  {marked.has(s.ref) && <circle cx={W - PAD - COL - 3} cy={y + 3} r={2.2} fill="#f59e0b" />}
-                </g>
-              );
-            })}
-          </svg>
+          <div key={amud} className="relative shrink-0">
+            {/* the pages under this one */}
+            <div className="absolute rounded-[5px]" style={{ inset: 0, transform: `translate(${gutterLeft ? 2 : -2}px, 2px)`, background: fill.page2, border: `1px solid ${fill.stroke}` }} />
+            <div className="absolute rounded-[5px]" style={{ inset: 0, transform: `translate(${gutterLeft ? 4 : -4}px, 4px)`, background: fill.page2, border: `1px solid ${fill.stroke}`, opacity: 0.6 }} />
+            <svg width={W} height={H} viewBox={`0 0 ${W} ${H}`} className="relative" role="img" aria-label={`${daf.title} ${amud}`}>
+              <defs>
+                {/* text that reads as words: dashes of varying length on each line */}
+                {([['G', fill.gem], ['M', fill.mishnah]] as const).map(([k, c]) => (
+                  <pattern key={k} id={`${pid}-${k}`} width="23" height={lineH} patternUnits="userSpaceOnUse">
+                    {[[0, 5], [6, 3], [10, 6], [17, 2.5], [20.5, 2.5]].map(([x, w], j) => <rect key={j} x={x} y={0} width={w} height={lineH * 0.58} rx={0.3} fill={c} />)}
+                  </pattern>
+                ))}
+                {([['R', fill.rashi], ['T', fill.tos]] as const).map(([k, c]) => (
+                  <pattern key={k} id={`${pidC}-${k}`} width="19" height={lineHC} patternUnits="userSpaceOnUse">
+                    {[[0, 3.5], [4.3, 2], [7, 4.5], [12.3, 2.2], [15.3, 3.7]].map(([x, w], j) => <rect key={j} x={x} y={0} width={w} height={lineHC * 0.5} fill={c} />)}
+                  </pattern>
+                ))}
+                <linearGradient id={gid} x1={gutterLeft ? '0' : '1'} x2={gutterLeft ? '1' : '0'} y1="0" y2="0">
+                  <stop offset="0" stopColor="#000" stopOpacity={paper ? 0.16 : 0.45} /><stop offset="0.12" stopColor="#000" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              <rect x={0.5} y={0.5} width={W - 1} height={H - 1} rx={5} fill={fill.page} stroke={fill.stroke} />
+              <rect x={0.5} y={0.5} width={W - 1} height={H - 1} rx={5} fill={`url(#${gid})`} pointerEvents="none" />
+              {/* running head, as on a Vilna page: the masechet, and the daf with . for aleph and : for beis */}
+              <text x={W / 2} y={11} textAnchor="middle" fontSize={8} fontWeight={800} fill={fill.text} style={{ fontFamily: HE_FONT }}>{daf.heTitle}</text>
+              <text x={gutterLeft ? W - PAD : PAD} y={11} textAnchor={gutterLeft ? 'end' : 'start'} fontSize={7} fontWeight={800} fill={fill.text} style={{ fontFamily: HE_FONT }}>{heNum}{isA ? '.' : ':'}</text>
+              <line x1={PAD} x2={W - PAD} y1={HEAD - 2} y2={HEAD - 2} stroke={fill.stroke} strokeWidth={0.6} />
+              {blocks.map((b, k) => {
+                const s = daf.segments[b.seg];
+                const read = b.seg < focusIdx;
+                const isFocus = b.seg === focusIdx;
+                const pat = b.kind === 'G' ? `${pid}-${s.isMishnah ? 'M' : 'G'}` : `${pidC}-${b.kind}`;
+                const x = ox + b.x, y = Y(b.y), w = b.w, h = Math.max(1.3, b.h * sy - 0.5);
+                return (
+                  <g key={k} onClick={() => onJump(b.seg)} onMouseMove={(e) => show(e, b.seg, b.kind)} className="cursor-pointer">
+                    {isFocus && <rect x={x - 1.2} y={y - 1} width={w + 2.4} height={h + 2} rx={1.6} fill={fill.focus} opacity={b.kind === 'G' ? 0.2 : 0.12} />}
+                    <rect x={x} y={y} width={w} height={h} fill="transparent" />
+                    <rect x={x} y={y} width={w} height={h} fill={`url(#${pat})`} opacity={b.kind === 'G' ? (read ? 0.95 : 0.72) : (read ? 0.75 : 0.5)} />
+                  </g>
+                );
+              })}
+              {/* opening words: each Mishnah and each new perek begins with its first word set large */}
+              {[...firstG.entries()].map(([i, b]) => {
+                const s = daf.segments[i]; const y = Y(b.y); const x = ox + b.x;
+                const prev = i > 0 ? daf.segments[i - 1] : null;
+                const newPerek = !!prev && isHadran(prev.he);
+                const out: ReactNode[] = [];
+                if (s.startsMishnah || newPerek) {
+                  const word = firstWord(s.he); const bw = Math.min(b.w - 2, Math.max(22, word.length * 5.2 + 6));
+                  out.push(<g key="ow"><line x1={ox - 2} x2={ox + IW - 8} y1={y - 1} y2={y - 1} stroke={fill.mishnah} strokeWidth={1.4} />
+                    <rect x={x + (b.w - bw) / 2} y={y} width={bw} height={10} rx={1} fill={fill.page} stroke={fill.mishnah} strokeWidth={0.8} />
+                    <text x={x + b.w / 2} y={y + 7.8} textAnchor="middle" fontSize={7.6} fontWeight={900} fill={fill.mishnah} style={{ fontFamily: HE_FONT }}>{word}</text></g>);
+                }
+                if (s.startsGemara) out.push(<g key="gm"><rect x={x + b.w - 15} y={y - 0.2} width={14} height={7.5} rx={1.2} fill={fill.page} /><text x={x + b.w - 8} y={y + 6} textAnchor="middle" fontSize={6.4} fontWeight={900} fill={fill.text} style={{ fontFamily: HE_FONT }}>גמ׳</text></g>);
+                if (isHadran(s.he)) out.push(<g key="h"><line x1={PAD} x2={W - PAD} y1={y - 1.6} y2={y - 1.6} stroke={fill.hadran} strokeWidth={0.9} /><line x1={PAD} x2={W - PAD} y1={y + 0.3} y2={y + 0.3} stroke={fill.hadran} strokeWidth={0.9} /><rect x={W / 2 - 22} y={y + 0.9} width={44} height={8} rx={1.5} fill={fill.page} /><text x={W / 2} y={y + 7.3} textAnchor="middle" fontSize={6.2} fontWeight={900} fill={fill.hadran} style={{ fontFamily: HE_FONT }}>הדרן עלך</text></g>);
+                const mk = info.get(s.ref);
+                let my = y + 2;
+                if (mk?.ein) { out.push(<text key="ein" x={outerX} y={my + 3} textAnchor="middle" fontSize={5.5} fontWeight={900} fill={fill.ein} style={{ fontFamily: HE_FONT }}>⚖</text>); my += 6; }
+                if (mk?.pasuk) { out.push(<circle key="ps" cx={outerX} cy={my + 1} r={1.6} fill={fill.pasuk} />); my += 5; }
+                if (mk?.biur) out.push(<text key="bi" x={outerX} y={my + 3} textAnchor="middle" fontSize={5.5} fill={fill.biur}>◆</text>);
+                if (marked.has(s.ref)) out.push(<path key="bm" d={`M ${x + b.w - 5} ${y} h 4 v 6 l -2 -1.6 l -2 1.6 z`} fill="#f59e0b" />);
+                return out.length ? <g key={`mk-${i}`} pointerEvents="none">{out}</g> : null;
+              })}
+              {/* the ribbon: hangs from the top edge down to where you are learning */}
+              {focusOnAmud && focusBlock && (() => { const rx = gutterLeft ? W - 4 : 4; const ry = Y(focusBlock.y) + 3; return (
+                <g pointerEvents="none"><rect x={rx - 1.8} y={0} width={3.6} height={ry} fill={fill.focus} opacity={0.85} /><path d={`M ${rx - 1.8} ${ry} h 3.6 v 5 l -1.8 -1.8 l -1.8 1.8 z`} fill={fill.focus} /></g>); })()}
+            </svg>
+          </div>
         );
       })}
-      <p className="px-2 text-[9px] leading-tight text-center" style={{ color: fill.text }}>Center: Gemara (amber = Mishnah) · right: Rashi · left: Tosafot · tap to jump</p>
+      <div className="px-2 text-[9px] leading-snug" style={{ color: fill.text }}>
+        <p className="text-center">Set like a Vilna page: Gemara in the centre, Rashi on the inner margin, Tosafot on the outer</p>
+        <p className="mt-1 flex flex-wrap justify-center gap-x-2 gap-y-0.5"><span style={{ color: fill.ein }}>⚖ Rambam / halacha</span><span style={{ color: fill.pasuk }}>● pasuk</span><span style={{ color: fill.biur }}>◆ Biur</span></p>
+      </div>
+      {lens && (() => {
+        const s = daf.segments[lens.i]; const mk = info.get(s.ref);
+        const words = bare(s.he).split(' ').slice(0, 12).join(' ');
+        return (
+          <div className="fixed z-50 w-[260px] rounded-xl border shadow-2xl px-3 py-2.5 pointer-events-none" style={{ top: lens.top, left: lens.left, background: fill.page, borderColor: fill.stroke }}>
+            <p className="text-[9px] font-black uppercase tracking-wider" style={{ color: fill.text }}>{lens.kind === 'R' ? 'Rashi on ' : lens.kind === 'T' ? 'Tosafot on ' : ''}{short(s.ref, daf.book)}{s.isMishnah ? ' · Mishnah' : ''}</p>
+            <p lang="he" dir="rtl" className="mt-1 leading-snug" style={{ fontFamily: HE_FONT, fontSize: '1.02rem', color: paper ? '#2a241c' : '#ece7dc' }}>{words}{bare(s.he).split(' ').length > 12 ? '…' : ''}</p>
+            {mk?.headline && <p className="mt-1 text-[12px] font-bold" style={{ color: fill.focus }}>{mk.headline}</p>}
+            <p className="mt-1.5 flex flex-wrap gap-1.5 text-[10px] font-bold" style={{ color: fill.text }}>
+              {mk?.rashi ? <span lang="he" style={{ fontFamily: HE_FONT }}>רש״י {mk.rashi}</span> : null}
+              {mk?.tos ? <span lang="he" style={{ fontFamily: HE_FONT }}>תוס׳ {mk.tos}</span> : null}
+              {mk?.ein ? <span style={{ color: fill.ein }}>⚖ halacha</span> : null}
+              {mk?.pasuk ? <span style={{ color: fill.pasuk }}>● pasuk</span> : null}
+              {mk?.biur ? <span style={{ color: fill.biur }}>◆ {mk.biur}</span> : null}
+            </p>
+          </div>
+        );
+      })()}
     </aside>
   );
 }
@@ -1589,12 +1754,18 @@ function quotedWords(verseHe: string, segHe: string): Set<number> {
   return out;
 }
 
-function BiurCard({ b, focused, innerRef, book }: { b: Biur; focused: boolean; innerRef?: React.RefObject<HTMLDivElement>; book: string }) {
+const HE_NUM = ['', 'א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ז', 'ח', 'ט', 'י', 'יא', 'יב'];
+function BiurCard({ b, n, focused, innerRef, book }: { b: Biur; n: number; focused: boolean; innerRef?: React.RefObject<HTMLDivElement>; book: string }) {
   const label = (en: string, he: string) => <p className="text-[10px] font-black uppercase tracking-wider text-amber-700 mb-1">{en} <span lang="he" style={{ fontFamily: HE_FONT, letterSpacing: 0, textTransform: 'none' }}>· {he}</span></p>;
   return (
-    <div ref={innerRef} className={`rounded-2xl border px-3.5 py-3 ${focused ? 'border-amber-500/70 bg-amber-500/10' : 'border-slate-700/60 bg-slate-800/50'}`}>
+    <div ref={innerRef} className={`rounded-2xl border-2 border-t-4 px-3.5 py-3 shadow-sm ${focused ? 'border-amber-500/70 bg-amber-500/10' : 'border-slate-700/60 border-t-amber-500/60 bg-slate-800/50'}`}>
+      <div className="flex items-start gap-2.5">
+        <span lang="he" className="shrink-0 mt-0.5 inline-flex items-center justify-center rounded-lg bg-amber-500/15 border border-amber-500/40 text-amber-800 px-2 py-0.5 text-[12px] font-black" style={{ fontFamily: HE_FONT }}>ביאור {HE_NUM[n] || n}</span>
+        <div className="min-w-0 flex-1">
       {b.heTitle ? <p lang="he" dir="rtl" className="text-slate-100" style={{ fontFamily: HE_FONT, fontSize: '1.15rem', fontWeight: 700 }}>{b.heTitle}</p> : null}
       <p className="font-bold text-slate-100">{b.title}{b.anchor ? <span className="ml-2 text-[11px] font-semibold text-slate-500">{short(b.anchor, book)}</span> : null}</p>
+        </div>
+      </div>
       {b.question && <div className="mt-2.5">{label('The question', 'הקושיא')}<p className="leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.97rem' }}><RefText text={b.question} /></p></div>}
       {b.shitos.length ? (
         <div className="mt-3">{label('The shitos side by side', 'השיטות')}
