@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Share2, Loader2, Gem, Sun, Moon } from 'lucide-react';
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, ChevronDown, Share2, Loader2, Gem, Sun, Moon } from 'lucide-react';
 import { DAF_API } from '../lib/daf';
 import { RefText, plain, shortRef, CiteLink } from './RefText';
 
@@ -95,18 +95,20 @@ export function GemsSection({ refs, initialRef, onGem }: { refs: string[]; initi
   const [cur, setCur] = useState<string | null>(initialRef);
   useEffect(() => { setCur(initialRef); }, [initialRef]);
   const { data, loading } = useCompanion(cur);
+  // phones start with a compact strip; "Show all" opens the full grid
+  const [open, setOpen] = useState(false);
   if (!cur) return null;
   const at = refs.indexOf(cur);
   const prev = at > 0 ? refs[at - 1] : null;
   const next = at >= 0 && at < refs.length - 1 ? refs[at + 1] : null;
   const gems = data ? gemsOf(data) : [];
   return (
-    <section className="mt-10 rounded-[28px] border px-4 sm:px-7 pt-6 pb-6 sm:pb-7" style={{ background: `radial-gradient(120% 70% at 0% 0%, #fbf6ea 0%, ${P.paper} 60%)`, borderColor: P.rule, color: P.ink }} aria-label="Gems from the Daf">
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-3">
-        <span className="flex w-11 h-11 shrink-0 items-center justify-center rounded-full" style={{ background: P.ink, color: '#e8cf8f' }}><Gem className="w-5 h-5" /></span>
+    <section className="mt-8 md:mt-10 rounded-3xl md:rounded-[28px] border px-4 sm:px-7 pt-4 md:pt-6 pb-4 md:pb-7" style={{ background: `radial-gradient(120% 70% at 0% 0%, #fbf6ea 0%, ${P.paper} 60%)`, borderColor: P.rule, color: P.ink }} aria-label="Gems from the Daf">
+      <div className="flex flex-wrap items-center gap-x-3 md:gap-x-4 gap-y-3">
+        <span className="hidden md:flex w-11 h-11 shrink-0 items-center justify-center rounded-full" style={{ background: P.ink, color: '#e8cf8f' }}><Gem className="w-5 h-5" /></span>
         <div className="min-w-0 flex-1">
-          <h2 className="text-2xl sm:text-[28px] font-black tracking-tight leading-none" style={{ fontFamily: EN_FONT }}>Gems from the Daf</h2>
-          <p className="mt-1.5 text-sm" style={{ color: P.muted }}>Supplemental material to aid your learning</p>
+          <h2 className="flex items-center gap-2 text-xl md:text-[28px] font-black tracking-tight leading-none" style={{ fontFamily: EN_FONT }}><Gem className="md:hidden w-4 h-4" style={{ color: P.gold }} />Gems from the Daf</h2>
+          <p className="mt-1 md:mt-1.5 text-xs md:text-sm" style={{ color: P.muted }}>Supplemental material to aid your learning</p>
         </div>
         <div className="flex items-center gap-1 rounded-full border px-1 py-1" style={{ borderColor: P.rule, background: P.card }}>
           <button disabled={!prev} onClick={() => prev && setCur(prev)} className="p-1.5 rounded-full hover:bg-black/5 disabled:opacity-25" aria-label={prev ? `Gems from ${prev}` : 'No earlier daf'}><ChevronLeft className="w-4 h-4" /></button>
@@ -120,9 +122,20 @@ export function GemsSection({ refs, initialRef, onGem }: { refs: string[]; initi
       ) : !data || !gems.length ? (
         <p className="py-8 text-sm" style={{ color: P.muted }}>The gems for this daf are still being prepared.</p>
       ) : (
-        <div className={`mt-6 grid grid-cols-2 md:grid-cols-4 gap-3 transition-opacity ${loading ? 'opacity-60' : ''}`}>
-          {gems.map((id, k) => <GemCard key={id} id={id} c={data} onClick={() => onGem(data.ref, id)} extra={k === gems.length - 1 ? fillRow(gems) : ''} />)}
-        </div>
+        <>
+          {/* phones, collapsed: one row of small cards */}
+          {!open && (
+            <div className={`md:hidden -mx-4 mt-3 flex gap-2 overflow-x-auto px-4 scroll-px-4 pb-1 snap-x snap-mandatory [scrollbar-width:none] transition-opacity ${loading ? 'opacity-60' : ''}`}>
+              {gems.map((id) => <MiniGem key={id} id={id} c={data} onClick={() => onGem(data.ref, id)} />)}
+            </div>
+          )}
+          <div className={`${open ? 'grid' : 'hidden md:grid'} mt-4 md:mt-6 grid-cols-2 md:grid-cols-4 gap-3 transition-opacity ${loading ? 'opacity-60' : ''}`}>
+            {gems.map((id, k) => <GemCard key={id} id={id} c={data} onClick={() => onGem(data.ref, id)} extra={k === gems.length - 1 ? fillRow(gems) : ''} />)}
+          </div>
+          <button onClick={() => setOpen(!open)} className="md:hidden mt-3 w-full inline-flex items-center justify-center gap-1.5 rounded-full border py-2 text-xs font-black" style={{ borderColor: P.rule, background: P.card }}>
+            {open ? 'Show less' : `Show all ${gems.length} gems`} <ChevronDown className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-180' : ''}`} />
+          </button>
+        </>
       )}
     </section>
   );
@@ -135,6 +148,20 @@ function fillRow(gems: GemId[]) {
   const mobile = singles % 2 ? 'col-span-2' : '';
   const lastRow = gems.includes('iyun') ? (singles <= 4 ? 0 : (singles - 4) % 4) : singles % 4;
   return `${mobile} ${lastRow ? MD_SPAN[4 - lastRow + 1] : ''}`;
+}
+
+// The compact card for a phone's collapsed strip: label and title only.
+function MiniGem({ id, c, onClick }: { id: GemId; c: Companion; onClick: () => void }) {
+  const dark = id === 'iyun' || id === 'sod';
+  const he = id === 'iyun' ? c.iyun?.heTitle : id === 'sod' ? 'סוד' : id === 'pasuk' ? 'פסוק' : id === 'rambam' ? 'רמב״ם' : id === 'tosafot' ? 'תוספות' : id === 'machloket' ? 'מחלוקת' : id === 'halacha' ? 'הלכה' : id === 'words' ? c.words[0]?.he : '';
+  return (
+    <button onClick={onClick} className="snap-start shrink-0 w-[150px] h-[104px] text-left rounded-2xl border p-3 flex flex-col"
+      style={dark ? { background: id === 'sod' ? 'linear-gradient(160deg, #2c2b62, #141332)' : 'linear-gradient(160deg, #3a2f1f, #1a150f)', borderColor: 'transparent', color: '#f1e9d6' } : { background: P.card, borderColor: P.rule, color: P.ink }}>
+      <span className="text-[9.5px] font-black uppercase tracking-[0.14em] truncate" style={{ color: dark ? '#e8cf8fcc' : P.muted }}>{LABEL[id]}</span>
+      {he ? <span lang="he" dir="rtl" className="mt-1 block truncate text-[19px] font-bold leading-tight" style={{ fontFamily: HE_FONT, color: dark ? '#f1e9d6' : P.gold }}>{he}</span> : null}
+      <span className="mt-auto text-[12.5px] font-semibold leading-snug line-clamp-2" style={{ fontFamily: EN_FONT }}>{titleOf(c, id)}</span>
+    </button>
+  );
 }
 
 function GemCard({ id, c, onClick, extra = '' }: { id: GemId; c: Companion; onClick: () => void; extra?: string }) {
