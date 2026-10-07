@@ -210,9 +210,15 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
             <ScrollText className="w-6 h-6 text-indigo-300" />
             <h1 className="text-2xl font-black tracking-tight">Super Daf</h1>
           </div>
-          <p className="sm:ml-auto sm:text-right text-sm sm:text-[15px] leading-snug text-slate-300 sm:border-l sm:border-slate-700 sm:pl-4">
-            Dedicated to <span className="font-black text-slate-100">Carol Serouya</span>, the best mother and wife
-          </p>
+        </div>
+
+        {/* the dedication, set like the dedication page of a sefer */}
+        <div className="mb-5 text-center">
+          <div className="mx-auto flex max-w-md items-center gap-3 text-[#d9ccad]/45" aria-hidden="true"><span className="h-px flex-1 bg-gradient-to-r from-transparent to-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-gradient-to-l from-transparent to-current" /></div>
+          <p className="mt-3 text-[11px] sm:text-xs font-black uppercase tracking-[0.28em] text-[#d9ccad]/70">Super Daf is dedicated to</p>
+          <p className="mt-1.5 text-[30px] sm:text-[40px] leading-tight text-[#f1e9d6]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 600 }}>Carol Serouya</p>
+          <p className="mt-0.5 text-base sm:text-lg italic text-[#d9ccad]/85" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif" }}>the best mother and wife</p>
+          <div className="mx-auto mt-3 flex max-w-md items-center gap-3 text-[#d9ccad]/45" aria-hidden="true"><span className="h-px flex-1 bg-gradient-to-r from-transparent to-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-gradient-to-l from-transparent to-current" /></div>
         </div>
 
         {/* device tip */}
