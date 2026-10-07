@@ -19,7 +19,7 @@ export function shortRef(r: string) {
   if ((m = r.match(/^(.+?) on Mishneh Torah, [^\d]*?(\d[\d:]*)$/))) return `${m[1]} ${m[2]}`;
   if ((m = r.match(/^Mishneh Torah, (.+)$/))) return `Rambam, ${m[1]}`;
   if ((m = r.match(/^(.+?) on [A-Z][A-Za-z' ]+? (\d+[ab]?[\d:]*)$/))) return `${m[1]} ${m[2]}`;
-  if ((m = r.match(/^[A-Z][A-Za-z' ]+? (\d+[ab]:[\d:]+)$/))) return `Gemara ${m[1]}`;
+  if ((m = r.match(/^[A-Z][A-Za-z' ]+? (\d+[ab]:[\d:]+(?:-[\dab:]+)?)$/))) return `Gemara ${m[1]}`;
   return r;
 }
 function splitRefs(inner: string): string[] {

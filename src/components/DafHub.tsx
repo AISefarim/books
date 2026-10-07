@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ArrowLeft, ArrowRight, Search, X, ScrollText, Loader2, BookOpen, Monitor, Tablet, Smartphone, ChevronLeft, ChevronRight, Lock, Share2, Check } from 'lucide-react';
 import { DAF_API, pingDafOpen, normalizeTractate, dafPath } from '../lib/daf';
-import { DafCompanion } from './DafCompanion';
+import { GemsSection, GemPage, gemPath, gemFromPath, type GemId } from './DafCompanion';
 
 // The Daf tab's front page: today's daf (huge), yesterday and tomorrow
 // beside it, then every finished daf by masechet, with a forgiving search
@@ -60,6 +60,22 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
   const dafimRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => { pingDafOpen(); }, []);
+  // A gem opens as its own page (/daf/<Masechet>/<n>/gems/<id>) over the hub.
+  const [gem, setGem] = useState(() => gemFromPath(window.location.pathname));
+  const pushedGem = useRef(false);
+  useEffect(() => {
+    const onPop = () => setGem(gemFromPath(window.location.pathname));
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
+  }, []);
+  const openGem = (ref: string, id: GemId) => {
+    if (gem) window.history.replaceState({}, '', gemPath(ref, id)); else { window.history.pushState({}, '', gemPath(ref, id)); pushedGem.current = true; }
+    setGem({ ref, id });
+  };
+  const closeGem = () => {
+    if (pushedGem.current) { pushedGem.current = false; window.history.back(); return; }
+    window.history.pushState({}, '', '/daf'); setGem(null);
+  };
   const [frame, setFrame] = useState<{ rashiHe?: string; tosafotHe?: string } | null>(null);
   useEffect(() => {
     if (!today?.ref) return;
@@ -212,7 +228,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
              center, today's real Rashi and Tosafot in faint columns around it ===== */}
         <div className="relative">
         {today && <button onClick={() => share(today.ref, dafPath(today.ref))} className="absolute bottom-6 right-6 sm:bottom-7 sm:right-8 z-10 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-3 py-1.5 text-xs font-black text-slate-200 backdrop-blur" aria-label={`Share ${today.ref}`}><Share2 className="w-3.5 h-3.5" /> Share</button>}
-        <button onClick={() => today && onOpen(today.ref)} disabled={!today} className="group relative w-full overflow-hidden rounded-[28px] border border-white/10 px-6 sm:px-10 pt-6 sm:pt-7 pb-9 sm:pb-11 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] transition-transform hover:-translate-y-0.5"
+        <div role="link" tabIndex={0} aria-label={today ? `Start learning ${today.ref}` : 'Today’s daf'} onClick={() => today && onOpen(today.ref)} onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && today) { e.preventDefault(); onOpen(today.ref); } }} className="group relative block w-full cursor-pointer overflow-hidden rounded-[28px] border border-white/10 px-6 sm:px-10 pt-6 sm:pt-7 pb-9 sm:pb-11 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] transition-transform hover:-translate-y-0.5"
           style={{ background: 'radial-gradient(120% 90% at 50% 0%, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.04) 45%, transparent 70%), linear-gradient(180deg, #121527 0%, #0d0f1c 100%)' }}>
           {/* a printed page's double rule */}
           <span aria-hidden="true" className="pointer-events-none absolute inset-3 rounded-[20px] border border-[#d9ccad]/15" />
@@ -251,7 +267,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
             {/* Rashi - inner column */}
             <Column label="רש״י" text={frame?.rashiHe} />
           </div>
-        </button>
+        </div>
         </div>
 
         {/* ===== yesterday & tomorrow ===== */}
@@ -260,8 +276,8 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
           <SideDay label="Tomorrow" day={tomorrow} dir="next" />
         </div>
 
-        {/* ===== from the daf: halachot, iyun, Tosafot, review... ===== */}
-        {items && <DafCompanion refs={allRefs} initialRef={companionRef} onOpen={onOpen} />}
+        {/* ===== gems from the daf: supplemental, set apart from the daf itself ===== */}
+        {items && <GemsSection refs={allRefs} initialRef={companionRef} onGem={openGem} />}
 
         {/* ===== WhatsApp community ===== */}
         {whatsappUrl && (
@@ -337,6 +353,7 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
             )}
           </>
         )}
+        {gem && <GemPage refName={gem.ref} id={gem.id} onClose={closeGem} onGem={openGem} onOpenDaf={(r) => { setGem(null); onOpen(r); }} />}
         {toast && <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[70] inline-flex items-center gap-2 rounded-full bg-slate-100 text-slate-900 px-4 py-2 text-sm font-black shadow-2xl"><Check className="w-4 h-4 text-emerald-600" /> {toast}</div>}
         <p className="mt-12 text-center text-xs text-slate-600">Each new daf is prepared a few days before it is learned, and then stays here for everyone.</p>
       </div>

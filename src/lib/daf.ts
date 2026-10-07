@@ -18,6 +18,7 @@ export function dafPath(ref: string): string {
 export function refFromPath(pathname: string): string | null {
   const parts = pathname.split('/').filter(Boolean);
   if ((parts[0] !== 'daf' && parts[0] !== 'superdaf') || !parts[1] || !parts[2]) return null;
+  if (parts[3] === 'gems') return null; // a gem page lives on the hub
   return `${decodeURIComponent(parts[1]).replace(/_/g, ' ')} ${parts[2].replace(/[ab]$/, '')}`;
 }
 
