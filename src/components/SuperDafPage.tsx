@@ -742,15 +742,13 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
               if (rambam) return (
                 // The Rambam: the same shape as Our Mishnah, in bronze
                 <button key={id} onClick={() => window.dispatchEvent(new Event('sd-rambam-toggle'))} className="group flex items-center justify-center py-1" title="The Rambam (R)" aria-label="The Rambam">
-                  <span className="flex lg:hidden flex-col items-center gap-0.5">
-                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8a5418] ring-2 ring-amber-300/50 group-active:bg-[#6f4313]">
+                  <span className="flex lg:hidden flex-col items-center">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-[#8a5418] ring-2 ring-amber-300/50 group-active:bg-[#6f4313]">
                       <span lang="he" className="text-[#fdf3dc]" style={{ fontFamily: HE_FONT, fontSize: '0.78rem', fontWeight: 700 }}>רמב״ם</span>
                     </span>
-                    <span className="text-[10px] font-black" style={{ color: '#fde7c2' }}>Rambam</span>
                   </span>
-                  <span className="hidden lg:inline-flex items-center justify-center gap-2 rounded-full bg-[#8a5418] px-4 py-2 ring-2 ring-amber-300/40 transition-colors group-hover:bg-[#9b601d] group-active:bg-[#6f4313]">
-                    <span lang="he" className="text-[#fdf3dc]" style={{ fontFamily: HE_FONT, fontSize: '1rem', fontWeight: 700 }}>רמב״ם</span>
-                    <span className="text-xs font-black text-[#fdf3dc] whitespace-nowrap">The Rambam</span>
+                  <span className="hidden lg:inline-flex items-center justify-center rounded-full bg-[#8a5418] px-5 py-2 ring-2 ring-amber-300/40 transition-colors group-hover:bg-[#9b601d] group-active:bg-[#6f4313]">
+                    <span lang="he" className="text-[#fdf3dc]" style={{ fontFamily: HE_FONT, fontSize: '1.1rem', fontWeight: 700 }}>רמב״ם</span>
                   </span>
                 </button>
               );
