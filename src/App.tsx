@@ -49,6 +49,22 @@ export default function App() {
   // AI Daf episodes (audio or video) whose daf has a Super Daf open inside it.
   const [readyDafs, setReadyDafs] = useState<Set<string>>(new Set());
   useEffect(() => { loadReadyDafs().then(setReadyDafs); }, []);
+  // A Super Daf citation clicked outside the reader (the hub, a gem page).
+  // The reader, when it's showing, marks the event handled during dispatch.
+  useEffect(() => {
+    const onGoto = (e: Event) => {
+      const d = (e as CustomEvent<{ ref: string; seg: string; handled: boolean }>).detail;
+      Promise.resolve().then(() => {
+        if (d.handled) return;
+        window.history.pushState({}, '', `${dafPath(d.ref)}#${d.seg}`);
+        setDafRef(d.ref);
+        setActiveTab('daf');
+        window.scrollTo(0, 0);
+      });
+    };
+    window.addEventListener('sd-goto', onGoto);
+    return () => window.removeEventListener('sd-goto', onGoto);
+  }, []);
   const isDafPodcast = (v: Video) => { const r = dafRefForMedia(v); return !!r && readyDafs.has(r); };
   // /daf (or /superdaf) is the hub; /daf/<Masechet>/<n> is the reader.
   const [dafRef, setDafRef] = useState<string | null>(() => refFromPath(window.location.pathname));

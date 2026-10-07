@@ -84,9 +84,32 @@ export function dafRefForMedia(v: { title?: string; folder?: string; category?: 
 let readyPromise: Promise<Set<string>> | null = null;
 export function loadReadyDafs(): Promise<Set<string>> {
   if (!readyPromise) {
-    readyPromise = fetch(`${DAF_API}/ready`).then((r) => r.json()).then((d) => new Set<string>(d.refs || [])).catch(() => new Set<string>());
+    readyPromise = fetch(`${DAF_API}/ready`).then((r) => r.json()).then((d) => (readySet = new Set<string>(d.refs || []))).catch(() => new Set<string>());
   }
   return readyPromise;
+}
+
+// Where a citation lives in Super Daf: a Gemara line ("Bekhorot 19a:4") or a
+// commentary on one ("Rashi on Bekhorot 19a:4:1") opens that line - when the
+// daf is built. Everything else (Rambam, Shulchan Arukh...) stays on Sefaria.
+let readySet: Set<string> | null = null;
+export type DafSpot = { ref: string; seg: string; path: string };
+export function superDafSpot(ref: string): DafSpot | null {
+  if (!readySet) { loadReadyDafs(); return null; }
+  const m = String(ref).replace(/^.+? on /, '').match(/^([A-Z][A-Za-z' ]+?) (\d+)([ab]):(\d+)/);
+  if (!m) return null;
+  const dafRef = `${m[1]} ${m[2]}`;
+  if (!readySet.has(dafRef)) return null;
+  const seg = `${m[2]}${m[3]}:${m[4]}`;
+  return { ref: dafRef, seg, path: `${dafPath(dafRef)}#${seg}` };
+}
+// Open a spot without reloading the page; the reader (if it's showing) or the
+// app handles the "sd-goto" event. Cmd/Ctrl-click still opens a new tab.
+export function goToSpot(e: { preventDefault(): void; stopPropagation(): void; metaKey: boolean; ctrlKey: boolean; shiftKey: boolean; button: number }, spot: DafSpot) {
+  e.stopPropagation();
+  if (e.metaKey || e.ctrlKey || e.shiftKey || e.button !== 0) return;
+  e.preventDefault();
+  window.dispatchEvent(new CustomEvent('sd-goto', { detail: { ref: spot.ref, seg: spot.seg, handled: false } }));
 }
 
 // Readership ping (counts people, not page loads - see the worker). Fire and forget.

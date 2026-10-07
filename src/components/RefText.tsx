@@ -1,4 +1,5 @@
-import { sefariaUrl } from '../lib/daf';
+import type { CSSProperties, ReactNode } from 'react';
+import { sefariaUrl, superDafSpot, goToSpot } from '../lib/daf';
 
 // Text written for Super Daf: [refs] become small citation chips, **phrase**
 // marks a note's key phrase, and Ashkenazi spellings read the Sephardi way.
@@ -26,6 +27,13 @@ function splitRefs(inner: string): string[] {
   // a ref ends in a number ("5:1", "17a:3"); split after it at a comma or semicolon
   return inner.split(/(?<=\d[ab]?)\s*[,;]\s*/).map((x) => x.trim()).filter(Boolean);
 }
+// A citation: to its place in Super Daf when there is one, else to Sefaria.
+export function CiteLink({ r, className, style, children }: { r: string; className?: string; style?: CSSProperties; children: ReactNode }) {
+  const spot = superDafSpot(r);
+  if (spot) return <a href={spot.path} className={className} style={style} title={`${r} - open in Super Daf`} onClick={(e) => goToSpot(e, spot)}>{children}</a>;
+  return <a href={sefariaUrl(r)} target="_blank" rel="noopener noreferrer" className={className} style={style} title={`${r} - on Sefaria`} onClick={(e) => e.stopPropagation()}>{children}</a>;
+}
+
 export function RefText({ text, className }: { text: string; className?: string }) {
   const keys = String(text || '').split(/(\*\*[^*]+\*\*)/g);
   if (keys.length > 1) return <span className={className}>{keys.map((k, i) => /^\*\*[^*]+\*\*$/.test(k) ? <strong key={i} className="sd-key"><RefText text={k.slice(2, -2)} /></strong> : <RefText key={i} text={k} />)}</span>;
@@ -38,7 +46,7 @@ export function RefText({ text, className }: { text: string; className?: string 
           const refs = splitRefs(m[1]).filter((r) => /\d/.test(r));
           return (
             <span key={i} className="whitespace-nowrap">
-              {refs.map((r, k) => <a key={k} href={sefariaUrl(r)} target="_blank" rel="noopener noreferrer" className="sd-cite" title={r} onClick={(e) => e.stopPropagation()}>{shortRef(r)}</a>)}
+              {refs.map((r, k) => <CiteLink key={k} r={r} className="sd-cite">{shortRef(r)}</CiteLink>)}
             </span>
           );
         }
