@@ -5,7 +5,7 @@ import {
   Quote, Sparkles, NotebookPen, Share2, GripHorizontal, ChevronUp, ChevronDown, Download, ScrollText, Compass } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
-import { RefText, plain, CiteLink } from './RefText';
+import { RefText, plain, CiteLink, shortRef } from './RefText';
 import { DAF_API, pingDafOpen, gistText, dafPath, sefariaUrl, superDafSpot, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
 import { useReadyDafs } from '../lib/useReadyDafs';
 import { downloadDaf } from '../lib/dafExport';
@@ -634,6 +634,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
           )}
           {daf && !mapOpen && <div className="hidden md:block absolute inset-y-0 left-0 w-3 z-20" onMouseEnter={() => setMapPeek(true)} title="The daf map" />}
           {daf && (daf.mishnayot || []).length > 0 && <MishnahPeek daf={daf} focusIdx={focusIdx} onGo={scrollToSeg} surface={surface} />}
+          {daf && dafHasRambam(daf) && <RambamPeek daf={daf} focusIdx={focusIdx} onGo={scrollToSeg} surface={surface} />}
           <div ref={scrollRef} className="sd-scroll flex-1 min-w-0 overflow-y-auto" onScroll={() => {
             // The daf map shows itself while you scroll and slips away when you stop.
             if (!scrolling) setScrolling(true);
@@ -727,16 +728,32 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       {/* ============ dock ============ */}
       {daf && (
         <nav className="shrink-0 bg-slate-950 border-t border-slate-800 px-2 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5">
-          <div className={`mx-auto grid gap-1 lg:flex lg:items-center lg:justify-center lg:gap-3 lg:max-w-3xl ${(daf.mishnayot || []).length ? 'max-w-xl grid-cols-5' : 'max-w-lg grid-cols-4'}`}>
+          <div className={`mx-auto grid gap-1 lg:flex lg:items-center lg:justify-center lg:gap-3 lg:max-w-3xl ${['max-w-lg grid-cols-4', 'max-w-xl grid-cols-5', 'max-w-2xl grid-cols-6'][((daf.mishnayot || []).length ? 1 : 0) + (dafHasRambam(daf) ? 1 : 0)]}`}>
             {([
               // "Our Mishnah" comes first and stands out - it lives here so it never covers the text
               ...((daf.mishnayot || []).length ? [{ id: 'mishnah', label: 'Our Mishnah', icon: ScrollText, amber: true }] : []),
+              ...(dafHasRambam(daf) ? [{ id: 'rambam', label: 'Rambam', icon: Landmark, rambam: true }] : []),
               { id: 'catchup', label: 'Catch me up', icon: Clock },
               { id: 'bookmarks', label: 'Bookmarks', icon: Bookmark },
               { id: 'ask', label: 'Ask', icon: MessageSquareText }, { id: 'listen', label: 'Listen', icon: Headphones },
-            ] as { id: string; label: string; icon: any; amber?: boolean }[]).map(({ id, label, icon: Icon, amber }) => {
+            ] as { id: string; label: string; icon: any; amber?: boolean; rambam?: boolean }[]).map(({ id, label, icon: Icon, amber, rambam }) => {
               const disabled = id === 'listen' && podcasts.length === 0;
               const active = sheet?.kind === id || (id === 'ask' && tab === 'ask' && !lowerCollapsed);
+              if (rambam) return (
+                // The Rambam: the same shape as Our Mishnah, in bronze
+                <button key={id} onClick={() => window.dispatchEvent(new Event('sd-rambam-toggle'))} className="group flex items-center justify-center py-1" title="The Rambam (R)" aria-label="The Rambam">
+                  <span className="flex lg:hidden flex-col items-center gap-0.5">
+                    <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#8a5418] ring-2 ring-amber-300/50 group-active:bg-[#6f4313]">
+                      <span lang="he" className="text-[#fdf3dc]" style={{ fontFamily: HE_FONT, fontSize: '0.78rem', fontWeight: 700 }}>רמב״ם</span>
+                    </span>
+                    <span className="text-[10px] font-black" style={{ color: '#fde7c2' }}>Rambam</span>
+                  </span>
+                  <span className="hidden lg:inline-flex items-center justify-center gap-2 rounded-full bg-[#8a5418] px-4 py-2 ring-2 ring-amber-300/40 transition-colors group-hover:bg-[#9b601d] group-active:bg-[#6f4313]">
+                    <span lang="he" className="text-[#fdf3dc]" style={{ fontFamily: HE_FONT, fontSize: '1rem', fontWeight: 700 }}>רמב״ם</span>
+                    <span className="text-xs font-black text-[#fdf3dc] whitespace-nowrap">The Rambam</span>
+                  </span>
+                </button>
+              );
               if (amber) return (
                 // Our Mishnah: a raised, glowing circle - the one button that invites a tap
                 <button key={id} onClick={() => window.dispatchEvent(new Event('sd-mishnah-toggle'))} className="group flex items-center justify-center py-1" title="Our Mishnah (M)" aria-label="Our Mishnah">
@@ -850,6 +867,19 @@ function PrepToggle({ prep, t }: { prep: DafPrep; t: any }) {
   );
 }
 
+// "הדרן עלך ..." closes a perek - Sefaria gives it a line of its own.
+const isHadran = (he: string) => /הדרן עלך/.test(he.replace(/[\u0591-\u05C7]/g, ''));
+function Hadran({ idx, he, t }: { idx: number; he: string; t: any }) {
+  return (
+    <div data-seg={idx} className={`my-14 -mx-1 select-none rounded-2xl border-y-[5px] border-double px-4 py-9 text-center ${t.accent}`} style={{ borderColor: 'currentColor', background: 'color-mix(in srgb, currentColor 6%, transparent)' }} role="separator" aria-label="End of the perek">
+      <p className="text-sm tracking-[0.5em]" aria-hidden="true">◆ ◆ ◆</p>
+      <p className="mt-3 text-[12px] font-black uppercase tracking-[0.32em]">End of the perek</p>
+      <p lang="he" dir="rtl" className={`mt-3 text-[34px] sm:text-[44px] leading-tight font-bold ${t.text || ''}`} style={{ fontFamily: HE_FONT, color: 'var(--sd-ink, inherit)' }}>{he}</p>
+      <p className={`mt-2 text-[15px] italic ${t.faint}`} style={{ fontFamily: EN_FONT }}>“We will return to you” - a new perek begins</p>
+    </div>
+  );
+}
+
 function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmarked, toggleBookmark, onShare, openOn, openSugya, canGo, onGo, gemaraLayout = 'full' }: {
   gemaraLayout?: 'full' | 'phrases';
   daf: Daf; t: any; showHe: boolean; showEn: boolean; fontScale: number; panelIdx: number | null; noteN: number | null;
@@ -931,6 +961,8 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
 
               {sugya.segments.map((idx) => {
                 const s = daf.segments[idx];
+                // the perek's last line closes the sugya - drawn after "What we learned"
+                if (isHadran(s.he)) return idx === sugya.segments[sugya.segments.length - 1] ? null : <Hadran key={s.ref} idx={idx} he={s.he} t={t} />;
                 const step = stepFor(s.ref);
                 const m = mes?.segments?.find((x) => x.ref === s.ref);
                 const hal = halItems.filter((h) => (h.refs || []).includes(s.ref));
@@ -1046,6 +1078,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
                 </div>
               )}
               {sugya.continuesOn && <p className={`mt-1 px-3 text-xs ${t.muted} italic`}>Continues on {short(sugya.continuesOn, daf.book)} — tomorrow’s daf.</p>}
+              {(() => { const li = sugya.segments[sugya.segments.length - 1]; return isHadran(daf.segments[li].he) ? <Hadran idx={li} he={daf.segments[li].he} t={t} /> : null; })()}
             </section>
           );
         })}
@@ -1088,12 +1121,14 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
   const syn = built?.synthesis && !built.synthesis._error ? built.synthesis : null;
   const seg = segIdx !== null ? daf.segments[segIdx] : null;
   const step = seg ? syn?.steps?.find((st) => (st.refs || []).includes(seg.ref)) : null;
-  // The Rambam's reading of the sugya shows open in Notes on every paragraph.
+  // The Rambam's reading of the sugya shows in Notes on the paragraphs Sefaria
+  // links to the Rambam or his commentators (and in the whole-sugya view).
   const mes = seg ? built?.mesivta?.segments?.find((x) => x.ref === seg.ref) : null;
   const all = built ? [...built.core, ...built.rishonim, ...built.acharonim, ...built.other] : [];
   const halAll = (built?.halacha?.items || []) as HalachaItem[];
   const hal = seg ? halAll.filter((h) => (h.refs || []).includes(seg.ref)) : halAll;
   const srcs = seg ? all.filter((c) => c.anchor === seg.ref) : all;
+  const rambamHere = !seg || (built?.rambamSources || []).some((r) => r.anchor === seg.ref);
   const [work, setWork] = useState<string | null>(null);
   const [words, setWords] = useState<Record<string, boolean>>({});
   const noteRef = useRef<HTMLDivElement>(null);
@@ -1144,7 +1179,7 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
               </div>
             ) : seg && built.mesivta ? <p className="text-slate-500">No commentary on Sefaria is anchored to this paragraph.</p> : seg ? <p className="text-slate-500 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Notes on their way.</p> : null}
             <ExtraSections built={built} seg={seg} />
-            {syn?.rambam && (
+            {syn?.rambam && rambamHere && (
               <div className="rounded-2xl border-2 border-amber-500/50 bg-amber-500/10 px-3.5 py-3">
                 <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-700"><Landmark className="w-4 h-4" /> The Rambam</p>
                 <p className="mt-1.5 leading-relaxed text-slate-100" style={{ fontFamily: EN_FONT, fontSize: '0.98rem' }}><RefText text={syn.rambam.reading} /></p>
@@ -1590,6 +1625,88 @@ function ExtraSections({ built, seg }: { built: Built; seg: Seg | null }) {
 // "Which Mishnah am I on?" - a pill that always names the Mishnah the current
 // paragraph belongs to (even one that began dapim ago) and opens it in a card,
 // so the reader never has to scroll back to remember it. Text from Sefaria.
+const dafHasRambam = (daf: Daf) => daf.sugyot.some((sg) => (sg.built?.rambamSources || []).length || sg.built?.synthesis?.rambam);
+
+// The Rambam, in full, for the sugya on screen: how he reads it, his rulings,
+// the Mishneh Torah in his own words, and his commentators. R toggles it.
+function RambamPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: number; onGo: (i: number) => void; surface: Surface }) {
+  const [open, setOpen] = useState(() => { try { return new URLSearchParams(window.location.search).has('rambam'); } catch { return false; } });
+  const [readIdx, setReadIdx] = useState<number | null>(null);
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setOpen(false);
+      if ((e.key === 'r' || e.key === 'R') && !e.metaKey && !e.ctrlKey && !['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '')) setOpen((o) => !o);
+    };
+    const onDock = () => setOpen((o) => !o);
+    window.addEventListener('keydown', onKey);
+    window.addEventListener('sd-rambam-toggle', onDock);
+    return () => { window.removeEventListener('keydown', onKey); window.removeEventListener('sd-rambam-toggle', onDock); };
+  }, []);
+  if (!open) return null;
+  const has = (sg: Daf['sugyot'][number]) => !!((sg.built?.rambamSources || []).length || sg.built?.synthesis?.rambam);
+  const here = daf.sugyot.findIndex((sg) => sg.segments.includes(focusIdx));
+  // this sugya if the Rambam speaks to it, else the nearest one that he does
+  const order = daf.sugyot.map((_, i) => i).sort((a, b) => Math.abs(a - here) - Math.abs(b - here) || a - b);
+  const sg = daf.sugyot[order.find((i) => has(daf.sugyot[i])) ?? 0];
+  const built = sg.built!;
+  const syn = built.synthesis && !(built.synthesis as any)._error ? built.synthesis : null;
+  const mt = (built.rambamSources || []).filter((r) => /^Mishneh Torah,/.test(r.ref));
+  const kelim = (built.rambamSources || []).filter((r) => !/^Mishneh Torah,/.test(r.ref));
+  const focusRef = daf.segments[focusIdx]?.ref;
+  const segIdx = (ref: string) => daf.segments.findIndex((x) => x.ref === ref);
+  const paper = surface === 'paper';
+  const first = daf.segments[sg.segments[0]]?.ref, last = daf.segments[sg.segments[sg.segments.length - 1]]?.ref;
+  const shortR = (r?: string) => (r || '').replace(daf.book + ' ', '');
+  const H = ({ children }: { children: React.ReactNode }) => <p className={`mt-6 mb-2 text-[10px] font-black uppercase tracking-[0.2em] ${paper ? 'text-[#8a5418]' : 'text-amber-300/80'}`}>{children}</p>;
+  const lineTag = (anchor: string) => {
+    const i = segIdx(anchor);
+    const isHere = anchor === focusRef;
+    return <button onClick={() => { if (i >= 0) { onGo(i); } }} className={`shrink-0 rounded-full px-2 py-0.5 text-[10px] font-black ${isHere ? 'bg-[#8a5418] text-white' : paper ? 'bg-amber-100 text-[#8a5418]' : 'bg-amber-400/15 text-amber-200'}`}>{isHere ? 'This line' : `on ${shortR(anchor)}`}</button>;
+  };
+  // the texts tied to the line on screen come first
+  const byHere = <T extends { anchor: string },>(xs: T[]) => [...xs.filter((x) => x.anchor === focusRef), ...xs.filter((x) => x.anchor !== focusRef)];
+
+  return (
+    <div className={`absolute top-3 bottom-3 right-3 z-30 w-[calc(100%-1.5rem)] sm:w-[min(640px,92%)] flex flex-col rounded-3xl border shadow-2xl animate-in fade-in slide-in-from-right-4 duration-200 ${paper ? 'bg-[#fbf6ea] border-[#8a5418]/30 text-stone-900' : 'bg-[#1a140c] border-amber-400/20 text-stone-100'}`}>
+      <div className={`flex items-start gap-3 px-5 pt-4 pb-3 border-b ${paper ? 'border-[#8a5418]/20' : 'border-amber-400/15'}`}>
+        <span lang="he" className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#8a5418] text-[#fdf3dc]" style={{ fontFamily: HE_FONT, fontSize: '0.8rem', fontWeight: 700 }}>רמב״ם</span>
+        <div className="min-w-0 flex-1">
+          <p className="text-lg font-black">The Rambam on this sugya</p>
+          <p className={`text-xs mt-0.5 ${paper ? 'text-stone-500' : 'text-stone-400'}`}>{first === last ? shortR(first) : `${shortR(first)}–${shortR(last)}`}{sg.index !== daf.sugyot[here]?.index ? ' · the nearest sugya he rules on' : ''}</p>
+        </div>
+        <button onClick={() => setOpen(false)} className={`p-1.5 rounded-full ${paper ? 'hover:bg-amber-100' : 'hover:bg-white/10'}`} aria-label="Close"><X className="w-4 h-4" /></button>
+      </div>
+      <div className="overflow-y-auto sd-scroll px-5 pb-5" style={{ fontFamily: EN_FONT }}>
+        {syn?.rambam?.reading && <><H>How he reads the sugya</H><p className="text-[16px] leading-relaxed"><RefText text={syn.rambam.reading} /></p></>}
+        {syn?.rambam?.rulings?.length ? <><H>His rulings</H><div className="space-y-2">{syn.rambam.rulings.map((r, i) => (
+          <div key={i} className={`rounded-xl border px-3.5 py-2.5 ${paper ? 'border-[#8a5418]/20 bg-white/60' : 'border-amber-400/15 bg-white/[0.03]'}`}>
+            <p className="text-[11px] font-black"><CiteLink r={r.ref} className="sd-cite">{r.ref.replace(/^Mishneh Torah, /, 'Rambam, ')}</CiteLink></p>
+            <p className="mt-1 text-[15px] leading-relaxed"><RefText text={r.ruling} /></p>
+          </div>))}</div></> : null}
+        {mt.length ? <><H>In his own words</H><div className="space-y-3">{byHere(mt).map((m, i) => (
+          <div key={i} className={`rounded-xl border px-3.5 py-3 ${m.anchor === focusRef ? (paper ? 'border-[#8a5418]/50 bg-amber-50' : 'border-amber-300/40 bg-amber-400/[0.06]') : paper ? 'border-[#8a5418]/15' : 'border-amber-400/10'}`}>
+            <p className="flex items-center gap-2 text-[11px] font-black"><CiteLink r={m.ref} className="sd-cite">{m.ref.replace(/^Mishneh Torah, /, '')}</CiteLink><span className="ml-auto">{lineTag(m.anchor)}</span></p>
+            {m.he && <p lang="he" dir="rtl" className="mt-2 text-right" style={{ fontFamily: HE_FONT, fontSize: '1.12rem', lineHeight: 1.7 }}>{m.he}</p>}
+            {m.en && <p className={`mt-1.5 text-[14.5px] leading-relaxed ${paper ? 'text-stone-700' : 'text-stone-300'}`}>{m.en}</p>}
+          </div>))}</div></> : null}
+        {kelim.length ? <><H>His commentators</H><div className="space-y-2">{byHere(kelim).map((k, i) => {
+          const gi = (built.rambamSources || []).indexOf(k);
+          const point = k.gist || syn?.rambam?.commentators?.find((c) => c.ref === k.ref)?.point || '';
+          return (
+            <div key={i} className={`rounded-xl border px-3.5 py-2.5 ${paper ? 'border-[#8a5418]/15' : 'border-amber-400/10'}`}>
+              <p className="flex items-center gap-2"><span className={`rounded-md px-1.5 py-0.5 text-[10px] font-black ${paper ? 'bg-[#8a5418] text-white' : 'bg-amber-400/20 text-amber-100'}`} style={{ fontFamily: 'system-ui, sans-serif' }}>{k.title}</span><CiteLink r={k.ref} className="sd-cite">{shortRef(k.ref)}</CiteLink><span className="ml-auto">{lineTag(k.anchor)}</span></p>
+              {point && <p className="mt-1.5 text-[15px] leading-relaxed"><RefText text={point} /></p>}
+              <button onClick={() => setReadIdx(readIdx === gi ? null : gi)} className={`mt-1 text-[11px] font-bold ${paper ? 'text-[#8a5418]' : 'text-amber-300/80'}`}>{readIdx === gi ? 'Hide the text' : 'Read the text'}</button>
+              {readIdx === gi && <div className="mt-1.5">{k.he && <p lang="he" dir="rtl" className="text-right" style={{ fontFamily: HE_FONT, fontSize: '1.05rem', lineHeight: 1.7 }}>{k.he}</p>}{k.en && <p className={`mt-1 text-[14px] leading-relaxed ${paper ? 'text-stone-700' : 'text-stone-300'}`}>{k.en}</p>}</div>}
+            </div>
+          );
+        })}</div></> : null}
+      </div>
+      <p className={`px-5 py-2.5 border-t text-[11px] ${paper ? 'border-[#8a5418]/20 text-stone-500' : 'border-amber-400/15 text-stone-400'}`}>Texts from Sefaria · press <kbd className="font-bold">R</kbd> anytime</p>
+    </div>
+  );
+}
+
 function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: number; onGo: (i: number) => void; surface: Surface }) {
   // Only the Mishnah this point of the Gemara belongs to.
   const list = (daf.mishnayot || []).map((m) => ({ ...m, idx: daf.segments.findIndex((s) => s.ref === m.startsAt) }));
