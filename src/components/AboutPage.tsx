@@ -29,7 +29,10 @@ export function AboutPage({ onContact }: { onContact: () => void }) {
       <p className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-2">About Us</p>
       <h2 className="text-3xl sm:text-4xl font-black text-slate-50 tracking-tight mb-4">Torah learning, free and easy to reach</h2>
       <p className="text-slate-300 leading-relaxed mb-3">
-        AI Sefarim is a free home for Torah learning, with sefarim, daily shiurim and learning tools in one place, built with a Sephardic outlook. It was started by Abraham Serouya to make serious learning available to everyone, on any device, at no cost.
+        AI Sefarim is a free home for Torah learning, with sefarim, daily shiurim and learning tools in one place, built with a Sephardic outlook.
+      </p>
+      <p className="text-slate-300 leading-relaxed mb-3">
+        It is all produced by one layman, Abraham Serouya, as a hobby. The goal is extremely high quality, accessible Torah, <span className="font-black text-slate-50">always free</span>.
       </p>
 
       <div className="grid sm:grid-cols-2 gap-3 mt-8">
