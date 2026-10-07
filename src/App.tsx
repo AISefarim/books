@@ -33,6 +33,7 @@ import { NewReleasesSection } from './components/NewReleasesSection';
 import { LearningGamificationBanner } from './components/LearningGamificationBanner';
 import { ChatPage } from './components/ChatPage';
 import { ContactPage } from './components/ContactPage';
+import { AboutPage } from './components/AboutPage';
 import { SuperDafPage } from './components/SuperDafPage';
 import { DafHub } from './components/DafHub';
 import { SuperDafHero } from './components/SuperDafHero';
@@ -43,7 +44,7 @@ export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [audios, setAudios] = useState<Audio[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'contact'>('sefarim');
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'contact' | 'about'>('sefarim');
 
   // A daf podcast is listened to inside Super Daf, with the sources open,
   // rather than played bare from the Media section.
@@ -146,6 +147,9 @@ export default function App() {
     }
     if (window.location.pathname === '/contact') {
       setActiveTab('contact');
+    }
+    if (window.location.pathname === '/about') {
+      setActiveTab('about');
     }
     if (/^\/(super)?daf(\/|$)/.test(window.location.pathname)) {
       setActiveTab('daf');
@@ -674,7 +678,8 @@ export default function App() {
     const onDafPop = () => {
       if (/^\/(super)?daf(\/|$)/.test(window.location.pathname)) { setActiveTab('daf'); setDafRef(refFromPath(window.location.pathname)); }
       else if (window.location.pathname === '/contact') setActiveTab('contact');
-      else setActiveTab((t) => (t === 'daf' || t === 'contact' ? 'sefarim' : t));
+      else if (window.location.pathname === '/about') setActiveTab('about');
+      else setActiveTab((t) => (t === 'daf' || t === 'contact' || t === 'about' ? 'sefarim' : t));
     };
     window.addEventListener('popstate', handlePopState);
     window.addEventListener('popstate', onDafPop);
@@ -693,7 +698,7 @@ export default function App() {
     setIsDirectLinkEntry(false);
     setPlayingDirectVideo(false);
     window.history.replaceState({}, '', '/');
-    setActiveTab((t) => (t === 'contact' ? 'sefarim' : t));
+    setActiveTab((t) => (t === 'contact' || t === 'about' ? 'sefarim' : t));
   };
 
   const handleOpenReader = (book: Book) => {
@@ -1002,10 +1007,16 @@ export default function App() {
   const hasGamificationCard = activeTab === 'library' || Boolean(selectedVideo);
   const userStats = getGamificationStats(deviceStats.totalWatchedCount, deviceStats.totalXp);
 
-  const openContact = () => {
+  const openInfoPage = (tab: 'contact' | 'about') => {
     handleHome();
-    window.history.pushState({}, '', '/contact');
-    setActiveTab('contact');
+    window.history.pushState({}, '', `/${tab}`);
+    setActiveTab(tab);
+    window.scrollTo(0, 0);
+  };
+  const openContact = () => openInfoPage('contact');
+  const goTab = (tab: 'sefarim' | 'media' | 'chat' | 'library') => {
+    setActiveTab(tab);
+    handleHome();
     window.scrollTo(0, 0);
   };
 
@@ -1049,7 +1060,7 @@ export default function App() {
       )}
 
       {/* Welcome Video Section (Disappears for people who have been on our website over 25 times) */}
-      {activeTab !== 'chat' && activeTab !== 'daf' && activeTab !== 'contact' && !deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
+      {activeTab !== 'chat' && activeTab !== 'daf' && activeTab !== 'contact' && activeTab !== 'about' && !deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-2">
           <div className="bg-slate-900 rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-800 shadow-indigo-950/40 relative">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/20 via-slate-900 to-slate-900 pointer-events-none" />
@@ -1919,6 +1930,8 @@ export default function App() {
           </div>
         ) : activeTab === 'contact' ? (
           <ContactPage />
+        ) : activeTab === 'about' ? (
+          <AboutPage onContact={openContact} />
         ) : activeTab === 'chat' ? (
           <ChatPage onExit={() => { setActiveTab('sefarim'); handleHome(); }} books={books} media={videos} categoryThumbnails={siteSettings.videoCategoryThumbnails} />
         ) : activeTab === 'daf' ? (
@@ -1951,6 +1964,33 @@ export default function App() {
 
       {activeTab !== 'chat' && activeTab !== 'daf' && (
         <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-700/60 mt-8 relative">
+          {(() => {
+            const link = 'block text-sm text-slate-400 hover:text-indigo-300 transition-colors text-left';
+            const head = 'text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 mb-3 text-left';
+            return (
+              <nav aria-label="Site map" className="max-w-3xl mx-auto grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-8 mb-10 sm:justify-items-center">
+                <div className="space-y-2.5">
+                  <p className={head}>Explore</p>
+                  <button onClick={() => goTab('sefarim')} className={link}>Sefarim</button>
+                  <button onClick={() => { handleHome(); window.history.pushState({}, '', '/superdaf'); setActiveTab('daf'); window.scrollTo(0, 0); }} className={link}>Super Daf</button>
+                  <button onClick={() => goTab('media')} className={link}>Shiurim</button>
+                  <button onClick={() => goTab('chat')} className={link}>Super Agent</button>
+                </div>
+                <div className="space-y-2.5">
+                  <p className={head}>Community</p>
+                  <a href={bannerUrl} target="_blank" rel="noopener noreferrer" className={link}>Join WhatsApp</a>
+                  <button onClick={() => setShowWhatsAppShareModal(true)} className={link}>Invite Friends</button>
+                  <button onClick={() => goTab('library')} className={link}>My Library</button>
+                </div>
+                <div className="space-y-2.5 col-span-2 sm:col-span-1">
+                  <p className={head}>About</p>
+                  <button onClick={() => openInfoPage('about')} className={link}>About Us</button>
+                  <button onClick={openContact} className={link}>Contact Us</button>
+                  <a href="https://www.sefaria.org" target="_blank" rel="noopener noreferrer" className={link}>Powered by Sefaria</a>
+                </div>
+              </nav>
+            );
+          })()}
           <p className="text-slate-400 text-sm font-medium max-w-2xl mx-auto leading-relaxed">
             <span className="font-bold text-slate-400">Please note:</span> These sefarim are generated using AI and have not been vetted by rabbinic authorities. We do not make any profit from the sale of physical books; they are printed and sold strictly at cost.
           </p>
@@ -1970,13 +2010,6 @@ export default function App() {
               />
             </a>
           </div>
-
-          <button
-            onClick={openContact}
-            className="mt-8 text-sm font-bold text-indigo-300 hover:text-indigo-200 transition-colors"
-          >
-            Contact Us
-          </button>
 
           {!isAdmin && (
             <button
