@@ -100,36 +100,36 @@ function SourceLink({ r }: { r: string }) {
   const inDaf = !!superDafSpot(r);
   return <CiteLink r={r} className="sd-ref inline-flex items-center gap-1">{displayRef(r)} {!inDaf && <ExternalLink className="w-3 h-3 opacity-60" />}</CiteLink>;
 }
-// Inline markup for short AI text: **bold**, <b>, <i>/<em> become real bold/italics; any other tag is dropped.
+// Inline markup for short AI text: <b>/<i>/<em> become the **bold** / *italic* markers RefText understands,
+// so *term* is italic, Hebrew stays upright, and spelling matches the rest of the page.
 function Inline({ text }: { text: string }) {
-  const clean = String(text || '').replace(/<br\s*\/?>/gi, ' ').replace(/<(?!\/?(?:b|i|em)>)[^>]+>/gi, '').replace(/\s{2,}/g, ' ').trim();
-  const parts = clean.split(/(\*\*[^*]+\*\*|<b>[^<]*<\/b>|<(?:i|em)>[^<]*<\/(?:i|em)>)/gi);
-  return <>{parts.map((p, i) => {
-    if (/^\*\*[^*]+\*\*$/.test(p)) return <strong key={i}>{p.slice(2, -2)}</strong>;
-    if (/^<b>/i.test(p)) return <strong key={i}>{p.replace(/<\/?b>/gi, '')}</strong>;
-    if (/^<(i|em)>/i.test(p)) return <em key={i}>{p.replace(/<\/?(?:i|em)>/gi, '')}</em>;
-    return <span key={i}>{p.replace(/<\/?(?:b|i|em)>/gi, '')}</span>;
-  })}</>;
+  const t = String(text || '').replace(/<br\s*\/?>/gi, ' ').replace(/<b>([^<]*)<\/b>/gi, '**$1**').replace(/<(?:i|em)>([^<]*)<\/(?:i|em)>/gi, '*$1*').replace(/<[^>]+>/g, '').replace(/\s{2,}/g, ' ').trim();
+  return <RefText text={t} />;
 }
 
 function Rich({ text, className, style }: { text: string; className?: string; style?: CSSProperties }) {
-  const clean = String(text || '').replace(/<\/?(?:i|em|br)\s*\/?>/gi, '').replace(/<(?!\/?b>)[^>]+>/g, '');
-  const parts = clean.split(/(\*\*[^*]+\*\*|<b>[^<]*<\/b>)/g);
+  const clean = String(text || '').replace(/<br\s*\/?>/gi, ' ').replace(/<(?:i|em)>([^<]*)<\/(?:i|em)>/gi, '*$1*').replace(/<(?!\/?b>)[^>]+>/g, '');
+  const parts = clean.split(/(\*\*[^*]+\*\*|<b>[^<]*<\/b>|\*[^*\n]+\*)/g);
   return (
     <p className={className} style={style}>
       {parts.map((p, i) => {
         if (p.startsWith('**') && p.endsWith('**')) return <strong key={i}>{p.slice(2, -2)}</strong>;
         if (p.startsWith('<b>') && p.endsWith('</b>')) return <strong key={i}>{p.slice(3, -4)}</strong>;
+        if (/^\*[^*\n]+\*$/.test(p)) return /[\u0590-\u05FF]/.test(p) ? <span key={i}>{p.slice(1, -1)}</span> : <em key={i}>{p.slice(1, -1)}</em>;
         return <span key={i}>{p}</span>;
       })}
     </p>
   );
 }
 // Davidson text with **bold** marks: bold = the Gemara's words, plain = elucidation.
-function Marked({ text }: { text: string }) {
-  const parts = String(text || '').replace(/<[^>]+>/g, '').split(/(\*\*[^*]+\*\*)/g);
-  return <>{parts.map((p, i) => (p.startsWith('**') && p.endsWith('**') ? <strong key={i}>{p.slice(2, -2)}</strong> : <span key={i} className="sd-eluc">{p}</span>))}</>;
+// Davidson's bold (the Gemara's own words) can open in one phrase and close in the next, so each
+// "**" toggles bold, and a phrase starts bold when the previous one ended inside a bold run.
+function Marked({ text, startBold = false }: { text: string; startBold?: boolean }) {
+  const parts = String(text || '').replace(/<[^>]+>/g, '').split('**');
+  let bold = startBold;
+  return <>{parts.map((p, i) => { if (i > 0) bold = !bold; if (!p) return null; return bold ? <strong key={i}>{p}</strong> : <span key={i} className="sd-eluc">{p}</span>; })}</>;
 }
+const boldStarts = (units: { en?: string }[]) => { let b = false; return units.map((u) => { const at = b; if ((String(u.en || '').split('**').length - 1) % 2) b = !b; return at; }); };
 function Davidson({ html, text, className, style }: { html?: string; text: string; className?: string; style?: CSSProperties }) {
   const src = html && /<b>/i.test(html) ? html : `<b>${text}</b>`;
   const tokens = src.replace(/<br\s*\/?>/gi, ' ').split(/(<\/?b>|<\/?i>|<\/?strong>|<\/?em>)/gi);
@@ -1046,18 +1046,18 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
 
                     {showEn && (m && m.units?.length ? (
                       <div className={`mt-2 rounded-xl overflow-hidden border ${t.rule}`}>
-                        {m.units.map((u, k) => (
+                        {(() => { const starts = boldStarts(m.units); return m.units.map((u, k) => (
                           <div key={k}>
                           <div className="sd-unit grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-x-4 gap-y-0.5 px-3 py-1.5 cursor-pointer" onClick={() => openOn(idx, 'notes', u.notes?.[0] ?? null)}>
                             {showHe && <p lang="he" dir="rtl" className="text-right" style={{ fontFamily: HE_FONT, fontSize: `${1.05 * fontScale}rem`, lineHeight: 1.6 }}>{u.he}</p>}
                             <p style={{ fontFamily: EN_FONT, fontSize: `${0.95 * fontScale}rem`, lineHeight: 1.55 }}>
-                              {u.en ? <Marked text={u.en} /> : <><strong>{u.literal}</strong>{u.elucidation ? <span className="sd-eluc"> {u.elucidation}</span> : null}</>}
+                              {u.en ? <Marked text={u.en} startBold={starts[k]} /> : <><strong>{u.literal}</strong>{u.elucidation ? <span className="sd-eluc"> {u.elucidation}</span> : null}</>}
                               {(u.notes || []).map((n) => <span key={n} className={`sd-note ${isPanel && noteN === n ? 'on' : ''}`} onClick={(e) => { e.stopPropagation(); openOn(idx, 'notes', n); }} title="Open this note below">{n}</span>)}
                             </p>
                           </div>
                           {placed.at[k]?.length ? <div className="px-2 py-1.5 space-y-1">{placed.at[k].map(blurb)}</div> : null}
                           </div>
-                        ))}
+                        )); })()}
                       </div>
                     ) : (
                       <div className="mt-2 cursor-pointer" onClick={() => openOn(idx, 'notes')}>
@@ -1350,7 +1350,7 @@ function Words({ comms, words, setWords }: { comms: Comm[]; words: Record<string
         const on = !!words[c.ref];
         return (
           <div key={c.ref} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2.5">
-            <p className="text-slate-200"><span className="font-black text-indigo-300">{c.title}</span>{c.gist ? <> — {gistText(c.title, c.gist)}</> : null}</p>
+            <p className="text-slate-200"><span className="font-black text-indigo-300">{workName(c.title, c.ref)}</span>{c.gist ? <> — <RefText text={gistText(c.title, c.gist)} /></> : null}</p>
             <div className="mt-1.5 flex gap-2">
               <button onClick={() => setWords((o) => ({ ...o, [c.ref]: !o[c.ref] }))} className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-slate-200 hover:bg-slate-700">{on ? 'Hide the words' : 'Read the words'}</button>
               <a href={sefariaUrl(c.ref)} target="_blank" rel="noopener noreferrer" className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-slate-400 hover:text-white inline-flex items-center gap-1">Sefaria <ExternalLink className="w-3 h-3" /></a>
