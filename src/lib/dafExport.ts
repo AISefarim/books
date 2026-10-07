@@ -1,3 +1,4 @@
+import { workName } from '../components/RefText';
 import { gistText } from './daf';
 // Builds a single self-contained HTML file of a Super Daf page: opens in any
 // browser offline, prints cleanly to PDF. Everything is inlined - no network.
@@ -50,11 +51,11 @@ export function buildDafHtml(daf: any): string {
       }
       core.forEach((c: any) => parts.push(`<p class="comm"><b>${esc(c.title)}</b> — ${esc(gistText(c.title, c.gist))}</p><div class="rashi" lang="he" dir="rtl">${esc(c.he)}</div>${c.en ? `<div class="cen">${md(c.en)}</div>` : ''}`));
       h.forEach((x) => parts.push(`<div class="hal"><b>Halacha · ${esc(x.issue)}</b>${[['Rambam', x.rambam], ['Shulchan Arukh', x.shulchanArukh], ['Rema', x.rema]].filter(([, r]) => r).map(([w, r]: any) => `<p><b>${w}:</b> ${esc(r.short || r.ruling)} <span class="cite">${esc(r.ref)}</span></p>`).join('')}</div>`));
-      if (m?.notes?.length) parts.push(`<div class="notes">${m.notes.map((n: any) => `<p><sup>${n.n}</sup> <b>${esc(n.source)}</b> — ${md(n.point)} <span class="cite">${esc(n.ref)}</span></p>`).join('')}</div>`);
+      if (m?.notes?.length) parts.push(`<div class="notes">${m.notes.map((n: any) => `<p><sup>${n.n}</sup> <b>${esc(workName(n.source, n.ref))}</b> — ${md(n.point)} <span class="cite">${esc(n.ref)}</span></p>`).join('')}</div>`);
       parts.push(`</article>`);
     });
 
-    if (syn?.rambam) parts.push(`<div class="rambam"><b>The Rambam</b><p>${md(syn.rambam.reading)}</p>${(syn.rambam.commentators || []).map((c: any) => `<p><b>${esc(c.source)}:</b> ${md(c.point)} <span class="cite">${esc(c.ref)}</span></p>`).join('')}</div>`);
+    if (syn?.rambam) parts.push(`<div class="rambam"><b>The Rambam</b><p>${md(syn.rambam.reading)}</p>${(syn.rambam.commentators || []).map((c: any) => `<p><b>${esc(workName(c.source, c.ref))}:</b> ${md(c.point)} <span class="cite">${esc(c.ref)}</span></p>`).join('')}</div>`);
     if (syn?.bigPicture) parts.push(`<p class="big"><b>Big picture.</b> ${esc(syn.bigPicture)}</p>`);
     const lesson = daf.summary?.sugyaLessons?.[sg.index];
     if (lesson) parts.push(`<p class="lesson"><b>What we learned</b> ${esc(lesson)}</p>`);

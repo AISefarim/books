@@ -5,7 +5,7 @@ import {
   Quote, Sparkles, NotebookPen, Share2, GripHorizontal, ChevronUp, ChevronDown, Download, ScrollText, Compass } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
-import { RefText, plain, CiteLink, shortRef } from './RefText';
+import { RefText, plain, CiteLink, shortRef, workName } from './RefText';
 import { DAF_API, pingDafOpen, gistText, dafPath, sefariaUrl, superDafSpot, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
 import { useReadyDafs } from '../lib/useReadyDafs';
 import { downloadDaf } from '../lib/dafExport';
@@ -1154,7 +1154,7 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
   useEffect(() => { noteRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, [noteN, tab, segIdx]);
   useEffect(() => { setWork(null); }, [segIdx, sugya.index]);
   const orderedNotes = useMemo(() => {
-    const low = (n: MNote) => /Rabbeinu Gershom/i.test(n.source || '');
+    const low = (n: MNote) => /Rabbeinu Gershom/i.test(workName(n.source, n.ref));
     const ns = [...(mes?.notes || []).filter((n) => !low(n)), ...(mes?.notes || []).filter(low)];
     if (noteN === null) return ns;
     return [...ns.filter((n) => n.n === noteN), ...ns.filter((n) => n.n !== noteN)];
@@ -1192,7 +1192,7 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
               <div className="space-y-2">
                 {orderedNotes.map((n) => (
                   <div key={n.n} ref={noteN === n.n ? noteRef : undefined} className={`rounded-xl border px-3 py-2.5 ${noteN === n.n ? 'border-indigo-400/60 bg-indigo-500/10' : 'border-slate-700/60 bg-slate-800/50'}`}>
-                    <p className="flex items-center gap-2 mb-1"><span className="sd-note on" style={{ verticalAlign: 'baseline' }}>{n.n}</span><span className="text-[11px] font-black text-indigo-200">{sourceName(n.source)}</span><span className="ml-auto"><SourceLink r={n.ref} /></span></p>
+                    <p className="flex items-center gap-2 mb-1"><span className="sd-note on" style={{ verticalAlign: 'baseline' }}>{n.n}</span><span className="text-[11px] font-black text-indigo-200">{workName(n.source, n.ref)}</span><span className="ml-auto"><SourceLink r={n.ref} /></span></p>
                     <p className="leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.96rem' }}><RefText text={n.point} /></p>
                     {(() => { const b = biurFor(n.n); return b ? (
                       <button onClick={() => { setFocusBiur(b.id); setTab('biurim'); }} className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-amber-500/40 bg-amber-500/10 px-2.5 py-1 text-[11px] font-bold text-amber-700 hover:bg-amber-500/20">
@@ -1213,7 +1213,7 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
                 <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-amber-700"><Landmark className="w-4 h-4" /> The Rambam</p>
                 <p className="mt-1.5 leading-relaxed text-slate-100" style={{ fontFamily: EN_FONT, fontSize: '0.98rem' }}><RefText text={syn.rambam.reading} /></p>
                 {syn.rambam.commentators?.length ? (
-                  <ul className="mt-2 space-y-1.5">{syn.rambam.commentators.map((c, i) => <li key={i} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-amber-500/40 text-amber-800 bg-amber-500/10">{c.source}</span><span className="text-slate-200"><RefText text={c.point} /> <SourceLink r={c.ref} /></span></li>)}</ul>
+                  <ul className="mt-2 space-y-1.5">{syn.rambam.commentators.map((c, i) => <li key={i} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-amber-500/40 text-amber-800 bg-amber-500/10">{workName(c.source, c.ref)}</span><span className="text-slate-200"><RefText text={c.point} /> <SourceLink r={c.ref} /></span></li>)}</ul>
                 ) : null}
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {syn.rambam.rulings?.length ? <button onClick={() => setWords((o) => ({ ...o, __rulings: o.__rulings === false }))} className="rounded-full border border-amber-500/40 bg-slate-900 px-2.5 py-1 text-[11px] font-bold text-amber-800">{words.__rulings !== false ? 'Hide' : 'Show'} his rulings ({syn.rambam.rulings.length})</button> : null}
@@ -1588,7 +1588,7 @@ function BiurCard({ b, focused, innerRef, book }: { b: Biur; focused: boolean; i
           <div className={`grid gap-2 ${b.shitos.length > 1 ? 'sm:grid-cols-2' : ''}`}>
             {b.shitos.map((x, i) => (
               <div key={i} className="rounded-xl bg-slate-800/60 border border-slate-700/60 px-3 py-2">
-                <p className="mb-1"><span className="rounded-md px-1.5 py-0.5 text-[10px] font-black border border-indigo-400/40 text-indigo-200 bg-indigo-500/10">{sourceName(x.who)}</span></p>
+                <p className="mb-1"><span className="rounded-md px-1.5 py-0.5 text-[10px] font-black border border-indigo-400/40 text-indigo-200 bg-indigo-500/10">{workName(x.who, x.refs[0])}</span></p>
                 <p className="text-slate-200 leading-relaxed"><RefText text={x.view} /></p>
                 <p className="mt-1 flex flex-wrap gap-x-2 gap-y-1">{x.refs.map((r) => <SourceLink key={r} r={r} />)}</p>
               </div>
@@ -1599,13 +1599,13 @@ function BiurCard({ b, focused, innerRef, book }: { b: Biur; focused: boolean; i
       {b.yesod && <div className="mt-3 rounded-xl border-l-4 border-amber-500/70 bg-amber-500/10 px-3 py-2">{label('What it turns on', 'יסוד הדברים')}<p className="text-slate-100 leading-relaxed"><RefText text={b.yesod} /></p></div>}
       {b.answers.length ? (
         <div className="mt-3">{label('Answers', 'תירוצים')}
-          <ul className="space-y-1.5">{b.answers.map((x, i) => <li key={i} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-slate-600 bg-slate-800 text-slate-200 h-fit">{sourceName(x.who)}</span><span className="text-slate-200"><RefText text={x.answer} /> {x.refs.map((r) => <span key={r} className="ml-1"><SourceLink r={r} /></span>)}</span></li>)}</ul>
+          <ul className="space-y-1.5">{b.answers.map((x, i) => <li key={i} className="flex gap-2"><span className="shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-black border border-slate-600 bg-slate-800 text-slate-200 h-fit">{workName(x.who, x.refs[0])}</span><span className="text-slate-200"><RefText text={x.answer} /> {x.refs.map((r) => <span key={r} className="ml-1"><SourceLink r={r} /></span>)}</span></li>)}</ul>
         </div>
       ) : null}
       {b.body.length ? <div className="mt-3 space-y-2">{b.body.map((p, i) => <p key={i} className="leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.97rem' }}><RefText text={p} /></p>)}</div> : null}
       {b.lemaaseh && <div className="mt-3">{label('Halacha l\'maaseh', 'למעשה')}<p className="text-slate-200"><RefText text={b.lemaaseh} /></p></div>}
       {b.open && <div className="mt-3">{label('Left open', 'צריך עיון')}<p className="text-slate-300 italic"><RefText text={b.open} /></p></div>}
-      {b.sources.length ? <p className="mt-3 text-[11px] text-slate-500">Sources: {b.sources.map(sourceName).join(' · ')}</p> : null}
+      {b.sources.length ? <p className="mt-3 text-[11px] text-slate-500">Sources: {[...new Set(b.sources.map((x) => workName(x)))].join(' · ')}</p> : null}
     </div>
   );
 }
