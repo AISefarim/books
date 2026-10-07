@@ -1,4 +1,4 @@
-import { Phone, Mail, MessageCircle } from 'lucide-react';
+import { MessageSquare, Mail, MessageCircle } from 'lucide-react';
 
 const PHONE_DISPLAY = '908-309-2031';
 const PHONE_TEL = '+19083092031';
@@ -15,10 +15,10 @@ export function ContactPage() {
       </p>
 
       <div className="flex flex-col gap-3">
-        <a href={`tel:${PHONE_TEL}`} className={card}>
-          <span className="p-3 rounded-2xl bg-indigo-600/20 text-indigo-300 shrink-0"><Phone className="w-6 h-6" /></span>
+        <a href={`sms:${PHONE_TEL}`} className={card}>
+          <span className="p-3 rounded-2xl bg-indigo-600/20 text-indigo-300 shrink-0"><MessageSquare className="w-6 h-6" /></span>
           <span className="min-w-0">
-            <span className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Call or text</span>
+            <span className="block text-[11px] font-black uppercase tracking-wider text-slate-500">Text</span>
             <span className="block text-xl font-bold text-slate-50 group-hover:text-indigo-300 transition-colors">{PHONE_DISPLAY}</span>
           </span>
         </a>
@@ -39,6 +39,10 @@ export function ContactPage() {
           </span>
         </a>
       </div>
+
+      <p className="mt-6 text-sm text-slate-500">
+        Prefer to talk? <a href={`tel:${PHONE_TEL}`} className="font-bold text-slate-300 hover:text-indigo-300 underline underline-offset-4">Call {PHONE_DISPLAY}</a>
+      </p>
     </div>
   );
 }
