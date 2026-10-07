@@ -213,7 +213,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   // Tablets and larger (any iPad, desktops) start a notch bigger - they're read
   // from further away than a phone - unless you've chosen a size yourself.
   const [fontScale, setFontScale] = useState<number>(prefs.fontScale || (typeof window !== 'undefined' && window.matchMedia('(min-width: 700px)').matches ? 1.1 : 1));
-  const [mapOpen, setMapOpen] = useState<boolean>(prefs.mapOpen === true);
+  const [mapOpen, setMapOpen] = useState<boolean>(() => (typeof prefs.mapPinned === 'boolean' ? prefs.mapPinned : typeof window !== 'undefined' && window.innerWidth >= 1024));
   // 'full' = full Hebrew paragraph + phrase-by-phrase; 'phrases' = phrase-by-phrase only (about twice as much on screen)
   const [gemaraLayout, setGemaraLayout] = useState<'full' | 'phrases'>(prefs.gemaraLayout === 'phrases' ? 'phrases' : 'full');
   const [mapPeek, setMapPeek] = useState(false);
@@ -278,7 +278,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   useEffect(() => {
     if (!document.querySelector(`link[href="${FONTS_HREF}"]`)) { const l = document.createElement('link'); l.rel = 'stylesheet'; l.href = FONTS_HREF; document.head.appendChild(l); }
   }, []);
-  useEffect(() => { writeJson(PREFS_KEY, { surface, lang, fontScale, mapOpen, split: splitTall, splitWide, lowerCollapsed, gemaraLayout, notesSplit }); }, [surface, lang, fontScale, mapOpen, splitTall, splitWide, lowerCollapsed, gemaraLayout, notesSplit]);
+  useEffect(() => { writeJson(PREFS_KEY, { surface, lang, fontScale, mapOpen, mapPinned: mapOpen, split: splitTall, splitWide, lowerCollapsed, gemaraLayout, notesSplit }); }, [surface, lang, fontScale, mapOpen, splitTall, splitWide, lowerCollapsed, gemaraLayout, notesSplit]);
   useEffect(() => { writeJson(BOOKMARKS_KEY, bookmarks); }, [bookmarks]);
   useEffect(() => { if (!toast) return; const id = window.setTimeout(() => setToast(null), 1800); return () => window.clearTimeout(id); }, [toast]);
 
@@ -346,6 +346,11 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   }, []);
 
   const scrollToSeg = useCallback((idx: number) => scrollRef.current?.querySelector<HTMLElement>(`[data-seg="${idx}"]`)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), []);
+  // Phones: the real page opens full screen from a button in the top bar
+  const realPages = useVilna(daf?.book || '');
+  const pageRegions = useRegions(daf?.book || '', daf?.daf || '');
+  const [phonePage, setPhonePage] = useState<'a' | 'b' | null>(null);
+  const pageHeadline = useMemo(() => { const m = new Map<string, string>(); for (const sg of daf?.sugyot || []) for (const st of sg.built?.synthesis?.steps || []) for (const r of st.refs || []) if (!m.has(r)) m.set(r, st.headline); return m; }, [daf]);
 
   useEffect(() => {
     if (!ref) return;
@@ -624,9 +629,11 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd-chip-sod { color:#6d28d9; border-color:rgba(139,92,246,.45); } .sd-dark .sd-chip-sod { color:#c4b5fd; }
       `}</style>
 
+      {phonePage && daf && createPortal(<VilnaViewer paper={surface === 'paper'} daf={daf} amud={phonePage} setAmud={setPhonePage} onClose={() => setPhonePage(null)} regions={pageRegions[phonePage]} focusIdx={focusIdx} headline={pageHeadline} onJump={(i) => { setPhonePage(null); scrollToSeg(i); }} />, document.body)}
       {/* ============ top bar ============ */}
       <header className="shrink-0 h-12 sm:h-14 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 bg-slate-950 text-slate-100 border-b border-slate-800">
         <button onClick={onExit} className="p-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>
+        {daf && realPages ? <button onClick={() => setPhonePage(daf.segments[focusIdx]?.amud?.endsWith('b') ? 'b' : 'a')} className="md:hidden inline-flex p-2 rounded-full border bg-slate-800 border-slate-700 text-slate-200" aria-label="See the daf as printed" title="See the daf as printed"><MapIcon className="w-4 h-4" /></button> : null}
         <button onClick={() => setMapOpen((m) => !m)} className={`hidden md:inline-flex p-2 rounded-full border ${mapOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}`} aria-label="Pin the daf map" title={mapOpen ? 'Unpin the daf map (it will show only while you scroll)' : 'Pin the daf map open'}><MapIcon className="w-4 h-4" /></button>
         <button disabled={!canGo(daf?.prev)} onClick={() => daf?.prev && canGo(daf.prev) && setRef(daf.prev)} className="p-1.5 rounded-full hover:bg-slate-800 text-slate-400 disabled:opacity-30" aria-label="Previous daf"><ChevronLeft className="w-5 h-5" /></button>
         <button onClick={() => setSheet(sheet?.kind === 'library' ? null : { kind: 'library' })} className="min-w-0 flex-1 text-center leading-tight rounded-xl hover:bg-slate-900 py-0.5" title="Browse all dapim">
@@ -1436,6 +1443,7 @@ function useVilna(book: string) {
   const [ok, setOk] = useState<boolean | null>(null);
   useEffect(() => {
     let live = true;
+    if (!book) { setOk(false); return; }
     if (!vilnaAvail.has(book)) vilnaAvail.set(book, fetch(`${VILNA_BASE}/info?book=${encodeURIComponent(book)}`).then((r) => r.json()).then((j) => !!j.available).catch(() => false));
     vilnaAvail.get(book)!.then((v) => { if (live) setOk(v); });
     return () => { live = false; };
@@ -1451,6 +1459,7 @@ function useRegions(book: string, daf: string) {
   const [r, setR] = useState<{ a: Regions; b: Regions }>({ a: EMPTY_REGIONS, b: EMPTY_REGIONS });
   useEffect(() => {
     let live = true;
+    if (!book || !daf) return;
     const get = (amud: 'a' | 'b') => { const k = `${book}/${daf}${amud}`; if (!regionCache.has(k)) regionCache.set(k, fetch(`${VILNA_BASE}/${encodeURIComponent(book)}/${daf}${amud}.json`).then((x) => (x.ok ? x.json() : {})).then((j: Partial<Regions>) => ({ segments: j.segments || {}, zones: j.zones || {} })).catch(() => EMPTY_REGIONS)); return regionCache.get(k)!; };
     Promise.all([get('a'), get('b')]).then(([a, b]) => { if (live) setR({ a, b }); });
     return () => { live = false; };
@@ -1557,16 +1566,16 @@ function VilnaViewer({ paper, daf, amud, setAmud, onClose, regions, focusIdx, he
     <div className={`fixed inset-0 z-[60] flex flex-col backdrop-blur-sm ${paper ? 'bg-[#f3ede0]/97 text-slate-900 sd-viewer-paper' : 'bg-black/85 text-white'}`} onClick={onClose}>
       <div className={`flex items-center gap-2 px-4 py-2.5 ${paper ? 'text-slate-900' : 'text-white'}`} onClick={(e) => { if ((e.target as HTMLElement).closest('button')) e.stopPropagation(); }}>
         <span lang="he" className="text-lg font-bold" style={{ fontFamily: HE_FONT }}>{daf.heTitle} {daf.heRef ? daf.heRef.replace(daf.heTitle, '').trim() : ''}{amud === 'a' ? '.' : ':'}</span>
-        <span className="text-xs opacity-60">{daf.title} {daf.daf}{amud} · Vilna edition</span>
+        <span className="hidden sm:inline text-xs opacity-60">{daf.title} {daf.daf}{amud} · Vilna edition</span>
         <span className="flex-1" />
-        <button onClick={() => setAmud('b')} disabled={amud === 'b'} className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold disabled:opacity-30">‹ Amud Bet</button>
-        <button onClick={() => setAmud('a')} disabled={amud === 'a'} className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold disabled:opacity-30">Amud Alef ›</button>
-        <button onClick={() => setZoom((z) => !z)} className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold">{zoom ? 'Fit to screen' : 'Zoom in'}</button>
+        <button onClick={() => setAmud('b')} disabled={amud === 'b'} className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold disabled:opacity-30">‹ <span className="hidden sm:inline">Amud </span>Bet</button>
+        <button onClick={() => setAmud('a')} disabled={amud === 'a'} className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold disabled:opacity-30">​<span className="hidden sm:inline">Amud </span>Alef ›</button>
+        <button onClick={() => setZoom((z) => !z)} className="rounded-full border border-current/25 px-3 py-1 text-xs font-bold">{zoom ? 'Fit' : 'Zoom'}</button>
         <button onClick={onClose} className="p-1.5 rounded-full hover:bg-black/10" aria-label="Close"><X className="w-5 h-5" /></button>
       </div>
       <div className={`flex-1 overflow-auto ${zoom ? '' : 'flex items-center justify-center'} px-4 pb-4 cursor-zoom-out`} onClick={onClose} title="Tap outside the page to close">
         {!loaded && <p className="opacity-70 text-sm inline-flex items-center gap-2 absolute left-1/2 top-1/2 -translate-x-1/2"><Loader2 className="w-4 h-4 animate-spin" /> Loading the page…</p>}
-        <div className={`relative cursor-default shrink-0 ${zoom ? 'w-[1500px] mx-auto' : ''}`} style={zoom ? {} : { height: 'calc(100dvh - 7.5rem)', aspectRatio: '3399 / 5397', maxWidth: '100%' }} onClick={(e) => e.stopPropagation()}>
+        <div className={`relative cursor-default shrink-0 ${zoom ? 'w-[1500px] mx-auto' : ''}`} style={zoom ? {} : { width: 'min(100%, calc((100dvh - 7.5rem) * 0.6298))', aspectRatio: '3399 / 5397' }} onClick={(e) => e.stopPropagation()}>
           <img key={`${amud}-${zoom}`} src={vilnaUrl(daf.book, daf.daf, amud, zoom ? 'l' : 'm')} alt={`${daf.title} ${daf.daf}${amud}, Vilna edition`} onLoad={() => setLoaded(true)} onDoubleClick={() => setZoom((z) => !z)}
             className={`block w-full h-full object-contain transition-opacity ${loaded ? 'opacity-100' : 'opacity-0'}`} style={paper ? { mixBlendMode: 'multiply' } : { filter: 'invert(.88) hue-rotate(180deg) brightness(1.05)' }} />
           {loaded && <PageOverlay regions={regions} daf={daf} focusIdx={focusIdx} hover={hover} setHover={setHover} onPick={onJump} outerRight={amud === 'b'} />}
