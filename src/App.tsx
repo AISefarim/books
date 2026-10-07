@@ -1002,7 +1002,15 @@ export default function App() {
   const hasGamificationCard = activeTab === 'library' || Boolean(selectedVideo);
   const userStats = getGamificationStats(deviceStats.totalWatchedCount, deviceStats.totalXp);
 
+  const openContact = () => {
+    handleHome();
+    window.history.pushState({}, '', '/contact');
+    setActiveTab('contact');
+    window.scrollTo(0, 0);
+  };
+
   const navbarProps = {
+    onOpenContact: openContact,
     isAdmin,
     onToggleAdmin: handleToggleAdmin,
     onHome: handleHome,
@@ -1964,12 +1972,7 @@ export default function App() {
           </div>
 
           <button
-            onClick={() => {
-              handleHome();
-              window.history.pushState({}, '', '/contact');
-              setActiveTab('contact');
-              window.scrollTo(0, 0);
-            }}
+            onClick={openContact}
             className="mt-8 text-sm font-bold text-indigo-300 hover:text-indigo-200 transition-colors"
           >
             Contact Us

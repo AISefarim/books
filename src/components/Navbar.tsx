@@ -1,4 +1,4 @@
-import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye, Sparkles, ScrollText } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye, Sparkles, ScrollText, Mail } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { GamificationStats } from '../lib/deviceTracker';
 
@@ -20,10 +20,11 @@ interface NavbarProps {
   onOpenSync?: () => void;
   showLevelBadge?: boolean;
   userStats?: GamificationStats;
+  onOpenContact?: () => void;
   variant?: 'header' | 'footer';
 }
 
-export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, totalViewed, onOpenWhatsAppShare, currentUser, onOpenSync, showLevelBadge = false, userStats, variant = 'header' }: NavbarProps) {
+export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onTabChange, whatsappUrl, totalBooks = 0, totalVideos = 0, totalPodcasts = 0, totalMedia, totalViewed, onOpenWhatsAppShare, currentUser, onOpenSync, showLevelBadge = false, userStats, onOpenContact, variant = 'header' }: NavbarProps) {
   const mediaCount = totalMedia !== undefined ? totalMedia : (totalVideos + totalPodcasts);
   const isGoogleUser = currentUser && !currentUser.isAnonymous;
 
@@ -262,6 +263,22 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
             </button>
           )}
 
+          {onOpenContact && (
+            <button
+              type="button"
+              onClick={onOpenContact}
+              className={`flex items-center gap-1.5 px-3 py-2 rounded-xl transition-all text-xs font-bold border active:scale-95 ${
+                activeTab === 'contact'
+                  ? 'bg-indigo-600 text-white border-indigo-400/40'
+                  : 'text-slate-300 hover:text-white hover:bg-slate-800/60 border-transparent hover:border-slate-700'
+              }`}
+              title="Contact Us"
+            >
+              <Mail className="w-3.5 h-3.5 text-indigo-300" />
+              <span className="hidden xl:inline uppercase tracking-wide">Contact</span>
+            </button>
+          )}
+
           {/* Optional Device Sync & Account Button */}
           {onOpenSync && (
             isGoogleUser ? (
@@ -306,6 +323,17 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
         
         {/* Mobile quick actions */}
         <div className="md:hidden absolute top-3 right-4 flex items-center gap-1.5">
+          {onOpenContact && (
+            <button
+              type="button"
+              onClick={onOpenContact}
+              className="p-1.5 text-slate-300 hover:text-white bg-slate-800/80 rounded-full border border-slate-700/60 active:scale-95"
+              title="Contact Us"
+              aria-label="Contact Us"
+            >
+              <Mail className="w-3.5 h-3.5 text-indigo-300" />
+            </button>
+          )}
           {onOpenSync && (
             <button
               type="button"
