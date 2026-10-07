@@ -32,7 +32,7 @@ export function AboutPage({ onContact }: { onContact: () => void }) {
         AI Sefarim is a free home for Torah learning, with sefarim, daily shiurim and learning tools in one place, built with a Sephardic outlook.
       </p>
       <p className="text-slate-300 leading-relaxed mb-3">
-        It is all produced by one layman, Abraham Serouya, as a hobby. The goal is extremely high quality, accessible Torah, <span className="font-black text-slate-50">always free</span>.
+        It is all produced by one layman as a hobby. The goal is extremely high quality, accessible Torah, <span className="font-black text-slate-50">always free</span>.
       </p>
 
       <div className="grid sm:grid-cols-2 gap-3 mt-8">
