@@ -13,7 +13,7 @@ export function ContactPage() {
       <p className="text-[11px] font-black uppercase tracking-[0.2em] text-indigo-400 mb-2">Contact Us</p>
       <h2 className="text-3xl sm:text-4xl font-black text-slate-50 tracking-tight mb-3">We'd love to hear from you</h2>
       <p className="text-slate-400 leading-relaxed mb-8">
-        Questions, corrections, suggestions for new sefarim, or interested in sponsoring? Reach out to Abraham Serouya directly.
+        Questions, corrections, suggestions for new sefarim, or interested in sponsoring? Reach out to us directly.
       </p>
 
       <div className="flex flex-col gap-3">
