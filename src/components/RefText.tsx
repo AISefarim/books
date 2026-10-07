@@ -15,7 +15,10 @@ export const plain = (s?: string) => sephardi(String(s || '').replace(/\*\*/g, '
 
 // "[Rashi on Bekhorot 17a:3:1, Kessef Mishneh on Mishneh Torah, Firstlings 5:1:2]"
 // -> separate chips with short names.
-export function shortRef(r: string) {
+// Sefaria files some classics under book names; label them as learners know them.
+const REF_NAMES: [RegExp, string][] = [[/^Chidushei Halachot\b/, 'Maharsha'], [/^Chidushei Agadot\b/, 'Maharsha (Aggadah)'], [/^Haggahot Ya'avetz\b/, "Ya'avetz"], [/^Chiddushei Ramban\b/, 'Ramban']];
+export function shortRef(r0: string) {
+  let r = r0; for (const [re, name] of REF_NAMES) r = r.replace(re, name);
   let m;
   if ((m = r.match(/^(.+?) on Mishneh Torah, [^\d]*?(\d[\d:]*)$/))) return `${m[1]} ${m[2]}`;
   if ((m = r.match(/^Mishneh Torah, (.+)$/))) return `Rambam, ${m[1]}`;
