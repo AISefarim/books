@@ -113,9 +113,19 @@ export function goToSpot(e: { preventDefault(): void; stopPropagation(): void; m
 }
 
 // Readership ping (counts people, not page loads - see the worker). Fire and forget.
+// Campaign tag from a shared link (?src=lakewood), kept for the visit so
+// later pings in the same tab carry it too.
+function dafSource(): string {
+  try {
+    const q = new URLSearchParams(window.location.search).get('src');
+    if (q && /^[a-z0-9-]{1,24}$/i.test(q)) { sessionStorage.setItem('dafSrc', q.toLowerCase()); return q.toLowerCase(); }
+    return sessionStorage.getItem('dafSrc') || '';
+  } catch { return ''; }
+}
+
 export function pingDafOpen(ref?: string) {
   try {
-    fetch(`${DAF_API}/open`, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ ref: ref || '' }) }).catch(() => {});
+    fetch(`${DAF_API}/open`, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'text/plain' }, body: JSON.stringify({ ref: ref || '', src: dafSource() }) }).catch(() => {});
   } catch { /* ignore */ }
 }
 
