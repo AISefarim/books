@@ -255,8 +255,8 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
                   <div className="mx-auto mt-6 flex w-40 items-center gap-3 text-[#d9ccad]/50" aria-hidden="true">
                     <span className="h-px flex-1 bg-current" /><span className="text-[10px]">◆</span><span className="h-px flex-1 bg-current" />
                   </div>
-                  <span className="mt-7 inline-flex items-center gap-2 rounded-2xl bg-indigo-600 text-white px-7 py-3.5 text-base sm:text-lg font-black shadow-xl shadow-indigo-600/30 group-hover:gap-3 group-hover:bg-indigo-500 transition-all">
-                    Start learning <ArrowRight className="w-5 h-5" />
+                  <span className="mt-8 inline-flex w-full max-w-[21rem] sm:w-auto sm:max-w-none items-center justify-center gap-3 rounded-full bg-indigo-600 text-white px-10 sm:px-14 py-4 sm:py-5 text-xl sm:text-2xl font-black tracking-tight ring-[6px] ring-indigo-400/20 shadow-[0_20px_60px_-12px_rgba(99,102,241,0.8)] group-hover:bg-indigo-500 group-hover:ring-indigo-300/35 group-hover:gap-4 transition-all">
+                    <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" /> Start learning <ArrowRight className="w-6 h-6 sm:w-7 sm:h-7" />
                   </span>
                   {todayMeta?.sugyot ? <p className="mt-3 text-xs font-semibold text-slate-500">{todayMeta.sugyot} sugyot</p> : null}
                 </>

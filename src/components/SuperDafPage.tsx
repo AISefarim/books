@@ -6,8 +6,8 @@ import {
 } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
-import { RefText, plain } from './RefText';
-import { DAF_API, pingDafOpen, gistText, dafPath, sefariaUrl, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
+import { RefText, plain, CiteLink } from './RefText';
+import { DAF_API, pingDafOpen, gistText, dafPath, sefariaUrl, superDafSpot, titleMatchesDaf, dafRefForMedia } from '../lib/daf';
 import { useReadyDafs } from '../lib/useReadyDafs';
 import { downloadDaf } from '../lib/dafExport';
 import { recordDeviceDafRead } from '../lib/deviceTracker';
@@ -84,7 +84,8 @@ const firstSentence = (s?: string) => { const t = plain(s).trim(); const m = t.m
 // Text helpers
 
 function SourceLink({ r }: { r: string }) {
-  return <a href={sefariaUrl(r)} target="_blank" rel="noopener noreferrer" className="sd-ref inline-flex items-center gap-1" onClick={(e) => e.stopPropagation()}>{r} <ExternalLink className="w-3 h-3 opacity-60" /></a>;
+  const inDaf = !!superDafSpot(r);
+  return <CiteLink r={r} className="sd-ref inline-flex items-center gap-1">{r} {!inDaf && <ExternalLink className="w-3 h-3 opacity-60" />}</CiteLink>;
 }
 function Rich({ text, className, style }: { text: string; className?: string; style?: CSSProperties }) {
   const clean = String(text || '').replace(/<\/?(?:i|em|br)\s*\/?>/gi, '').replace(/<(?!\/?b>)[^>]+>/g, '');
@@ -336,7 +337,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         if (first) {
           first = false;
           const hash = decodeURIComponent(window.location.hash.replace(/^#/, ''));
-          if (hash) { const i = d.segments.findIndex((s) => short(s.ref, d.book) === hash || s.ref === hash); if (i >= 0) { setResume(null); setTimeout(() => scrollToSeg(i), 200); } }
+          if (hash) { const i = d.segments.findIndex((s) => short(s.ref, d.book) === hash || s.ref === hash); if (i >= 0) { setResume(null); setPinned(i); setTimeout(() => scrollToSeg(i), 200); } }
         }
         if (d.status !== 'ready') {
           let delay = 7000;
@@ -348,6 +349,23 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     tick();
     return () => { cancelled = true; if (pollRef.current) window.clearTimeout(pollRef.current); };
   }, [ref, load, scrollToSeg]);
+
+  // A citation to a line in Super Daf: scroll there on this daf, or move to its daf.
+  useEffect(() => {
+    const onGoto = (e: Event) => {
+      const d = (e as CustomEvent<{ ref: string; seg: string; handled: boolean }>).detail;
+      d.handled = true;
+      if (daf && d.ref === daf.ref) {
+        const i = daf.segments.findIndex((s) => short(s.ref, daf.book) === d.seg);
+        if (i >= 0) { setPinned(i); scrollToSeg(i); }
+        return;
+      }
+      window.history.pushState({}, '', `${dafPath(d.ref)}#${d.seg}`);
+      setRef(d.ref);
+    };
+    window.addEventListener('sd-goto', onGoto);
+    return () => window.removeEventListener('sd-goto', onGoto);
+  }, [daf, scrollToSeg]);
 
   useEffect(() => {
     if (!daf) return;

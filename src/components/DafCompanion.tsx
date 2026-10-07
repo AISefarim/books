@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties, type ReactNode } from 'react';
-import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Share2, Loader2, Gem, Sun, Moon, Scale, Link2 } from 'lucide-react';
-import { DAF_API, sefariaUrl } from '../lib/daf';
-import { RefText, plain, shortRef } from './RefText';
+import { ArrowLeft, ArrowRight, ChevronLeft, ChevronRight, Share2, Loader2, Gem, Sun, Moon } from 'lucide-react';
+import { DAF_API } from '../lib/daf';
+import { RefText, plain, shortRef, CiteLink } from './RefText';
 
 // "Gems from the Daf": supplementary study material around one daf. The hub
 // shows a parchment band of cards - set apart from the daf itself - and each
@@ -168,20 +168,89 @@ function GemCard({ id, c, onClick, extra = '' }: { id: GemId; c: Companion; onCl
   }
   let visual: ReactNode = null;
   let line = titleOf(c, id);
-  if (id === 'remember') visual = <span className="text-[52px] leading-none font-bold" style={{ fontFamily: EN_FONT, color: P.gold }}>3</span>;
-  if (id === 'halacha') { visual = <span className="flex items-end gap-2"><Scale className="w-9 h-9" style={{ color: P.gold }} strokeWidth={1.5} /></span>; }
+  if (id === 'remember') visual = <ThreeLines />;
+  if (id === 'halacha') visual = <HalachaPath />;
   if (id === 'rambam') visual = <span lang="he" className="text-[34px] leading-none font-bold" style={{ fontFamily: HE_FONT, color: P.gold }}>רמב״ם</span>;
-  if (id === 'tosafot') visual = <span lang="he" className="text-[34px] leading-none font-bold" style={{ fontFamily: HE_FONT, color: P.gold }}>תוספות</span>;
-  if (id === 'machloket') visual = <span lang="he" className="text-[34px] leading-none font-bold" style={{ fontFamily: HE_FONT, color: P.gold }}>מחלוקת</span>;
+  if (id === 'tosafot') visual = <MiniColumn dh={c.tosafot[0]?.dh || ''} />;
+  if (id === 'machloket') { const ps = c.machlokes[0]?.positions || []; visual = <Versus a={ps[0]?.who} b={ps[1]?.who} />; }
   if (id === 'words') { visual = <span lang="he" dir="rtl" className="block w-full truncate text-[30px] leading-tight font-bold" style={{ fontFamily: HE_FONT, color: P.gold }}>{c.words[0]?.he}</span>; line = `${c.words.length} terms that unlock the daf`; }
   if (id === 'review') { const { book, n } = splitRef(c.ref); visual = <Ring n={n} last={LAST_DAF[book] || 0} />; }
-  if (id === 'shas') { visual = <Link2 className="w-9 h-9" style={{ color: P.gold }} strokeWidth={1.5} />; line = `${c.shas.length} places in Shas that share this daf’s ideas`; }
+  if (id === 'shas') { visual = <ShasWeb names={c.shas.map((s) => s.ref.replace(/^Jerusalem Talmud /, 'Y. ').replace(/ \d.*$/, ''))} />; line = `${c.shas.length} places in Shas that share this daf’s ideas`; }
   return (
     <button onClick={onClick} className={`${extra} group text-left rounded-2xl border p-4 flex flex-col min-h-[150px] transition-all hover:-translate-y-0.5 hover:shadow-[0_14px_30px_-20px_rgba(35,29,21,0.6)]`} style={{ background: P.card, borderColor: P.rule, color: P.ink }}>
       <span className="text-[10.5px] font-black uppercase tracking-[0.16em]" style={{ color: P.muted }}>{LABEL[id]}</span>
       <span className="flex-1 flex items-center py-3">{visual}</span>
       <span className="text-[14px] leading-snug font-semibold line-clamp-2" style={{ fontFamily: EN_FONT }}>{line}</span>
     </button>
+  );
+}
+
+// ---- small drawings for the gem cards (gold line-work on parchment)
+
+function ThreeLines() {
+  return (
+    <span className="flex w-full flex-col gap-2" aria-hidden="true">
+      {[0.92, 0.75, 0.84].map((w, i) => (
+        <span key={i} className="flex items-center gap-2">
+          <span lang="he" className="flex w-6 h-6 shrink-0 items-center justify-center rounded-full border text-[12px] font-bold" style={{ fontFamily: HE_FONT, borderColor: P.gold, color: P.gold }}>{HE_NUM[i]}</span>
+          <span className="h-[5px] rounded-full" style={{ width: `${w * 100}%`, background: `${P.gold}40` }} />
+        </span>
+      ))}
+    </span>
+  );
+}
+
+// Gemara -> Rambam -> Shulchan Arukh, as a path
+function HalachaPath() {
+  const stops = ['גמרא', 'רמב״ם', 'שו״ע'];
+  return (
+    <span className="relative flex w-full items-start justify-between" aria-hidden="true">
+      <span className="absolute left-3 right-3 top-[9px] h-px" style={{ background: `${P.gold}66` }} />
+      {stops.map((s, i) => (
+        <span key={s} className="relative flex flex-col items-center gap-1.5">
+          <span className="w-[18px] h-[18px] rounded-full border-2" style={{ borderColor: P.gold, background: i === stops.length - 1 ? P.gold : P.card }} />
+          <span lang="he" className="text-[15px] font-bold leading-none" style={{ fontFamily: HE_FONT, color: P.ink }}>{s}</span>
+        </span>
+      ))}
+    </span>
+  );
+}
+
+// a sliver of a printed page: the dibbur hamatchil, then lines of text
+function MiniColumn({ dh }: { dh: string }) {
+  return (
+    <span dir="rtl" className="flex w-full flex-col gap-1.5" aria-hidden="true">
+      <span lang="he" className="truncate text-[17px] font-bold leading-tight" style={{ fontFamily: HE_FONT, color: P.gold }}>{dh ? `ד״ה ${dh}` : 'תוספות'}</span>
+      {[1, 0.9, 0.96, 0.6].map((w, i) => <span key={i} className="h-[4px] rounded-full" style={{ width: `${w * 100}%`, background: `${P.ink}1f` }} />)}
+    </span>
+  );
+}
+
+// two sides of a dispute, one above the other
+function Versus({ a, b }: { a?: string; b?: string }) {
+  const pill = (t?: string) => <span className="block truncate rounded-full border px-3 py-1 text-[12.5px] font-black" style={{ borderColor: P.rule, background: '#fff9' }}>{t || ''}</span>;
+  return (
+    <span className="flex w-full flex-col items-stretch gap-0.5">
+      {pill(a)}
+      <span lang="he" className="self-center text-[13px] font-bold leading-tight" style={{ fontFamily: HE_FONT, color: P.gold }}>מול</span>
+      {pill(b)}
+    </span>
+  );
+}
+
+// this daf at the center, linked out to other masechtot
+function ShasWeb({ names }: { names: string[] }) {
+  const uniq = Array.from(new Set(names)).slice(0, 5);
+  const pts = uniq.map((_, i) => { const a = (-150 + (i * 300) / Math.max(1, uniq.length - 1)) * (Math.PI / 180); return { x: 50 + Math.cos(a) * 40, y: 50 + Math.sin(a) * 38 }; });
+  return (
+    <span className="flex w-full items-center gap-3">
+      <svg width="64" height="64" viewBox="0 0 100 100" className="shrink-0" aria-hidden="true">
+        {pts.map((p, i) => <line key={i} x1="50" y1="50" x2={p.x} y2={p.y} stroke={P.gold} strokeOpacity="0.5" strokeWidth="2" />)}
+        {pts.map((p, i) => <circle key={i} cx={p.x} cy={p.y} r="7" fill={P.card} stroke={P.gold} strokeWidth="2.5" />)}
+        <circle cx="50" cy="50" r="12" fill={P.gold} />
+      </svg>
+      <span className="min-w-0 text-[12px] font-bold leading-snug" style={{ color: P.muted }}>{uniq.join(' · ')}</span>
+    </span>
   );
 }
 
@@ -318,7 +387,7 @@ function Hero({ c, id, words }: { c: Companion; id: GemId; words: number }) {
 // ---------------------------------------------------------------- pieces
 
 const Ornament = () => <div className="mx-auto flex w-40 items-center gap-3" style={{ color: 'var(--accent)', opacity: 0.6 }} aria-hidden="true"><span className="h-px flex-1 bg-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-current" /></div>;
-const Chip = ({ r }: { r: string }) => <a href={sefariaUrl(r)} target="_blank" rel="noopener noreferrer" className="sd-cite" title={r}>{shortRef(r)}</a>;
+const Chip = ({ r }: { r: string }) => <CiteLink r={r} className="sd-cite">{shortRef(r)}</CiteLink>;
 const Para = ({ text, drop }: { text: string; drop?: boolean }) => <p className={`text-[19px] sm:text-[20px] leading-[1.75] ${drop ? 'dropcap' : ''}`} style={{ fontFamily: EN_FONT }}><RefText text={text} /></p>;
 const H2 = ({ children }: { children: ReactNode }) => <h2 className="mt-12 mb-4 text-[24px] sm:text-[27px] font-bold leading-snug tracking-tight" style={{ fontFamily: EN_FONT }}>{children}</h2>;
 const Label = ({ children }: { children: ReactNode }) => <p className="mt-12 mb-5 flex items-center gap-3 text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: 'var(--accent)' }}>{children}<span className="h-px flex-1" style={{ background: 'var(--rule)' }} /></p>;
@@ -501,12 +570,12 @@ function ShasBody({ c }: { c: Companion }) {
   return (
     <div className="space-y-4">
       {c.shas.map((s, i) => (
-        <a key={i} href={sefariaUrl(s.ref)} target="_blank" rel="noopener noreferrer" className="block rounded-2xl border px-5 sm:px-6 py-5 transition-transform hover:-translate-y-0.5" style={{ borderColor: 'var(--rule)', background: 'var(--card)' }}>
+        <CiteLink key={i} r={s.ref} className="block rounded-2xl border px-5 sm:px-6 py-5 transition-transform hover:-translate-y-0.5" style={{ borderColor: 'var(--rule)', background: 'var(--card)' }}>
           <p className="flex flex-wrap items-center gap-2 text-[19px] font-bold" style={{ fontFamily: EN_FONT }}>{s.ref}{s.yerushalmi && <span className="rounded-full border px-2 py-0.5 text-[10px] font-black uppercase tracking-wider" style={{ borderColor: 'var(--rule)', color: 'var(--muted)' }}>Yerushalmi</span>}</p>
           <p className="mt-1 text-xs font-bold" style={{ color: 'var(--muted)' }}>Connected to our daf at {segShort(s.anchor)}{s.headline ? ` - ${s.headline}` : ''}</p>
           {s.en ? <p className="mt-3 text-[17px] leading-relaxed" style={{ fontFamily: EN_FONT }}>{plain(s.en)}</p>
             : s.he ? <p lang="he" dir="rtl" className="mt-3 text-[20px] leading-relaxed" style={{ fontFamily: HE_FONT }}>{s.he}…</p> : null}
-        </a>
+        </CiteLink>
       ))}
     </div>
   );
