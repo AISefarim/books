@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import LiveAnalytics from './LiveAnalytics';
 import { Loader2, Lock, RefreshCw, Users, CalendarDays, Infinity as InfinityIcon, ScrollText } from 'lucide-react';
 
 // /stats - private Super Daf readership numbers, behind a simple PIN
@@ -49,7 +50,7 @@ export default function DafStatsPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 px-4 sm:px-8 py-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="flex items-center gap-3">
           <ScrollText className="w-6 h-6 text-indigo-300" />
           <h1 className="text-2xl font-black tracking-tight">Super Daf readers</h1>
@@ -57,6 +58,7 @@ export default function DafStatsPage() {
         </div>
         <p className="mt-1 text-sm text-slate-400">Unique people who opened Super Daf (the Daf page or any daf). A person counts once per day, however many times they open it. Days follow New York time.</p>
         {err && <p className="mt-4 text-rose-300">{err}</p>}
+        <LiveAnalytics pin={key} />
 
         {!stats ? (
           <div className="py-20 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-slate-500" /></div>
