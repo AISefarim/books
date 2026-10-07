@@ -9,6 +9,7 @@ const short = (ref: string, book: string) => String(ref || '').replace(book + ' 
 function md(s: unknown) {
   return esc(s)
     .replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>')
+    .replace(/\*([^*\n]+)\*/g, '<i>$1</i>')
     .replace(/\[([^\]]{3,120}\d[^\]]*)\]/g, '<span class="cite">$1</span>');
 }
 
