@@ -110,8 +110,9 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
 
       {/* Navigation Controls */}
       {books.length > 1 && (
-        <div className="absolute bottom-6 right-6 flex items-center gap-2 z-20">
+        <div className="relative flex items-center justify-center gap-2 z-20 pb-6 md:pb-0 md:absolute md:bottom-6 md:right-6">
           <button 
+            aria-label="Previous sefer"
             onClick={handlePrev}
             className="p-3 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white hover:bg-black/40 transition-all"
           >
@@ -123,12 +124,13 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
                 key={idx}
                 onClick={() => setCurrentIndex(idx)}
                 className={`w-2 h-2 rounded-full transition-all ${
-                  idx === currentIndex ? 'bg-slate-900 w-6' : 'bg-slate-900/30 hover:bg-slate-900/50'
+                  idx === currentIndex ? 'bg-white w-6' : 'bg-white/30 hover:bg-white/50'
                 }`}
               />
             ))}
           </div>
           <button 
+            aria-label="Next sefer"
             onClick={handleNext}
             className="p-3 rounded-full bg-black/20 backdrop-blur-md border border-white/10 text-white hover:bg-black/40 transition-all"
           >
