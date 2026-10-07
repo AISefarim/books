@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo, useRef, useCallback, type CSSProperties, 
 import {
   ArrowLeft, ChevronLeft, ChevronRight, Headphones, X, ExternalLink, Clock, Loader2, Scale, Landmark, Send, MessageSquareText,
   Minus, Plus, Lock, Bookmark, BookmarkCheck, Maximize2, Minimize2, Type, Sun, Moon, Map as MapIcon, ListTree, Check, Library,
-  Quote, Sparkles, NotebookPen, Share2, GripHorizontal, ChevronUp, ChevronDown, Download, ScrollText,
-} from 'lucide-react';
+  Quote, Sparkles, NotebookPen, Share2, GripHorizontal, ChevronUp, ChevronDown, Download, ScrollText, Compass } from 'lucide-react';
 import type { Video as MediaItem } from '../types';
 import { AudioPlayer } from './AudioPlayer';
 import { RefText, plain, CiteLink } from './RefText';
@@ -44,11 +43,18 @@ interface Sugya {
   prelude?: { from: string; to: string; segments: Seg[] }; continuation?: { from: string; to: string; segments: Seg[] }; continuesOn?: string;
   built: Built | null;
 }
+// Daf prep: what to know before learning the daf (built once per daf)
+export interface DafPrep {
+  leftOff: string; question: string; prev?: string | null;
+  concepts: { he: string; name: string; explain: string; ref: string }[];
+  people: { name: string; he: string; era: string; role: string }[];
+}
 interface Daf {
   ref: string; heRef: string; book: string; daf: string; title: string; heTitle: string; next: string | null; prev: string | null;
   mishnayot?: { ref: string; he: string; en: string; startsAt: string; endsAt?: string; fromDaf: string | null; lines?: { he: string; enHtml: string }[] }[];
   segments: Seg[]; sugyot: Sugya[]; status: 'ready' | 'building'; done: number; total: number; attribution: string;
   summary?: { preview?: string[]; takeaways?: string[]; sugyaLessons?: string[] } | null;
+  prep?: DafPrep | null;
   versions: { he: { title: string; license: string }; en: { title: string; license: string } };
 }
 interface TldrSoFar { upto: string; sofar: string; nowWeAre: string; keepInMind: string[] }
@@ -814,6 +820,36 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 // ----------------------------------------------------------------------
 // Upper half: the daf. Hebrew, interlinear, Rashi & Tosafot inline, halacha standalone.
 
+// "Before you start": the Daf prep, folded under the "we'll learn" points.
+function PrepToggle({ prep, t }: { prep: DafPrep; t: any }) {
+  const [open, setOpen] = useState(false);
+  const label = (s: string) => <p className={`mt-4 mb-1.5 text-[10px] font-black uppercase tracking-[0.18em] ${t.accent}`}>{s}</p>;
+  return (
+    <div className="mt-2.5 border-t pt-2" style={{ borderColor: 'currentColor', borderTopColor: 'rgba(127,127,127,0.18)' }}>
+      <button onClick={() => setOpen(!open)} className={`w-full flex items-center gap-2 text-left text-[13px] font-black ${t.accent}`} aria-expanded={open}>
+        <Compass className="w-4 h-4" /> Daf prep <span className={`font-semibold ${t.faint}`}>· background, who's who</span>
+        <ChevronDown className={`ml-auto w-4 h-4 transition-transform ${open ? 'rotate-180' : ''}`} />
+      </button>
+      {open && (
+        <div className="pb-1 text-[15px] leading-relaxed" style={{ fontFamily: EN_FONT }}>
+          {prep.leftOff && <>{label('Where we left off')}<p><RefText text={prep.leftOff} /></p></>}
+          {prep.question && <>{label('The question going in')}<p className="font-semibold"><RefText text={prep.question} /></p></>}
+          {prep.concepts?.length ? <>{label('Know before you start')}<ul className="space-y-2.5">{prep.concepts.map((c, i) => (
+            <li key={i}>
+              <span className="font-bold"><span lang="he" dir="rtl" style={{ fontFamily: HE_FONT, fontSize: '1.12em' }}>{c.he}</span>{c.name ? ` · ${c.name}` : ''}</span>
+              <span className="block"><RefText text={c.explain} /></span>
+            </li>))}</ul></> : null}
+          {prep.people?.length ? <>{label("Who's who")}<ul className="space-y-1.5">{prep.people.map((p, i) => (
+            <li key={i} className="flex gap-2">
+              <span className="shrink-0 font-bold"><span lang="he" style={{ fontFamily: HE_FONT }}>{p.he}</span> <span className={`text-[10px] font-black uppercase tracking-wider ${t.faint}`}>{p.era}</span></span>
+              <span className="min-w-0"><RefText text={p.role} /></span>
+            </li>))}</ul></> : null}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmarked, toggleBookmark, onShare, openOn, openSugya, canGo, onGo, gemaraLayout = 'full' }: {
   gemaraLayout?: 'full' | 'phrases';
   daf: Daf; t: any; showHe: boolean; showEn: boolean; fontScale: number; panelIdx: number | null; noteN: number | null;
@@ -842,6 +878,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
           <div className={`rounded-2xl border ${t.card} px-4 py-3 mb-4 shadow-sm`}>
             <p className={`text-[10px] font-black uppercase tracking-[0.18em] ${t.accent} mb-1.5`}>On this daf we'll learn</p>
             <ul className="space-y-1">{daf.summary.preview.slice(0, 3).map((x, i) => <li key={i} className="flex gap-2 text-[15px] leading-snug" style={{ fontFamily: EN_FONT }}><span className={`font-black ${t.accent}`}>{i + 1}.</span><span>{x}</span></li>)}</ul>
+            {daf.prep && <PrepToggle prep={daf.prep} t={t} />}
           </div>
         ) : null}
         {daf.sugyot.map((sugya) => {
