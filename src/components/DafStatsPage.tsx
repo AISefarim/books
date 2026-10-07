@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import LiveAnalytics from './LiveAnalytics';
 import { Loader2, Lock, RefreshCw, Users, CalendarDays, Infinity as InfinityIcon, ScrollText } from 'lucide-react';
 
 // /stats - private Super Daf readership numbers, behind a simple PIN
@@ -8,7 +9,7 @@ import { Loader2, Lock, RefreshCw, Users, CalendarDays, Infinity as InfinityIcon
 const WORKER_URL = (import.meta as any).env?.VITE_CHAT_WORKER_URL || 'https://aisefarim-chat.abrahamserouya.workers.dev';
 const ENDPOINT = `${WORKER_URL.replace(/\/$/, '')}/admin/dafstats`;
 
-type Stats = { today: number; thisMonth: number; allTime: number; perDay: { day: string; people: number }[]; perDaf: { ref: string; people: number }[] };
+type Stats = { today: number; thisMonth: number; allTime: number; perDay: { day: string; people: number }[]; perDaf: { ref: string; people: number }[]; perSource?: { src: string; people: number }[] };
 
 export default function DafStatsPage() {
   const [key, setKey] = useState(() => { try { return localStorage.getItem('statsPin') || ''; } catch { return ''; } });
@@ -49,14 +50,15 @@ export default function DafStatsPage() {
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100 px-4 sm:px-8 py-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <div className="flex items-center gap-3">
           <ScrollText className="w-6 h-6 text-indigo-300" />
           <h1 className="text-2xl font-black tracking-tight">Super Daf readers</h1>
           <button onClick={() => load(key)} className="ml-auto inline-flex items-center gap-1.5 rounded-full border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-bold hover:bg-slate-800">{busy ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />} Refresh</button>
         </div>
-        <p className="mt-1 text-sm text-slate-400">Unique people who opened Super Daf (the Daf page or any daf). A person counts once per day, however many times they open it.</p>
+        <p className="mt-1 text-sm text-slate-400">Unique people who opened Super Daf (the Daf page or any daf). A person counts once per day, however many times they open it. Days follow New York time.</p>
         {err && <p className="mt-4 text-rose-300">{err}</p>}
+        <LiveAnalytics pin={key} />
 
         {!stats ? (
           <div className="py-20 flex justify-center"><Loader2 className="w-6 h-6 animate-spin text-slate-500" /></div>
@@ -83,6 +85,20 @@ export default function DafStatsPage() {
               </div>
               <div className="mt-1 flex justify-between text-[10px] text-slate-500"><span>{days[0]?.day.slice(5)}</span><span>today</span></div>
             </div>
+
+            {!!stats.perSource?.length && (
+              <>
+                <h2 className="mt-8 mb-3 text-sm font-black uppercase tracking-wider text-slate-400">People from tagged links · all time</h2>
+                <div className="rounded-2xl border border-slate-800 bg-slate-900 divide-y divide-slate-800">
+                  {stats.perSource.map((d) => (
+                    <div key={d.src} className="flex items-center gap-3 px-4 py-2.5">
+                      <span className="font-bold">?src={d.src}</span>
+                      <span className="ml-auto tabular-nums font-black">{d.people.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              </>
+            )}
 
             <h2 className="mt-8 mb-3 text-sm font-black uppercase tracking-wider text-slate-400">People per daf · all time</h2>
             {stats.perDaf.length === 0 ? <p className="text-slate-500 text-sm">No daf opens recorded yet.</p> : (
