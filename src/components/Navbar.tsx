@@ -7,8 +7,8 @@ interface NavbarProps {
   onToggleAdmin: () => void;
   onHome: () => void;
   logoUrl?: string;
-  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'contact';
-  onTabChange: (tab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'contact') => void;
+  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'contact' | 'about';
+  onTabChange: (tab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'contact' | 'about') => void;
   whatsappUrl?: string;
   totalBooks?: number;
   totalVideos?: number;

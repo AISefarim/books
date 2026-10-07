@@ -18,7 +18,7 @@ function gemsOf(c) {
 }
 
 export default async function handler(req, res) {
-  const urls = [{ loc: `${SITE}/`, pri: '0.8' }, { loc: `${SITE}/daf`, pri: '1.0', freq: 'daily' }];
+  const urls = [{ loc: `${SITE}/`, pri: '0.8' }, { loc: `${SITE}/daf`, pri: '1.0', freq: 'daily' }, { loc: `${SITE}/about`, pri: '0.5' }, { loc: `${SITE}/contact`, pri: '0.5' }];
   try {
     const items = (await api('index')).items || [];
     const books = new Set();
