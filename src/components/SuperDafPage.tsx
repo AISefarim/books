@@ -243,6 +243,9 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
   const [bookmarks, setBookmarks] = useState<BookmarkItem[]>(() => readJson<BookmarkItem[]>(BOOKMARKS_KEY, []));
   const [resume, setResume] = useState<{ segRef: string } | null>(null);
   const [isFull, setIsFull] = useState(false);
+  // Focus mode: only the Gemara and the notes - no top bar, bottom bar or daf map.
+  // (iPad Safari can't full-screen a page, so this is the screen-maxing mode there.)
+  const [focus, setFocus] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
@@ -530,9 +533,25 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
     const el: any = document.documentElement;
     const d: any = document;
     const inFs = d.fullscreenElement || d.webkitFullscreenElement;
-    if (!inFs) { (el.requestFullscreen?.({ navigationUI: 'hide' }) || el.webkitRequestFullscreen?.())?.catch?.(() => {}); }
-    else { (d.exitFullscreen?.() || d.webkitExitFullscreen?.())?.catch?.(() => {}); }
+    if (!focus) {
+      setFocus(true);
+      // where the browser can, go truly full screen as well
+      if (!inFs) { try { (el.requestFullscreen?.({ navigationUI: 'hide' }) || el.webkitRequestFullscreen?.())?.catch?.(() => {}); } catch { /* not supported */ } }
+    } else {
+      setFocus(false);
+      if (inFs) { try { (d.exitFullscreen?.() || d.webkitExitFullscreen?.())?.catch?.(() => {}); } catch { /* ignore */ } }
+    }
   };
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (['INPUT', 'TEXTAREA'].includes(document.activeElement?.tagName || '') || e.metaKey || e.ctrlKey) return;
+      if (e.key === 'f' || e.key === 'F') toggleFullscreen();
+      if (e.key === 'Escape' && focus) setFocus(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  });
+
 
   const t = surface === 'paper'
     ? { shell: 'bg-[#efe7d6]', page: 'bg-[#f7f2e7] text-stone-900', card: 'bg-white/70 border-[#e3d8c1]', soft: 'bg-[#efe6d3]', muted: 'text-stone-500', faint: 'text-stone-400', rule: 'border-[#e3d8c1]', accent: 'text-indigo-700', chip: 'bg-white/80 border-[#e3d8c1] text-stone-700', hover: 'hover:bg-white/70', sel: 'ring-2 ring-indigo-400/50' }
@@ -634,7 +653,10 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
       {phonePage && daf && createPortal(<VilnaViewer paper={surface === 'paper'} daf={daf} amud={phonePage} setAmud={setPhonePage} onClose={() => setPhonePage(null)} regions={pageRegions[phonePage]} focusIdx={focusIdx} headline={pageHeadline} onJump={(i) => { setPhonePage(null); scrollToSeg(i); }} />, document.body)}
       {/* ============ top bar ============ */}
-      <header className="shrink-0 h-12 sm:h-14 flex items-center gap-1.5 sm:gap-2 px-2 sm:px-4 bg-slate-950 text-slate-100 border-b border-slate-800">
+      {focus && (
+        <button onClick={toggleFullscreen} className="fixed left-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[60] inline-flex items-center gap-1.5 rounded-full bg-slate-900/70 border border-slate-700 px-3 py-1.5 text-xs font-black text-slate-200 opacity-40 hover:opacity-100 active:opacity-100 backdrop-blur transition-opacity" aria-label="Exit focus mode" title="Exit focus mode (Esc)"><Minimize2 className="w-3.5 h-3.5" /> Exit</button>
+      )}
+      <header className={`${focus ? 'hidden' : 'flex'} shrink-0 h-12 sm:h-14 items-center gap-1.5 sm:gap-2 px-2 sm:px-4 bg-slate-950 text-slate-100 border-b border-slate-800`}>
         <button onClick={onExit} className="p-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>
         {daf && realPages ? <button onClick={() => setPhonePage(daf.segments[focusIdx]?.amud?.endsWith('b') ? 'b' : 'a')} className="md:hidden inline-flex p-2 rounded-full border bg-slate-800 border-slate-700 text-slate-200" aria-label="See the daf as printed" title="See the daf as printed"><MapIcon className="w-4 h-4" /></button> : null}
         <button onClick={() => { setMapOpen((m) => !m); setMapPeek(false); }} className={`hidden md:inline-flex p-2 rounded-full border ${mapOpen ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-white'}`} aria-label="Pin the daf map" title={mapOpen ? 'Unpin the daf map (it will show only while you scroll)' : 'Pin the daf map open'}><MapIcon className="w-4 h-4" /></button>
@@ -651,7 +673,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         <button onClick={() => setSheet(sheet?.kind === 'library' ? null : { kind: 'library' })} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 sm:px-3 py-1.5 text-xs font-black ${sheet?.kind === 'library' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="All dapim" title="Browse all dapim"><Library className="w-4 h-4" /><span className="hidden sm:inline">All dapim</span></button>
         <button disabled={!daf || daf.status !== 'ready'} onClick={() => daf && downloadDaf(daf)} className="p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white disabled:opacity-30" aria-label="Download this daf for offline reading" title={daf?.status === 'ready' ? 'Download this daf (works offline, prints to PDF)' : 'Available once the daf is fully prepared'}><Download className="w-4 h-4" /></button>
         <button onClick={() => setSheet(sheet?.kind === 'settings' ? null : { kind: 'settings' })} className={`p-2 rounded-full border ${sheet?.kind === 'settings' ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700 text-slate-200 hover:text-white'}`} aria-label="Reading settings" title="Reading settings"><Type className="w-4 h-4" /></button>
-        <button onClick={toggleFullscreen} className="hidden sm:inline-flex p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white" aria-label="Full screen" title={isFull ? 'Exit full screen' : 'Full screen'}>{isFull ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</button>
+        <button onClick={toggleFullscreen} className="hidden sm:inline-flex p-2 rounded-full bg-slate-800 border border-slate-700 text-slate-200 hover:text-white" aria-label="Focus mode" title={focus ? 'Exit focus mode' : 'Focus mode: just the Gemara and notes (F)'}>{focus ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</button>
       </header>
 
       {/* ============ body: upper (the daf) / divider / lower (the notes) ============ */}
@@ -659,13 +681,13 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         <div className="relative flex min-h-0 min-w-0" style={wide ? { width: `${upperPct}%` } : { height: `${upperPct}%` }}>
           {/* Pinned: a column of its own. Unpinned: it appears while you scroll (or a
               mouse rests at the left edge) and fades away after - touch never pins it. */}
-          {daf && (
+          {daf && !focus && (
             <div className={`${mapOpen ? 'relative' : `absolute inset-y-0 left-0 z-30 shadow-2xl transition-opacity ease-out ${mapPeek ? 'opacity-100 duration-150' : scrolling ? 'opacity-90 duration-150' : 'opacity-0 pointer-events-none duration-700'}`} hidden md:block`}
               onPointerEnter={(e) => { if (e.pointerType === 'mouse') setMapPeek(true); }} onPointerLeave={(e) => { if (e.pointerType === 'mouse') setMapPeek(false); }}>
               <Minimap daf={daf} focusIdx={focusIdx} onJump={scrollToSeg} bookmarks={bookmarks} surface={surface} />
             </div>
           )}
-          {daf && !mapOpen && <div className="hidden md:block absolute inset-y-0 left-0 w-3 z-20" onPointerEnter={(e) => { if (e.pointerType === 'mouse') setMapPeek(true); }} title="The daf map" />}
+          {daf && !mapOpen && !focus && <div className="hidden md:block absolute inset-y-0 left-0 w-3 z-20" onPointerEnter={(e) => { if (e.pointerType === 'mouse') setMapPeek(true); }} title="The daf map" />}
           {daf && (daf.mishnayot || []).length > 0 && <MishnahPeek daf={daf} focusIdx={focusIdx} onGo={scrollToSeg} surface={surface} />}
           {daf && dafHasRambam(daf) && <RambamPeek daf={daf} focusIdx={focusIdx} onGo={scrollToSeg} surface={surface} />}
           <div ref={scrollRef} className="sd-scroll flex-1 min-w-0 overflow-y-auto" onScroll={() => {
@@ -759,7 +781,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       </div>
 
       {/* ============ dock ============ */}
-      {daf && (
+      {daf && !focus && (
         <nav className="shrink-0 bg-slate-950 border-t border-slate-800 px-2 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5">
           <div className={`mx-auto grid gap-1 lg:flex lg:items-center lg:justify-center lg:gap-3 lg:max-w-3xl ${['max-w-lg grid-cols-4', 'max-w-xl grid-cols-5', 'max-w-2xl grid-cols-6'][((daf.mishnayot || []).length ? 1 : 0) + (dafHasRambam(daf) ? 1 : 0)]}`}>
             {([
