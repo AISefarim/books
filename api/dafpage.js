@@ -108,6 +108,11 @@ function setHead(html, { title, desc, path, type = 'website', jsonld }) {
   html = html.replace(/<meta\s+property="og:title"\s+content="[^"]*"\s*\/?>/, `<meta property="og:title" content="${t}" />\n    <meta name="twitter:title" content="${t}" />`);
   html = html.replace(/<meta\s+property="og:description"\s+content="[^"]*"\s*\/?>/, `<meta property="og:description" content="${d}" />\n    <meta name="twitter:description" content="${d}" />`);
   html = html.replace(/<meta\s+property="og:type"\s+content="[^"]*"\s*\/?>/, `<meta property="og:type" content="${type}" />\n    <meta property="og:url" content="${esc(url)}" />`);
+  // Super Daf's own logo on every shared /daf link (not the AI Sefarim logo)
+  const img = `${SITE}/superdaf-og.jpg`;
+  html = html.replace(/<meta\s+property="og:image"\s+content="[^"]*"\s*\/?>/, `<meta property="og:image" content="${img}" />\n    <meta property="og:image:width" content="1200" />\n    <meta property="og:image:height" content="1200" />\n    <meta property="og:image:alt" content="Super Daf - the daf, sugya by sugya" />\n    <meta name="twitter:card" content="summary_large_image" />\n    <meta name="twitter:image" content="${img}" />`);
+  html = html.replace(/<link\s+rel="apple-touch-icon"\s+href="[^"]*"\s*\/?>/, `<link rel="apple-touch-icon" href="${SITE}/superdaf-apple-touch.png" />`);
+  html = html.replace(/<link\s+rel="icon"\s+href="[^"]*"[^>]*>/, `<link rel="icon" type="image/png" href="${SITE}/superdaf-favicon.png" />`);
   html = html.replace('</head>', `    <link rel="canonical" href="${esc(url)}" />\n${jsonld ? `    <script type="application/ld+json">${JSON.stringify(jsonld).replace(/</g, '\\u003c')}</script>\n` : ''}  </head>`);
   return html;
 }
