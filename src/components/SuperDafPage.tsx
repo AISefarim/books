@@ -1393,13 +1393,19 @@ function OutlineMap({ daf, focusIdx, onJump, bookmarks, surface, top }: { daf: D
   const count = (segRef: string, title: string) => core.filter((c) => c.anchor === segRef && c.title === title).length;
   const marked = new Set(bookmarks.filter((b) => b.ref === daf.ref).map((b) => b.segRef));
   const mishnayot = daf.segments.map((s, i) => (s.startsMishnah ? i : -1)).filter((i) => i >= 0);
+  const carried = (daf.mishnayot || []).find((m) => !daf.segments.some((s) => s.ref === m.startsAt));
   const fill = surface === 'paper' ? { page: '#fbf7ee', stroke: '#d9cdb3', block: '#cfc3a9', mishnah: '#e8c279', side: '#ddd3bd', focus: '#4f46e5', text: '#8a7f6a', bg: '#efe7d6' } : { page: '#18181b', stroke: '#2e2e33', block: '#3a3a40', mishnah: '#6b5a3a', side: '#2e2e33', focus: '#a5b4fc', text: '#8a898e', bg: '#0c0c0e' };
   return (
     <aside className="flex h-full shrink-0 w-[128px] flex-col items-center gap-3 py-3 overflow-y-auto sd-scroll border-r border-black/5" style={{ background: fill.bg }} aria-label="Where you are on the daf">
       <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider" style={{ color: fill.text }}><MapIcon className="w-3 h-3" /> The daf</div>
       {top}
-      {mishnayot.length > 0 && (
+      {(mishnayot.length > 0 || carried) && (
         <div className="w-full px-2 flex flex-col gap-1">
+          {carried && (
+            <button onClick={() => window.dispatchEvent(new Event('sd-mishnah-toggle'))} className="w-full rounded-lg px-2 py-1 text-left text-[10px] font-black leading-tight opacity-90" style={{ background: fill.mishnah, color: surface === 'paper' ? '#5b3a06' : '#f5e3c0' }} title={`The Mishnah this daf is explaining began on ${carried.startsAt}`}>
+              <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '0.8rem' }}>מתני׳</span> · from {carried.startsAt.replace(daf.book + ' ', '').replace(/:\d+$/, '')}
+            </button>
+          )}
           {mishnayot.map((i, k) => (
             <button key={i} onClick={() => onJump(i)} className="w-full rounded-lg px-2 py-1 text-left text-[10px] font-black leading-tight transition-colors" style={{ background: fill.mishnah, color: surface === 'paper' ? '#5b3a06' : '#f5e3c0' }} title={`Jump to this Mishnah (${daf.segments[i].ref})`}>
               <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '0.8rem' }}>מתני׳</span> {mishnayot.length > 1 ? `${k + 1} · ` : ''}{daf.segments[i].amud}
@@ -1532,12 +1538,19 @@ function Minimap(props: { daf: Daf; focusIdx: number; onJump: (i: number) => voi
   if (!real || mode === 'outline') return <OutlineMap {...props} top={toggle} />;
   const here = daf.segments[focusIdx]?.amud?.endsWith('b') ? 'b' : 'a';
   const mishnayot = daf.segments.map((s, i) => (s.startsMishnah ? i : -1)).filter((i) => i >= 0);
+  // the Mishnah this daf opens on, when it began on an earlier daf - its chip opens Our Mishnah
+  const carried = (daf.mishnayot || []).find((m) => !daf.segments.some((s) => s.ref === m.startsAt));
   return (
     <aside className="relative flex h-full shrink-0 w-[148px] flex-col items-center gap-3 py-3 overflow-y-auto sd-scroll border-r border-black/5" style={{ background: col.bg }} aria-label="The daf as printed">
       <div className="flex items-center gap-1 text-[10px] font-black uppercase tracking-wider" style={{ color: col.text }}><MapIcon className="w-3 h-3" /> The daf</div>
       {toggle}
-      {mishnayot.length > 0 && (
+      {(mishnayot.length > 0 || carried) && (
         <div className="w-full px-2 flex flex-col gap-1">
+          {carried && (
+            <button onClick={() => window.dispatchEvent(new Event('sd-mishnah-toggle'))} className="w-full rounded-lg px-2 py-1 text-left text-[10px] font-black leading-tight" style={{ background: paper ? '#f1dcae' : '#4d4130', color: paper ? '#5b3a06' : '#f5e3c0' }} title={`The Mishnah this daf is explaining began on ${carried.startsAt}`}>
+              <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '0.8rem' }}>מתני׳</span> · from {carried.startsAt.replace(daf.book + ' ', '').replace(/:\d+$/, '')}
+            </button>
+          )}
           {mishnayot.map((i, k) => (
             <button key={i} onClick={() => props.onJump(i)} className="w-full rounded-lg px-2 py-1 text-left text-[10px] font-black leading-tight" style={{ background: paper ? '#e8c279' : '#6b5a3a', color: paper ? '#5b3a06' : '#f5e3c0' }} title={`Jump to this Mishnah (${daf.segments[i].ref})`}>
               <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '0.8rem' }}>מתני׳</span> {mishnayot.length > 1 ? `${k + 1} · ` : ''}{daf.segments[i].amud}
@@ -2005,6 +2018,7 @@ function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: num
               </p>
             </div>
             {shown.idx >= 0 && <button onClick={() => { onGo(shown.idx); setOpen(false); }} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-black ${paper ? 'bg-amber-600 text-white' : 'bg-amber-400 text-stone-900'}`}>Go to it</button>}
+            {shown.idx < 0 && (() => { const m = shown.startsAt.match(/^(.+?) (\d+)([ab]):(\d+)/); return m ? <button onClick={() => { setOpen(false); window.dispatchEvent(new CustomEvent('sd-goto', { detail: { ref: `${m[1]} ${m[2]}`, seg: `${m[2]}${m[3]}:${m[4]}`, handled: false } })); }} className={`shrink-0 rounded-full px-3 py-1.5 text-xs font-black ${paper ? 'bg-amber-600 text-white' : 'bg-amber-400 text-stone-900'}`}>Go to {m[2]}{m[3]}</button> : null; })()}
             <button onClick={() => setOpen(false)} className={`p-1.5 rounded-full ${paper ? 'hover:bg-amber-100' : 'hover:bg-white/10'}`} aria-label="Close"><X className="w-4 h-4" /></button>
           </div>
           {/* set like the page: Hebrew and English side by side, bold = the Mishnah's own words */}
