@@ -29,6 +29,22 @@
       "destination": "/api/dafpage?book=:book&n=:n&gem=:gem"
     },
     {
+      "source": "/superdaf",
+      "destination": "/api/dafpage"
+    },
+    {
+      "source": "/superdaf/:book",
+      "destination": "/api/dafpage?book=:book"
+    },
+    {
+      "source": "/superdaf/:book/:n",
+      "destination": "/api/dafpage?book=:book&n=:n"
+    },
+    {
+      "source": "/superdaf/:book/:n/gems/:gem",
+      "destination": "/api/dafpage?book=:book&n=:n&gem=:gem"
+    },
+    {
       "source": "/(.*)",
       "destination": "/index.html"
     }
