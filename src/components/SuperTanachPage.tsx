@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Loader2, Sun, Moon, Minus, Plus, Search, Check, Scale, Link2, MessageSquareText, Send, Library, BookOpen, ExternalLink, X, Sparkles, ListTree } from 'lucide-react';
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ArrowLeft, ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Loader2, Sun, Moon, Minus, Plus, Search, Check, Scale, Link2, MessageSquareText, Send, Library, BookOpen, ExternalLink, X, Sparkles, ListTree, Maximize2, Minimize2 } from 'lucide-react';
 import { RefText, plain, shortRef, workName } from './RefText';
 import { TANACH_API, tanachPath, refFromTanachPath } from '../lib/tanach';
 import { sefariaUrl } from '../lib/daf';
@@ -96,95 +96,359 @@ function Hub({ header, onOpen, onExit }: { header?: ReactNode; onOpen: (r: strin
 }
 const BookBtn = ({ b, onClick }: { b: any; onClick: () => void }) => <button className="tn-book" onClick={onClick}><bdi lang="he" dir="rtl">{b.heTitle}</bdi><span>{b.title}</span><small>{b.perakim} perakim</small></button>;
 
-// ----------------------------------------------------------------------
-// Reader
+// Reader: one pasuk at a time, full screen. The pasuk large in the middle, the commentators around it
+// (Mikraot Gedolot), PARDES under it, and below everything Sefaria links to it, in Sefaria's categories.
+// Every long source carries a one-line summary and its key line highlighted.
+
+const CAT_HE: Record<string, string> = { Commentary: 'מפרשים', Remez: 'רמז', Targum: 'תרגום', 'Quoting Commentary': 'מפרשים מצטטים', Talmud: 'תלמוד', Midrash: 'מדרש', Halakhah: 'הלכה', Kabbalah: 'קבלה', Chasidut: 'חסידות', Musar: 'מוסר', 'Jewish Thought': 'מחשבת ישראל', Liturgy: 'תפילה', Tanakh: 'תנ״ך', Mishnah: 'משנה', Tosefta: 'תוספתא', Responsa: 'שו״ת', 'Second Temple': 'בית שני', Essay: 'מאמרים' };
+const CAT_EN: Record<string, string> = { Commentary: 'Commentators', 'Quoting Commentary': 'Quoting commentaries', Halakhah: 'Halacha', Liturgy: 'Tefillah', Tanakh: 'Tanach', Essay: 'Essays' };
+const catName = (c: string) => CAT_EN[c] || c;
+const PARDES_CATS: Record<string, string[]> = { peshat: ['Commentary', 'Targum'], remez: ['Remez'], derash: ['Midrash', 'Talmud'], sod: ['Kabbalah', 'Chasidut'] };
+const enc = encodeURIComponent;
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+const firstSentence = (t?: string) => { const s = plain(t).replace(/\s*\[[^\]]+\]/g, ''); const m = s.match(/^.{20,}?[.!?](\s|$)/); return (m ? m[0] : s).trim(); };
+
+// a pasuk's library, one category at a time; summaries for its long sources are fetched (made once) as it is viewed
+const libCache = new Map<string, any>();
+function useLib(pref: string, cat: string, summarize: boolean) {
+  const key = `${pref}|${cat}`;
+  const [d, setD] = useState<any>(() => libCache.get(key) || null);
+  useEffect(() => {
+    let alive = true;
+    let cur = libCache.get(key);
+    const put = (x: any) => { cur = x; libCache.set(key, x); if (alive) setD(x); };
+    setD(cur || null);
+    (async () => {
+      if (!cur) {
+        try { put(await (await fetch(`${TANACH_API}/lib?ref=${enc(pref)}&cat=${enc(cat)}`)).json()); } catch { put({ error: 'Could not load the sources.' }); }
+      }
+      if (!summarize || !cur?.items || cur.cat !== cat) return;
+      const todo = Array.from({ length: cur.chunks || 0 }, (_, k) => k).filter((k) => !cur.have?.[k]);
+      const worker = async () => {
+        for (let k = todo.shift(); k !== undefined && alive; k = todo.shift()) {
+          for (let tries = 0; tries < 8 && alive; tries++) {
+            try {
+              const r = await (await fetch(`${TANACH_API}/sum?ref=${enc(pref)}&cat=${enc(cat)}&chunk=${k}`)).json();
+              if (r.map) { const kk = k; put({ ...cur, have: cur.have.map((h: boolean, i: number) => (i === kk ? true : h)), items: cur.items.map((x: any) => (r.map[x.ref] ? { ...x, sum: r.map[x.ref] } : x)) }); break; }
+              if (r.error) break;
+            } catch { /* retry */ }
+            await sleep(5000);
+          }
+        }
+      };
+      await Promise.all([worker(), worker(), worker()]);
+    })();
+    return () => { alive = false; };
+  }, [key, summarize]); // eslint-disable-line react-hooks/exhaustive-deps
+  return d;
+}
+
+// find a key line in the text, ignoring nikkud, te'amim and spacing
+function findMark(text: string, mark: string, he: boolean): [number, number] | null {
+  if (!he) { const i = text.indexOf(mark); return i < 0 ? null : [i, i + mark.length]; }
+  const skip = (c: string) => /[֑-ׇ]/.test(c);
+  let s = ''; const at: number[] = [];
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (skip(c)) continue;
+    if (/\s/.test(c)) { if (!s || s.endsWith(' ')) continue; s += ' '; at.push(i); continue; }
+    s += c; at.push(i);
+  }
+  const m = mark.replace(/[֑-ׇ]/g, '').replace(/\s+/g, ' ').trim();
+  const i = m ? s.indexOf(m) : -1;
+  if (i < 0) return null;
+  let end = at[i + m.length - 1] + 1;
+  while (end < text.length && skip(text[end])) end++;
+  return [at[i], end];
+}
+function Marked({ text, mark, he }: { text: string; mark?: string | null; he?: boolean }) {
+  const r = mark ? findMark(text, mark, !!he) : null;
+  if (!r) return <>{text}</>;
+  return <>{text.slice(0, r[0])}<mark className="st-mark">{text.slice(r[0], r[1])}</mark>{text.slice(r[1])}</>;
+}
+
+function Clamp({ children, lines, className }: { children: ReactNode; lines: number; className?: string }) {
+  const [open, setOpen] = useState(false);
+  const [over, setOver] = useState(false);
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => { const el = ref.current; if (el && !open) setOver(el.scrollHeight > el.clientHeight + 4); }, [children, lines, open]);
+  return (
+    <div className={className}>
+      <div ref={ref} className={open ? '' : 'st-clamp'} style={open ? undefined : { WebkitLineClamp: lines }}>{children}</div>
+      {(over || open) && <button className="st-more" onClick={() => setOpen(!open)}>{open ? 'Less' : 'Read all'}</button>}
+    </div>
+  );
+}
+
+function Entry({ x, lang, voice, pending, lines = 6 }: { x: any; lang: Lang; voice?: string; pending?: boolean; lines?: number }) {
+  const s = x.sum?.s || voice;
+  const showHe = lang !== 'en' || !x.en, showEn = (lang !== 'he' || !x.he) && !!x.en;
+  return (
+    <div className="st-entry">
+      {s ? <p className="st-sum"><Sparkles className="w-3.5 h-3.5" /><span>{plain(s)}</span></p> : x.long && pending ? <p className="st-sum is-pending"><Loader2 className="w-3.5 h-3.5 animate-spin" /><span>Summarizing…</span></p> : null}
+      {showHe && x.he && <Clamp lines={lines} className="st-src-he"><p lang="he" dir="rtl"><Marked text={x.he} mark={x.sum?.kHe} he /></p></Clamp>}
+      {showEn && <Clamp lines={showHe ? 3 : lines} className="st-src-en"><p><Marked text={x.en} mark={x.sum?.kEn} /></p></Clamp>}
+      <a className="st-ref" href={x.url} target="_blank" rel="noopener noreferrer">{shortRef(x.ref)} <ExternalLink className="w-3 h-3" /></a>
+    </div>
+  );
+}
+
+const groupWorks = (items: any[]) => {
+  const g: any[] = [];
+  for (const x of items || []) { const last = g[g.length - 1]; if (last && last.work === x.work) last.items.push(x); else g.push({ work: x.work, heWork: x.heWork, items: [x] }); }
+  return g;
+};
+
+function WorkCard({ g, lang, voices, pending, lines }: { g: any; lang: Lang; voices?: Record<string, string>; pending?: boolean; lines?: number }) {
+  return (
+    <article className="st-card">
+      <header className="st-card-head">{g.heWork ? <bdi lang="he" dir="rtl">{g.heWork}</bdi> : <span />}<b>{workName(g.work)}</b></header>
+      {g.items.map((x: any) => <Entry key={x.ref} x={x} lang={lang} voice={voices?.[x.ref]} pending={pending} lines={lines} />)}
+    </article>
+  );
+}
+
+function SourceList({ pref, cat, lang, summarize }: { pref: string; cat: string; lang: Lang; summarize: boolean }) {
+  const d = useLib(pref, cat, summarize);
+  const [shown, setShown] = useState(12);
+  useEffect(() => setShown(12), [pref, cat]);
+  if (!d) return <div className="st-list"><div className="st-shimmer" /><div className="st-shimmer" /></div>;
+  if (d.error) return <p className="st-muted">{d.error}</p>;
+  const groups = groupWorks(d.items);
+  const pending = summarize && (d.have || []).some((h: boolean) => !h);
+  return (
+    <div className="st-list">
+      {groups.slice(0, shown).map((g, i) => <WorkCard key={g.work + i} g={g} lang={lang} pending={pending} />)}
+      {groups.length > shown && <button className="st-showmore" onClick={() => setShown(shown + 24)}>Show {Math.min(24, groups.length - shown)} more · {groups.length - shown} works left</button>}
+    </div>
+  );
+}
+
+function Sheet({ title, onClose, children }: { title: ReactNode; onClose: () => void; children: ReactNode }) {
+  useEffect(() => { const f = (e: KeyboardEvent) => e.key === 'Escape' && onClose(); window.addEventListener('keydown', f); return () => window.removeEventListener('keydown', f); }, [onClose]);
+  return (
+    <div className="st-sheet-wrap" onClick={onClose}>
+      <div className="st-sheet" onClick={(e) => e.stopPropagation()} role="dialog">
+        <div className="st-sheet-head"><div className="st-sheet-title">{title}</div><button className="st-icon" onClick={onClose} aria-label="Close"><X className="w-5 h-5" /></button></div>
+        <div className="st-sheet-body">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+type SheetState = null | { k: 'pardes'; layer: string } | { k: 'perek' } | { k: 'ask' };
 
 function Reader({ perekRef, onOpen, onBack }: { perekRef: string; onOpen: (r: string) => void; onBack: () => void }) {
   const prefs = useMemo(() => readJson<any>(PREFS_KEY, {}), []);
-  const [dark, setDark] = useState<boolean>(!!prefs.dark);
+  const [dark, setDark] = useState<boolean>(prefs.dark ?? true);
   const [lang, setLang] = useState<Lang>(prefs.lang || 'both');
   const [scale, setScale] = useState<number>(prefs.scale || 1);
   useEffect(() => { try { localStorage.setItem(PREFS_KEY, JSON.stringify({ dark, lang, scale })); } catch { /* private */ } }, [dark, lang, scale]);
   const [data, setData] = useState<any>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [sel, setSel] = useState<number | null>(null);
+  const [n, setN] = useState<number>(() => Number(new URLSearchParams(window.location.search).get('p')) || 1);
+  const [sheet, setSheet] = useState<SheetState>(null);
+  const [full, setFull] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
   const wide = useWide();
 
   useEffect(() => {
     let alive = true, stepping = false;
     const load = async () => {
       try {
-        const d = await (await fetch(`${TANACH_API}/get?ref=${encodeURIComponent(perekRef)}`)).json();
+        const d = await (await fetch(`${TANACH_API}/get?ref=${enc(perekRef)}`)).json();
         if (!alive) return;
         if (d.error) { setErr(d.error); return; }
         setData(d);
-        if (d.status === 'building' && !stepping && !new URLSearchParams(window.location.search).has('nobuild')) { stepping = true; try { await fetch(`${TANACH_API}/step?ref=${encodeURIComponent(perekRef)}`); } catch { /* next round */ } stepping = false; if (alive) setTimeout(load, 400); }
+        if (d.status === 'building' && !stepping && !new URLSearchParams(window.location.search).has('nobuild')) { stepping = true; try { await fetch(`${TANACH_API}/step?ref=${enc(perekRef)}`); } catch { /* next round */ } stepping = false; if (alive) setTimeout(load, 400); }
       } catch { if (alive) setErr('Could not reach Super Tanach. Check your connection and try again.'); }
     };
     load(); return () => { alive = false; };
   }, [perekRef]);
-  // open the first built pasuk on a wide screen
-  useEffect(() => { if (wide && sel === null && data?.pesukim?.some((p: any) => p.notes)) setSel(data.pesukim.find((p: any) => p.notes).n); }, [wide, data, sel]);
+
+  const count = data?.pesukim?.length || 0;
+  const go = (m: number) => { if (m >= 1 && m <= count) { setN(m); rootRef.current?.scrollTo({ top: 0, behavior: 'smooth' }); } };
+  useEffect(() => { const u = new URL(window.location.href); u.searchParams.set('p', String(n)); window.history.replaceState({}, '', u); }, [n]);
+  useEffect(() => {
+    const f = (e: KeyboardEvent) => {
+      if (sheet || /input|textarea/i.test((e.target as HTMLElement)?.tagName || '')) return;
+      if (e.key === 'ArrowRight' || e.key === 'ArrowDown' && e.altKey) go(n + 1);
+      if (e.key === 'ArrowLeft') go(n - 1);
+    };
+    window.addEventListener('keydown', f); return () => window.removeEventListener('keydown', f);
+  });
+  useEffect(() => { const f = () => setFull(!!document.fullscreenElement); document.addEventListener('fullscreenchange', f); return () => document.removeEventListener('fullscreenchange', f); }, []);
+  useEffect(() => { document.getElementById(`st-dot-${n}`)?.scrollIntoView({ inline: 'center', block: 'nearest' }); }, [n, data]);
+  const toggleFull = () => { if (document.fullscreenElement) document.exitFullscreen?.(); else document.documentElement.requestFullscreen?.().catch(() => {}); };
 
   const [bookName, perekNum] = (() => { const m = perekRef.match(/^(.+) (\d+)$/); return m ? [m[1], Number(m[2])] : [perekRef, 0]; })();
-  const selP = data?.pesukim?.find((p: any) => p.n === sel);
+  const p = data?.pesukim?.find((x: any) => x.n === n) || data?.pesukim?.[0];
   return (
-    <div className={`tn ${dark ? 'tn-dark' : 'tn-paper'}`} style={{ ['--sc' as any]: scale }}>
-      <style>{READER_CSS}</style>
-      <header className="tn-bar">
-        <button onClick={onBack} className="tn-icon" aria-label="All sefarim"><ArrowLeft className="w-5 h-5" /></button>
-        <div className="tn-bar-title"><b>{bookName} {perekNum}</b>{data?.heRef && <bdi lang="he" dir="rtl">{data.heRef}</bdi>}</div>
-        <div className="tn-seg">{(['he', 'both', 'en'] as Lang[]).map((l) => <button key={l} className={lang === l ? 'on' : ''} onClick={() => setLang(l)}>{l === 'he' ? 'עב' : l === 'en' ? 'EN' : 'Both'}</button>)}</div>
-        <button className="tn-icon" onClick={() => setScale((s) => Math.max(0.85, +(s - 0.08).toFixed(2)))} aria-label="Smaller"><Minus className="w-4 h-4" /></button>
-        <button className="tn-icon" onClick={() => setScale((s) => Math.min(1.5, +(s + 0.08).toFixed(2)))} aria-label="Larger"><Plus className="w-4 h-4" /></button>
-        <button className="tn-icon" onClick={() => setDark(!dark)} aria-label="Light or dark">{dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>
+    <div ref={rootRef} className={`st ${dark ? 'st-night' : 'st-paper'}`} style={{ ['--sc' as any]: scale }}>
+      <style>{READER_CSS}{STUDY_CSS}</style>
+      <header className="st-bar">
+        <button onClick={onBack} className="st-icon" aria-label="All sefarim"><ArrowLeft className="w-5 h-5" /></button>
+        <div className="st-title"><bdi lang="he" dir="rtl">{(data?.heRef || '').replace(/ [^ ]+$/, '')} {heNum(perekNum)}</bdi><small>{bookName} {perekNum}</small></div>
+        <nav className="st-dots" aria-label="Pesukim">{(data?.pesukim || []).map((x: any) => (
+          <button key={x.n} id={`st-dot-${x.n}`} className={`${x.n === p?.n ? 'on' : ''} ${x.notes ? 'built' : ''}`} onClick={() => go(x.n)} title={`Pasuk ${x.n}`}><bdi lang="he" dir="rtl">{heNum(x.n)}</bdi></button>
+        ))}</nav>
+        <div className="st-tools">
+          {data?.overview && <button className="st-icon" onClick={() => setSheet({ k: 'perek' })} title="The perek: overview and review"><ListTree className="w-4 h-4" /></button>}
+          <button className="st-icon" onClick={() => setSheet({ k: 'ask' })} title="Ask"><MessageSquareText className="w-4 h-4" /></button>
+          <div className="tn-seg">{(['he', 'both', 'en'] as Lang[]).map((l) => <button key={l} className={lang === l ? 'on' : ''} onClick={() => setLang(l)}>{l === 'he' ? 'עב' : l === 'en' ? 'EN' : 'Both'}</button>)}</div>
+          <button className="st-icon st-hide-sm" onClick={() => setScale((s) => Math.max(0.85, +(s - 0.08).toFixed(2)))} aria-label="Smaller"><Minus className="w-4 h-4" /></button>
+          <button className="st-icon st-hide-sm" onClick={() => setScale((s) => Math.min(1.5, +(s + 0.08).toFixed(2)))} aria-label="Larger"><Plus className="w-4 h-4" /></button>
+          <button className="st-icon" onClick={() => setDark(!dark)} aria-label="Light or dark">{dark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}</button>
+          <button className="st-icon st-hide-sm" onClick={toggleFull} aria-label="Full screen">{full ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}</button>
+        </div>
       </header>
 
-      {err ? <div className="tn-note">{err}</div> : !data ? <div className="tn-note"><Loader2 className="w-6 h-6 animate-spin" /><p>Opening {perekRef}…</p></div> : data.status === 'unavailable' ? <div className="tn-note">{data.note}</div> : (
-        <div className={`tn-layout ${wide ? 'is-wide' : ''}`}>
-          <main className="tn-text">
-            <div className="tn-title">
-              <bdi lang="he" dir="rtl" className="tn-title-he">{(data.heRef || '').replace(/ [^ ]+$/, '')}<span>{heNum(perekNum)}</span></bdi>
-              <p>{bookName} · Perek {perekNum}</p>
-            </div>
-            {data.status === 'building' && <div className="tn-building"><span><b>Preparing this perek</b> · {data.done} of {data.total}. Each pasuk opens as soon as it is ready; afterwards it is instant for everyone.</span><div className="tn-progress"><i style={{ width: `${Math.round((100 * data.done) / Math.max(1, data.total))}%` }} /></div></div>}
-            {data.overview && <Overview ov={data.overview} perekRef={perekRef} onPick={setSel} />}
-            <ol className="tn-pesukim">
-              {data.pesukim.map((p: any) => (
-                <li key={p.n} id={`p${p.n}`} className={`tn-pasuk ${sel === p.n ? 'is-sel' : ''} ${p.notes ? '' : 'is-pending'}`}>
-                  <button className="tn-pasuk-btn" onClick={() => setSel(sel === p.n && !wide ? null : p.n)} aria-expanded={sel === p.n}>
-                    <span className="tn-pnum"><bdi lang="he" dir="rtl">{heNum(p.n)}</bdi><small>{p.n}</small></span>
-                    <span className={`tn-ptext tn-ptext-${lang}`}>
-                      {lang !== 'en' && <span lang="he" dir="rtl" className="tn-he">{p.he}</span>}
-                      {lang !== 'he' && <span className="tn-en">{p.en}</span>}
-                      {p.notes?.gist && <span className="tn-gist">{plain(p.notes.gist)}</span>}
-                    </span>
-                    {p.notes && <span className="tn-dots" title="PARDES layers for this pasuk">{PARDES.map((L) => <i key={L.key} className={`tn-${L.key} ${p.notes.pardes?.[L.key] ? 'on' : ''}`}>{L.he}</i>)}</span>}
-                  </button>
-                  {!wide && sel === p.n && <div className="tn-inline"><Panel p={p} perekRef={perekRef} onClose={() => setSel(null)} /></div>}
-                </li>
-              ))}
-            </ol>
-            {data.overview?.review?.length > 0 && <Review items={data.overview.review} onPick={setSel} />}
-            <nav className="tn-pager">
-              {data.prev ? <button onClick={() => onOpen(String(data.prev))}><ChevronLeft className="w-4 h-4" /> {data.prev}</button> : <span />}
-              {data.next ? <button onClick={() => onOpen(String(data.next))}>{data.next} <ChevronRight className="w-4 h-4" /></button> : <span />}
-            </nav>
-            <p className="tn-attr">{data.attribution}</p>
-          </main>
-          {wide && <aside className="tn-side">{selP ? <Panel p={selP} perekRef={perekRef} /> : <p className="tn-muted tn-side-empty">Tap a pasuk to open its Mikraot Gedolot.</p>}</aside>}
-        </div>
+      {err ? <div className="tn-note">{err}</div> : !data ? <div className="tn-note"><Loader2 className="w-6 h-6 animate-spin" /><p>Opening {perekRef}…</p></div> : data.status === 'unavailable' ? <div className="tn-note">{data.note}</div> : p && (
+        <Pasuk key={p.ref} p={p} count={count} lang={lang} wide={wide} perekLabel={`${bookName} ${perekNum}`} onGo={go} onLayer={(layer) => setSheet({ k: 'pardes', layer })} />
       )}
+
+      {data?.attribution && <p className="st-attr">{data.attribution}</p>}
+      {data && (
+        <nav className="st-pager">
+          {data.prev ? <button onClick={() => onOpen(String(data.prev))}><ChevronLeft className="w-4 h-4" /> {data.prev}</button> : <span />}
+          {data.next ? <button onClick={() => onOpen(String(data.next))}>{data.next} <ChevronRight className="w-4 h-4" /></button> : <span />}
+        </nav>
+      )}
+
+      {sheet?.k === 'pardes' && p && <PardesSheet p={p} layer={sheet.layer} lang={lang} onClose={() => setSheet(null)} />}
+      {sheet?.k === 'perek' && data?.overview && (
+        <Sheet title={<><bdi lang="he" dir="rtl" className="st-sheet-he">{data.heRef}</bdi><span>The perek</span></>} onClose={() => setSheet(null)}>
+          <Overview ov={data.overview} perekRef={perekRef} onPick={(m) => { setSheet(null); go(m); }} />
+          {data.overview.review?.length > 0 && <Review items={data.overview.review} onPick={(m) => { setSheet(null); go(m); }} />}
+        </Sheet>
+      )}
+      {sheet?.k === 'ask' && p && <Sheet title={<span>Ask about pasuk {p.n}</span>} onClose={() => setSheet(null)}><Ask perekRef={perekRef} n={p.n} /></Sheet>}
     </div>
   );
 }
 
+function Pasuk({ p, count, lang, wide, perekLabel, onGo, onLayer }: { p: any; count: number; lang: Lang; wide: boolean; perekLabel: string; onGo: (n: number) => void; onLayer: (l: string) => void }) {
+  const notes = p.notes;
+  const summarize = !!notes;
+  const com = useLib(p.ref, 'Commentary', summarize);
+  const cats: any[] = com?.cats || [];
+  const catCount = (c: string) => Number(cats.find((x) => x.cat === c)?.count || 0);
+  const voices = useMemo(() => Object.fromEntries((notes?.commentators || []).map((c: any) => [c.ref, c.point])), [notes]);
+  const groups = groupWorks(com?.items).slice(0, 8);
+  const pending = summarize && (com?.have || []).some((h: boolean) => !h);
+  const card = (g: any, i: number) => <WorkCard key={g.work + i} g={g} lang={lang} voices={voices} pending={pending} lines={wide ? 9 : 7} />;
+  const left = groups.filter((_, i) => i % 2 === 0), right = groups.filter((_, i) => i % 2 === 1);
+  const libCats = cats.filter((c) => c.cat !== 'Commentary');
+  const [cat, setCat] = useState<string | null>(null);
+  const curCat = cat || (libCats.find((c) => c.cat === 'Quoting Commentary') || libCats[0])?.cat || null;
+  const total = cats.reduce((a, c) => a + Number(c.count || 0), 0);
+
+  const center = (
+    <main className="st-center">
+      <div className="st-num"><bdi lang="he" dir="rtl">{heNum(p.n)}</bdi><span>{perekLabel}:{p.n}</span></div>
+      {notes?.headline && <p className="st-headline">{plain(notes.headline)}</p>}
+      {lang !== 'en' && <p className="st-pasuk-he" lang="he" dir="rtl">{p.he}</p>}
+      {lang !== 'he' && <p className="st-pasuk-en">{p.en}</p>}
+      {notes?.gist && <p className="st-gist"><b>In short</b>{plain(notes.gist)}</p>}
+      <div className="st-pardes">
+        {PARDES.map((L) => {
+          const v = notes?.pardes?.[L.key];
+          const k = PARDES_CATS[L.key].reduce((a, c) => a + catCount(c), 0);
+          return (
+            <button key={L.key} className={`st-pd tn-${L.key}`} disabled={!v && !k} onClick={() => onLayer(L.key)}>
+              <bdi lang="he" dir="rtl">{L.he}</bdi>
+              <b>{L.name}</b><small>{L.sub}</small>
+              <span>{v ? firstSentence(v.text) : k ? 'Open all the sources of this level.' : 'Nothing on Sefaria for this level here.'}</span>
+              {k > 0 && <em>{k} {k === 1 ? 'source' : 'sources'} →</em>}
+            </button>
+          );
+        })}
+      </div>
+      <div className="st-step">
+        <button disabled={p.n <= 1} onClick={() => onGo(p.n - 1)}><ChevronLeft className="w-4 h-4" /> <bdi lang="he" dir="rtl">{p.n > 1 ? heNum(p.n - 1) : ''}</bdi></button>
+        <button disabled={p.n >= count} onClick={() => onGo(p.n + 1)}><bdi lang="he" dir="rtl">{p.n < count ? heNum(p.n + 1) : ''}</bdi> <ChevronRight className="w-4 h-4" /></button>
+      </div>
+    </main>
+  );
+
+  return (
+    <>
+      <div className={`st-stage ${wide ? 'is-wide' : ''}`}>
+        {wide && <aside className="st-col">{com ? left.map(card) : <><div className="st-shimmer" /><div className="st-shimmer" /></>}</aside>}
+        {center}
+        {wide && <aside className="st-col">{com ? right.map(card) : <><div className="st-shimmer" /><div className="st-shimmer" /></>}</aside>}
+      </div>
+      {!wide && (groups.length > 0 || !com) && (
+        <section className="st-band st-band-tight">
+          <div className="st-band-title"><h2>The commentators</h2><bdi lang="he" dir="rtl">מפרשים</bdi></div>
+          <div className="st-swipe">{com ? groups.map(card) : <div className="st-shimmer" />}</div>
+        </section>
+      )}
+
+      {notes && (notes.argue?.length > 0 || notes.words?.length > 0 || notes.connections?.length > 0) && (
+        <section className="st-band">
+          <div className="st-band-title"><h2>Where they meet and differ</h2></div>
+          <div className="st-insights">
+            {(notes.argue || []).map((a: any, i: number) => (
+              <div key={i} className="tn-argue">
+                <p className="tn-eyebrow"><Scale className="w-4 h-4" /> Where they argue</p>
+                <p className="tn-q">{plain(a.question)}</p>
+                <div className="tn-views">{(a.views || []).map((v: any, k: number) => <div key={k}><b>{workName(v.who, v.ref)}</b><p>{plain(v.view)}</p></div>)}</div>
+              </div>
+            ))}
+            {notes.connections?.length > 0 && (
+              <div className="st-card">
+                <p className="tn-eyebrow"><Link2 className="w-4 h-4" /> Where this pasuk lives on</p>
+                <div className="tn-conn">{notes.connections.map((c: any, i: number) => (
+                  <a key={i} href={sefariaUrl(c.ref)} target="_blank" rel="noopener noreferrer"><span className={`tn-kind k-${String(c.kind).toLowerCase()}`}>{c.kind}</span><span><b>{shortRef(c.ref)}</b><RefText text={once(c.note)} /></span></a>
+                ))}</div>
+              </div>
+            )}
+            {notes.words?.length > 0 && <div className="st-card"><p className="tn-eyebrow">Key words</p><div className="tn-words">{notes.words.map((w: any, i: number) => <span key={i}><bdi lang="he" dir="rtl">{w.he}</bdi>{plain(w.gloss)}</span>)}</div></div>}
+          </div>
+        </section>
+      )}
+
+      {libCats.length > 0 && curCat && (
+        <section className="st-band">
+          <div className="st-band-title"><h2>Everything on this pasuk</h2><span className="st-total">{total} sources on Sefaria</span></div>
+          <div className="st-cats" role="tablist">{cats.map((c) => (
+            <button key={c.cat} role="tab" className={(c.cat === 'Commentary' ? cat === 'Commentary' : c.cat === curCat) ? 'on' : ''} onClick={() => setCat(c.cat)}>
+              <bdi lang="he" dir="rtl">{CAT_HE[c.cat] || ''}</bdi><span>{catName(c.cat)} · {c.count}</span>
+            </button>
+          ))}</div>
+          <SourceList pref={p.ref} cat={cat === 'Commentary' ? 'Commentary' : curCat} lang={lang} summarize={summarize} />
+        </section>
+      )}
+    </>
+  );
+}
+
+function PardesSheet({ p, layer, lang, onClose }: { p: any; layer: string; lang: Lang; onClose: () => void }) {
+  const L = PARDES.find((x) => x.key === layer)!;
+  const v = p.notes?.pardes?.[layer];
+  const com = useLib(p.ref, 'Commentary', false);
+  const present = PARDES_CATS[layer].filter((c) => (com?.cats || []).some((x: any) => x.cat === c));
+  return (
+    <Sheet onClose={onClose} title={<span className={`st-pd-title tn-${layer}`}><bdi lang="he" dir="rtl">{L.he}</bdi><span><b>{L.name}</b><small>{L.sub} · {p.ref}</small></span></span>}>
+      {v ? <div className={`st-layer-ai tn-${layer}`}><RefText text={once(v.text)} /></div> : <p className="st-muted">No summary for this level on this pasuk; here is everything Sefaria links at this level.</p>}
+      {!com ? <div className="st-shimmer" /> : present.map((c) => (
+        <div key={c}>
+          <p className="st-subhead"><bdi lang="he" dir="rtl">{CAT_HE[c]}</bdi> All the {catName(c).toLowerCase()} · {com.cats.find((x: any) => x.cat === c)?.count}</p>
+          <SourceList pref={p.ref} cat={c} lang={lang} summarize={!!p.notes} />
+        </div>
+      ))}
+    </Sheet>
+  );
+}
+
 function useWide() {
-  const q = '(min-width: 1080px)';
+  const q = '(min-width: 1100px)';
   const [w, setW] = useState(() => typeof window !== 'undefined' && window.matchMedia(q).matches);
   useEffect(() => { const m = window.matchMedia(q); const f = () => setW(m.matches); m.addEventListener('change', f); return () => m.removeEventListener('change', f); }, []);
   return w;
 }
+
 
 function Overview({ ov, perekRef, onPick }: { ov: any; perekRef: string; onPick: (n: number) => void }) {
   const [open, setOpen] = useState(false);
@@ -205,89 +469,6 @@ function Overview({ ov, perekRef, onPick }: { ov: any; perekRef: string; onPick:
       )}
       <button className="tn-more" onClick={() => setOpen(!open)}>{open ? 'Less' : 'The arc, threads and big questions'} {open ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</button>
     </section>
-  );
-}
-
-function Panel({ p, perekRef, onClose }: { p: any; perekRef: string; onClose?: () => void }) {
-  const n = p.notes;
-  const [tab, setTab] = useState<'learn' | 'sources' | 'ask'>('learn');
-  const [layer, setLayer] = useState<string | null>(null);
-  useEffect(() => { setTab('learn'); setLayer(null); }, [p.ref]);
-  if (!n) return <div className="tn-panel"><p className="tn-muted"><Loader2 className="w-4 h-4 animate-spin inline" /> This pasuk is being prepared…</p></div>;
-  const total: number = p.counts ? (Object.values(p.counts) as any[]).reduce((a: number, b: any) => a + Number(b || 0), 0) : 0;
-  return (
-    <div className="tn-panel">
-      <div className="tn-panel-head">
-        <div><p className="tn-eyebrow">{p.ref}</p><h3>{plain(n.headline || '')}</h3></div>
-        <a href={p.url} target="_blank" rel="noopener noreferrer" className="tn-icon" title="On Sefaria"><ExternalLink className="w-4 h-4" /></a>
-        {onClose && <button className="tn-icon" onClick={onClose} aria-label="Close"><X className="w-4 h-4" /></button>}
-      </div>
-      <div className="tn-tabs">
-        <button className={tab === 'learn' ? 'on' : ''} onClick={() => setTab('learn')}><BookOpen className="w-4 h-4" /> Learn</button>
-        <button className={tab === 'sources' ? 'on' : ''} onClick={() => setTab('sources')}><Library className="w-4 h-4" /> Sources {total > 0 && <small>{total}</small>}</button>
-        <button className={tab === 'ask' ? 'on' : ''} onClick={() => setTab('ask')}><MessageSquareText className="w-4 h-4" /> Ask</button>
-      </div>
-      {tab === 'learn' && (
-        <div className="tn-learn">
-          <div className="tn-pardes">
-            {PARDES.map((L) => { const v = n.pardes?.[L.key]; return (
-              <button key={L.key} className={`tn-tile tn-${L.key} ${v ? '' : 'is-empty'} ${layer === L.key ? 'is-open' : ''}`} disabled={!v} onClick={() => setLayer(layer === L.key ? null : L.key)}>
-                <bdi className="tn-tile-he" lang="he" dir="rtl">{L.he}</bdi>
-                <span className="tn-tile-name">{L.name}<small>{L.sub}</small></span>
-                <span className="tn-tile-text">{v ? (layer === L.key ? <RefText text={once(v.text)} /> : <>{plain(v.text).replace(/\s*\[[^\]]+\]/g, '').slice(0, 150)}{plain(v.text).length > 150 ? '…' : ''}</>) : 'No source on Sefaria for this level here.'}</span>
-              </button>); })}
-          </div>
-
-          {n.commentators?.length > 0 && (
-            <div className="tn-block">
-              <p className="tn-eyebrow">The voices <span className="tn-count">{n.commentators.length}</span></p>
-              <div className="tn-voices">{n.commentators.map((c: any, i: number) => {
-                const src = Object.values(p.sources || {}).flat().find((x: any) => x.ref === c.ref) as any;
-                return <div key={i} className="tn-voice"><div className="tn-voice-who"><b>{workName(c.who, c.ref)}</b>{src?.heTitle && <bdi lang="he" dir="rtl">{src.heTitle}</bdi>}</div><p><RefText text={once(c.point)} /></p><a href={sefariaUrl(c.ref)} target="_blank" rel="noopener noreferrer">{shortRef(c.ref)}</a></div>;
-              })}</div>
-            </div>
-          )}
-
-          {n.argue?.length > 0 && n.argue.map((a: any, i: number) => (
-            <div key={i} className="tn-block tn-argue">
-              <p className="tn-eyebrow"><Scale className="w-4 h-4" /> Where they argue</p>
-              <p className="tn-q">{plain(a.question)}</p>
-              <div className="tn-views">{(a.views || []).map((v: any, k: number) => <div key={k}><b>{workName(v.who, v.ref)}</b><p>{plain(v.view)}</p></div>)}</div>
-            </div>
-          ))}
-
-          {n.words?.length > 0 && <div className="tn-words">{n.words.map((w: any, i: number) => <span key={i}><bdi lang="he" dir="rtl">{w.he}</bdi>{plain(w.gloss)}</span>)}</div>}
-
-          {n.connections?.length > 0 && (
-            <div className="tn-block">
-              <p className="tn-eyebrow"><Link2 className="w-4 h-4" /> Where this pasuk lives on</p>
-              <div className="tn-conn">{n.connections.map((c: any, i: number) => (
-                <a key={i} href={sefariaUrl(c.ref)} target="_blank" rel="noopener noreferrer"><span className={`tn-kind k-${String(c.kind).toLowerCase()}`}>{c.kind}</span><span><b>{shortRef(c.ref)}</b><RefText text={once(c.note)} /></span></a>
-              ))}</div>
-            </div>
-          )}
-        </div>
-      )}
-      {tab === 'sources' && <Sources p={p} />}
-      {tab === 'ask' && <Ask perekRef={perekRef} n={p.n} />}
-    </div>
-  );
-}
-
-const SRC_LABEL: [string, string][] = [['peshat', 'Commentators'], ['targum', 'Targum'], ['remez', 'Remez'], ['midrash', 'Midrash'], ['sod', 'Zohar & Kabbalah'], ['chasidut', 'Chasidut'], ['gemara', 'Gemara & Mishnah'], ['halacha', 'Halacha'], ['tefillah', 'Tefillah'], ['tanach', 'Other pesukim'], ['thought', 'Jewish thought & Musar']];
-function Sources({ p }: { p: any }) {
-  const groups = SRC_LABEL.filter(([k]) => (p.sources?.[k] || []).length);
-  const [open, setOpen] = useState<string | null>(null);
-  if (!groups.length) return <p className="tn-muted">No sources are linked to this pasuk on Sefaria.</p>;
-  return (
-    <div className="tn-sources">{groups.map(([k, label]) => (
-      <div key={k} className={`tn-sgroup ${open === k ? 'is-open' : ''}`}>
-        <button onClick={() => setOpen(open === k ? null : k)}><span>{label}</span><small>{Number(p.counts?.[k] || 0) > p.sources[k].length ? `${p.sources[k].length} of ${Number(p.counts[k])}` : p.sources[k].length}</small>{open === k ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}</button>
-        {open === k && p.sources[k].map((s: any) => (
-          <div key={s.ref} className="tn-src"><a href={s.url} target="_blank" rel="noopener noreferrer"><b>{s.title}</b>{s.heTitle && <bdi lang="he" dir="rtl"> {s.heTitle}</bdi>} · {shortRef(s.ref)}</a>{s.he && <p lang="he" dir="rtl" className="tn-src-he">{s.he}</p>}{s.en && <p className="tn-src-en">{s.en}</p>}</div>
-        ))}
-      </div>
-    ))}</div>
   );
 }
 
@@ -513,4 +694,144 @@ const READER_CSS = `
   .tn-voice { flex:0 0 82%; scroll-snap-align:start; background:var(--card); }
 }
 @media (max-width: 560px) { .tn { border-radius:0; } .tn-bar { border-radius:0; } .tn-seg { display:none; } .tn-pasuk-btn { grid-template-columns:1.9rem minmax(0,1fr) auto; gap:.5rem; padding:.75rem .35rem; } .tn-he { font-size:1.45em; } .tn-tile { min-height:118px; } }
+`;
+
+const STUDY_CSS = `
+.st { --he:${HEF}; --en:${ENF}; position:fixed; inset:0; z-index:80; overflow-y:auto; overflow-x:hidden; font-size:calc(16px * var(--sc,1)); color:var(--ink); scrollbar-width:thin; padding-bottom:2rem; }
+.st-night { --bg:#0c0b12; --card:#15131e; --chip:rgba(232,194,122,.08); --ink:#f3ede0; --soft:#d2cbbb; --mute:#938b7c; --acc:#e8c27a; --gold:#e8c27a; --line:rgba(232,194,122,.14); --mark:rgba(232,194,122,.28); --markink:#fff6df;
+  background:radial-gradient(1100px 620px at 50% -12%, rgba(232,194,122,.11), transparent 62%), radial-gradient(900px 700px at 105% 105%, rgba(79,70,229,.12), transparent 60%), #0c0b12; }
+.st-paper { --bg:#f6f0e1; --card:#fffcf3; --chip:rgba(138,90,11,.07); --ink:#1d1812; --soft:#463d30; --mute:#857860; --acc:#8a5a0b; --gold:#8a5a0b; --line:rgba(120,90,40,.17); --mark:rgba(250,204,21,.45); --markink:inherit;
+  background:radial-gradient(1100px 620px at 50% -12%, rgba(255,255,255,.8), transparent 62%), #f3ecdb; }
+.st-bar { position:sticky; top:0; z-index:5; display:flex; align-items:center; gap:.5rem; padding:.5rem 1rem; background:color-mix(in srgb, var(--bg) 80%, transparent); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); border-bottom:1px solid var(--line); }
+.st-title { display:flex; flex-direction:column; align-items:flex-start; line-height:1.1; flex:none; }
+.st-title bdi { font-family:var(--he); font-size:1.3rem; color:var(--gold); }
+.st-title small { font-size:.66rem; letter-spacing:.16em; text-transform:uppercase; color:var(--mute); font-weight:800; }
+.st-dots { flex:1; min-width:0; display:flex; gap:.3rem; overflow-x:auto; scrollbar-width:none; padding:.15rem .4rem; justify-content:safe center; }
+.st-dots::-webkit-scrollbar { display:none; }
+.st-dots button { flex:none; width:32px; height:32px; border-radius:50%; font-family:var(--he); font-size:.9rem; color:var(--mute); border:1px solid var(--line); transition:all .15s; }
+.st-dots button.built { color:var(--ink); border-color:color-mix(in srgb, var(--gold) 50%, transparent); }
+.st-dots button.on { background:var(--gold); color:var(--bg); border-color:transparent; font-weight:700; box-shadow:0 0 0 4px color-mix(in srgb, var(--gold) 22%, transparent); }
+.st-tools { display:flex; align-items:center; gap:.1rem; flex:none; }
+.st-icon { width:36px; height:36px; flex:none; display:grid; place-items:center; border-radius:999px; color:var(--soft); }
+.st-icon:hover { background:var(--chip); color:var(--ink); }
+.st .tn-seg { display:flex; }
+.st .tn-seg button.on { background:var(--gold); color:var(--bg); }
+
+.st-stage { max-width:1680px; margin:0 auto; padding:2.4rem 1.6rem 1rem; display:grid; grid-template-columns:minmax(0,1fr); gap:1.8rem; }
+.st-stage.is-wide { grid-template-columns:minmax(0,1fr) minmax(0,1.3fr) minmax(0,1fr); align-items:start; }
+.st-stage.is-wide .st-center { position:sticky; top:84px; }
+.st-center { text-align:center; min-width:0; }
+.st-num { display:flex; flex-direction:column; align-items:center; gap:.3rem; margin-bottom:.8rem; }
+.st-num bdi { font-family:var(--he); font-size:3.4rem; line-height:1; color:var(--gold); text-shadow:0 0 44px color-mix(in srgb, var(--gold) 45%, transparent); }
+.st-num span { font-size:.7rem; letter-spacing:.22em; text-transform:uppercase; color:var(--mute); font-weight:800; }
+.st-headline { font-family:var(--en); font-style:italic; color:var(--soft); font-size:1.08em; margin-bottom:1.1rem; }
+.st-pasuk-he { font-family:var(--he); font-size:clamp(1.85rem, 2.75vw, 3.25rem); line-height:1.8; font-weight:500; color:var(--ink); text-wrap:balance; }
+.st-pasuk-en { font-family:var(--en); font-size:clamp(1.02rem, 1.25vw, 1.25rem); line-height:1.65; color:var(--soft); margin:1rem auto 0; max-width:38em; text-wrap:pretty; }
+.st-gist { margin:1.3rem auto 0; max-width:36em; padding:.75rem 1rem; border-radius:16px; background:var(--chip); border:1px solid var(--line); color:var(--soft); font-size:.92em; line-height:1.55; }
+.st-gist b { display:block; color:var(--gold); font-size:.64rem; letter-spacing:.2em; text-transform:uppercase; margin-bottom:.15rem; }
+.st-pardes { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:.55rem; margin-top:1.5rem; text-align:left; }
+.st-pd { position:relative; overflow:hidden; display:flex; flex-direction:column; min-width:0; padding:.75rem .8rem .75rem; min-height:150px; border-radius:18px; color:#fff; transition:transform .18s, box-shadow .18s; box-shadow:inset 0 1px 0 rgba(255,255,255,.12); }
+.st-pd:not(:disabled):hover { transform:translateY(-3px); box-shadow:0 22px 34px -20px rgba(0,0,0,.65), inset 0 1px 0 rgba(255,255,255,.12); }
+.st-pd:disabled { opacity:.3; cursor:default; }
+.st-pd > bdi { position:absolute; right:.08em; bottom:-.28em; font-family:var(--he); font-size:5.2rem; line-height:1; opacity:.2; pointer-events:none; }
+.st-pd b { font-size:1rem; position:relative; }
+.st-pd small { font-size:.66rem; opacity:.78; letter-spacing:.04em; position:relative; }
+.st-pd span { position:relative; margin-top:.45rem; font-family:var(--en); font-size:.8rem; line-height:1.42; opacity:.94; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; }
+.st-pd em { position:relative; margin-top:auto; padding-top:.5rem; font-style:normal; font-size:.66rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; opacity:.9; }
+.tn-peshat.st-pd, .st-layer-ai.tn-peshat { background:linear-gradient(150deg,#5b5b66,#26262c); }
+.tn-remez.st-pd, .st-layer-ai.tn-remez { background:linear-gradient(150deg,#0f8a80,#123f3c); }
+.tn-derash.st-pd, .st-layer-ai.tn-derash { background:linear-gradient(150deg,#c2620e,#6b240d); }
+.tn-sod.st-pd, .st-layer-ai.tn-sod { background:radial-gradient(120% 90% at 100% 0%, rgba(167,139,250,.55), transparent 60%), linear-gradient(150deg,#4a3fd6,#1b1846); }
+.st-step { display:flex; justify-content:space-between; margin-top:1.3rem; }
+.st-step button { display:inline-flex; align-items:center; gap:.35rem; min-width:64px; justify-content:center; padding:.45rem .9rem; border-radius:999px; border:1px solid var(--line); color:var(--soft); font-family:var(--he); font-size:1rem; }
+.st-step button:not(:disabled):hover { background:var(--chip); color:var(--ink); }
+.st-step button:disabled { opacity:.25; }
+
+.st-col { display:grid; gap:.9rem; min-width:0; }
+.st-card { min-width:0; padding:1rem 1.1rem; border-radius:20px; background:var(--card); border:1px solid var(--line); text-align:left; box-shadow:0 22px 44px -36px rgba(0,0,0,.75); }
+.st-card-head { display:flex; align-items:baseline; justify-content:space-between; gap:.5rem; margin-bottom:.6rem; padding-bottom:.45rem; border-bottom:1px solid var(--line); }
+.st-card-head bdi { font-family:var(--he); font-size:1.4rem; color:var(--gold); font-weight:700; line-height:1.2; }
+.st-card-head b { font-size:.7rem; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); text-align:right; }
+.st-entry + .st-entry { margin-top:.85rem; padding-top:.85rem; border-top:1px dashed var(--line); }
+.st-sum { display:flex; gap:.45rem; align-items:flex-start; font-family:var(--en); font-size:.93em; line-height:1.5; color:var(--ink); font-weight:600; margin-bottom:.55rem; padding:.5rem .65rem; border-radius:12px; background:var(--chip); }
+.st-sum svg { flex:none; margin-top:.25rem; color:var(--gold); }
+.st-sum.is-pending { color:var(--mute); font-weight:500; font-style:italic; background:transparent; padding:0; }
+.st-src-he p { font-family:var(--he); font-size:1.13em; line-height:1.8; color:var(--soft); text-align:justify; }
+.st-src-en p { font-family:var(--en); font-size:.9em; line-height:1.6; color:var(--mute); margin-top:.4rem; }
+.st-clamp { display:-webkit-box; -webkit-box-orient:vertical; overflow:hidden; }
+.st-more { font-size:.72rem; font-weight:800; color:var(--gold); margin-top:.25rem; letter-spacing:.04em; }
+.st-mark { background:linear-gradient(transparent 8%, var(--mark) 8%, var(--mark) 94%, transparent 94%); color:var(--markink); border-radius:3px; padding:0 .08em; box-decoration-break:clone; -webkit-box-decoration-break:clone; }
+.st-ref { display:inline-flex; align-items:center; gap:.25rem; margin-top:.45rem; font-size:.68rem; font-weight:700; color:var(--mute); text-decoration:none; }
+.st-ref:hover { color:var(--gold); }
+
+.st-band { max-width:1240px; margin:2.4rem auto 0; padding:0 1.3rem; }
+.st-band-tight { margin-top:1.4rem; padding:0; }
+.st-band-tight .st-band-title { padding:0 1rem; }
+.st-band-title { display:flex; align-items:baseline; flex-wrap:wrap; gap:.4rem .8rem; margin-bottom:1rem; }
+.st-band-title h2 { font-family:var(--en); font-size:1.55rem; font-weight:600; color:var(--ink); }
+.st-band-title bdi { font-family:var(--he); font-size:1.4rem; color:var(--gold); }
+.st-total { font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; font-weight:800; color:var(--mute); }
+.st-swipe { display:flex; gap:.7rem; overflow-x:auto; scroll-snap-type:x mandatory; padding:0 1rem .5rem; scrollbar-width:none; align-items:flex-start; }
+.st-swipe::-webkit-scrollbar { display:none; }
+.st-swipe > .st-card, .st-swipe > .st-shimmer { flex:0 0 86%; max-width:440px; scroll-snap-align:center; }
+.st-insights { display:grid; grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr)); gap:.9rem; align-items:start; }
+.st .tn-argue { background:var(--card); border:1px solid var(--line); }
+.st .tn-views > div { background:var(--chip); }
+.st-cats { display:flex; gap:.45rem; overflow-x:auto; scrollbar-width:none; padding-bottom:.3rem; margin-bottom:1.1rem; }
+.st-cats::-webkit-scrollbar { display:none; }
+.st-cats button { flex:none; display:flex; flex-direction:column; align-items:flex-start; gap:.05rem; padding:.5rem .85rem; border-radius:14px; border:1px solid var(--line); background:var(--card); color:var(--soft); text-align:left; transition:all .15s; }
+.st-cats button:hover { border-color:var(--gold); }
+.st-cats bdi { font-family:var(--he); font-size:1.1rem; color:var(--gold); line-height:1.2; }
+.st-cats span { font-size:.72rem; font-weight:700; white-space:nowrap; }
+.st-cats button.on { background:var(--gold); border-color:transparent; }
+.st-cats button.on bdi, .st-cats button.on span { color:var(--bg); }
+.st-list { display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,360px),1fr)); gap:.9rem; align-items:start; }
+.st-showmore { grid-column:1 / -1; justify-self:center; padding:.6rem 1.2rem; border-radius:999px; border:1px solid var(--line); color:var(--gold); font-weight:800; font-size:.85rem; }
+.st-shimmer { min-height:150px; border-radius:20px; background:linear-gradient(100deg, var(--chip) 30%, var(--line) 50%, var(--chip) 70%); background-size:220% 100%; animation:stsh 1.5s linear infinite; }
+@keyframes stsh { from { background-position:120% 0; } to { background-position:-120% 0; } }
+.st-muted { color:var(--mute); font-size:.92rem; }
+.st-attr { max-width:900px; margin:3rem auto 0; padding:0 1.2rem; text-align:center; font-size:.72rem; color:var(--mute); line-height:1.5; }
+.st-pager { max-width:900px; margin:1rem auto 0; padding:0 1.2rem; display:flex; justify-content:space-between; }
+.st-pager button { display:inline-flex; align-items:center; gap:.3rem; padding:.5rem .9rem; border-radius:999px; border:1px solid var(--line); color:var(--soft); font-weight:700; font-size:.85rem; }
+
+.st-sheet-wrap { position:fixed; inset:0; z-index:90; display:flex; justify-content:flex-end; background:rgba(6,5,12,.55); backdrop-filter:blur(3px); animation:stfade .2s ease-out; }
+.st-sheet { width:min(680px,100%); height:100%; overflow-y:auto; background:var(--bg); border-left:1px solid var(--line); animation:stin .26s cubic-bezier(.2,.8,.2,1); scrollbar-width:thin; }
+.st-night .st-sheet { background:#100f17; }
+.st-sheet-head { position:sticky; top:0; z-index:2; display:flex; align-items:center; gap:.6rem; padding:.9rem 1rem .9rem 1.2rem; background:color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter:blur(12px); border-bottom:1px solid var(--line); }
+.st-sheet-title { flex:1; min-width:0; display:flex; align-items:center; gap:.7rem; font-weight:800; }
+.st-sheet-he { font-family:var(--he); font-size:1.4rem; color:var(--gold); }
+.st-sheet-body { padding:1.1rem 1.2rem 3rem; display:grid; gap:1.1rem; }
+.st-sheet .st-list { grid-template-columns:minmax(0,1fr); }
+.st-sheet .tn-overview { background:var(--card); }
+.st-pd-title { display:flex; align-items:center; gap:.7rem; background:none !important; }
+.st-pd-title > bdi { width:46px; height:46px; display:grid; place-items:center; border-radius:14px; font-family:var(--he); font-size:1.8rem; color:#fff; }
+.st-pd-title.tn-peshat > bdi { background:linear-gradient(150deg,#5b5b66,#26262c); } .st-pd-title.tn-remez > bdi { background:linear-gradient(150deg,#0f8a80,#123f3c); }
+.st-pd-title.tn-derash > bdi { background:linear-gradient(150deg,#c2620e,#6b240d); } .st-pd-title.tn-sod > bdi { background:linear-gradient(150deg,#4a3fd6,#1b1846); }
+.st-pd-title > span { display:flex; flex-direction:column; line-height:1.2; }
+.st-pd-title b { font-family:var(--en); font-size:1.3rem; color:var(--ink); }
+.st-pd-title small { font-size:.72rem; font-weight:600; color:var(--mute); }
+.st-layer-ai { padding:1.1rem 1.2rem; border-radius:20px; color:#fff; font-family:var(--en); font-size:1.02em; line-height:1.7; }
+.st-layer-ai .sd-cite { background:rgba(255,255,255,.18) !important; color:#fff !important; }
+.st-subhead { display:flex; align-items:baseline; gap:.5rem; margin:.4rem 0 .7rem; font-weight:800; font-size:.72rem; letter-spacing:.14em; text-transform:uppercase; color:var(--mute); }
+.st-subhead bdi { font-family:var(--he); font-size:1.25rem; letter-spacing:0; color:var(--gold); text-transform:none; }
+@keyframes stfade { from { opacity:0; } }
+@keyframes stin { from { transform:translateX(40px); opacity:.4; } }
+@keyframes stup { from { transform:translateY(60px); opacity:.4; } }
+
+@media (max-width: 760px) {
+  .st-bar { flex-wrap:wrap; padding:.45rem .55rem .35rem; gap:.25rem .35rem; }
+  .st-title { flex:1; }
+  .st-dots { order:3; flex:0 0 100%; justify-content:flex-start; padding:.1rem 0 .15rem; }
+  .st-hide-sm { display:none; }
+  .st-stage { padding:1.5rem 1.05rem .5rem; gap:1rem; }
+  .st-num bdi { font-size:2.8rem; }
+  .st-pasuk-he { font-size:calc(1.85rem * var(--sc,1)); line-height:1.75; }
+  .st-pardes { grid-template-columns:repeat(2,minmax(0,1fr)); }
+  .st-pd { min-height:136px; }
+  .st-band { padding:0 1rem; margin-top:1.8rem; }
+  .st-band-tight { padding:0; }
+  .st-band-title h2 { font-size:1.3rem; }
+  .st-sheet-wrap { align-items:flex-end; }
+  .st-sheet { height:92vh; border-left:0; border-radius:24px 24px 0 0; animation:stup .26s cubic-bezier(.2,.8,.2,1); }
+}
 `;
