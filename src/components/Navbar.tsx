@@ -1,4 +1,4 @@
-import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye, Sparkles, ScrollText, Mail } from 'lucide-react';
+import { BookOpen, Video, Library, MessageCircle, Headphones, Share2, Cloud, Eye, Sparkles, ScrollText, Mail, BookMarked } from 'lucide-react';
 import { User } from 'firebase/auth';
 import { GamificationStats } from '../lib/deviceTracker';
 
@@ -7,8 +7,8 @@ interface NavbarProps {
   onToggleAdmin: () => void;
   onHome: () => void;
   logoUrl?: string;
-  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'contact' | 'about';
-  onTabChange: (tab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'contact' | 'about') => void;
+  activeTab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'tanach' | 'contact' | 'about';
+  onTabChange: (tab: 'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'tanach' | 'contact' | 'about') => void;
   whatsappUrl?: string;
   totalBooks?: number;
   totalVideos?: number;
@@ -154,6 +154,22 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
             >
               <ScrollText className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Super Daf</span><span className="sm:hidden">Daf</span>
+            </button>
+            <button
+              onClick={() => {
+                onHome();
+                window.history.pushState({}, '', '/tanach');
+                onTabChange('tanach');
+                window.scrollTo(0, 0);
+              }}
+              className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 sm:gap-2 px-2.5 sm:px-3.5 lg:px-4 py-2 rounded-full text-[11px] sm:text-xs lg:text-sm font-black uppercase tracking-wider transition-all whitespace-nowrap ${
+                activeTab === 'tanach'
+                  ? 'bg-indigo-600 text-white shadow-[0_2px_12px_-2px_rgba(99,102,241,0.5)] ring-1 ring-indigo-400/40'
+                  : 'text-slate-400 hover:text-slate-200 hover:bg-slate-700/50'
+              }`}
+            >
+              <BookMarked className="w-4 h-4 shrink-0" />
+              <span>Tanach</span>
             </button>
             <button
               onClick={() => {
