@@ -39,6 +39,8 @@ import { DafHub } from './components/DafHub';
 import { SuperDafHero } from './components/SuperDafHero';
 import { SuperMishnahPage } from './components/SuperMishnahPage';
 import { refFromMishnahPath } from './lib/mishnah';
+import { SuperTanachPage } from './components/SuperTanachPage';
+import { refFromTanachPath } from './lib/tanach';
 import { refFromPath, dafFromTitle, dafPath, dafRefForMedia, loadReadyDafs } from './lib/daf';
 import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats, registerMediaList, recordWebsiteVisit } from './lib/deviceTracker';
 
@@ -46,7 +48,7 @@ export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
   const [audios, setAudios] = useState<Audio[]>([]);
-  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'mishnah' | 'contact' | 'about'>('sefarim');
+  const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'mishnah' | 'tanach' | 'contact' | 'about'>('sefarim');
 
   // A daf podcast is listened to inside Super Daf, with the sources open,
   // rather than played bare from the Media section.
@@ -158,6 +160,9 @@ export default function App() {
     }
     if (/^\/mishnah(\/|$)/.test(window.location.pathname)) {
       setActiveTab('mishnah');
+    }
+    if (/^\/tanach(\/|$)/.test(window.location.pathname)) {
+      setActiveTab('tanach');
     }
   }, []);
 
@@ -683,9 +688,10 @@ export default function App() {
     const onDafPop = () => {
       if (/^\/(super)?daf(\/|$)/.test(window.location.pathname)) { setActiveTab('daf'); setDafRef(refFromPath(window.location.pathname)); }
       else if (/^\/mishnah(\/|$)/.test(window.location.pathname)) setActiveTab('mishnah');
+      else if (/^\/tanach(\/|$)/.test(window.location.pathname)) setActiveTab('tanach');
       else if (window.location.pathname === '/contact') setActiveTab('contact');
       else if (window.location.pathname === '/about') setActiveTab('about');
-      else setActiveTab((t) => (t === 'daf' || t === 'mishnah' || t === 'contact' || t === 'about' ? 'sefarim' : t));
+      else setActiveTab((t) => (t === 'daf' || t === 'mishnah' || t === 'tanach' || t === 'contact' || t === 'about' ? 'sefarim' : t));
     };
     window.addEventListener('popstate', handlePopState);
     window.addEventListener('popstate', onDafPop);
@@ -1053,7 +1059,7 @@ export default function App() {
           the top on desktop - on mobile it moves to the bottom instead of
           eating the whole first screen. Unchanged on every other tab. */}
       {/* Super Daf is a full-screen reader and renders its own chrome. */}
-      {activeTab !== 'daf' && activeTab !== 'mishnah' && (
+      {activeTab !== 'daf' && activeTab !== 'mishnah' && activeTab !== 'tanach' && (
         <div className={activeTab === 'chat' ? 'hidden sm:block' : ''}>
           <Navbar {...navbarProps} />
         </div>
@@ -1066,7 +1072,7 @@ export default function App() {
       )}
 
       {/* Welcome Video Section (Disappears for people who have been on our website over 25 times) */}
-      {activeTab !== 'chat' && activeTab !== 'daf' && activeTab !== 'mishnah' && activeTab !== 'contact' && activeTab !== 'about' && !deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
+      {activeTab !== 'chat' && activeTab !== 'daf' && activeTab !== 'mishnah' && activeTab !== 'tanach' && activeTab !== 'contact' && activeTab !== 'about' && !deviceStats.hasOver25Visits && !selectedBook && !selectedVideo && !searchQuery && !selectedCategory && !activeSeries && (
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4 md:pt-6 pb-2">
           <div className="bg-slate-900 rounded-3xl md:rounded-[2.5rem] overflow-hidden shadow-2xl border border-slate-800 shadow-indigo-950/40 relative">
             <div className="absolute inset-0 bg-gradient-to-br from-indigo-950/20 via-slate-900 to-slate-900 pointer-events-none" />
@@ -1145,7 +1151,7 @@ export default function App() {
         </div>
       )}
 
-      <main className={activeTab === 'chat' || activeTab === 'daf' || activeTab === 'mishnah' ? 'max-w-7xl mx-auto px-1 sm:px-6 lg:p-12 pt-2 sm:pt-4' : 'max-w-7xl mx-auto p-6 lg:p-12 pt-4'}>
+      <main className={activeTab === 'chat' || activeTab === 'daf' || activeTab === 'mishnah' || activeTab === 'tanach' ? 'max-w-7xl mx-auto px-1 sm:px-6 lg:p-12 pt-2 sm:pt-4' : 'max-w-7xl mx-auto p-6 lg:p-12 pt-4'}>
         {status && (
           <div
             className={`mb-6 p-5 rounded-3xl font-bold flex items-center gap-3 animate-in fade-in slide-in-from-top-4 ${
@@ -1940,6 +1946,12 @@ export default function App() {
           <AboutPage onContact={openContact} />
         ) : activeTab === 'chat' ? (
           <ChatPage onExit={() => { setActiveTab('sefarim'); handleHome(); }} books={books} media={videos} categoryThumbnails={siteSettings.videoCategoryThumbnails} />
+        ) : activeTab === 'tanach' ? (
+          <SuperTanachPage
+            initialRef={refFromTanachPath(window.location.pathname)}
+            header={<Navbar {...navbarProps} />}
+            onExit={() => { setActiveTab('sefarim'); handleHome(); window.history.pushState({}, '', '/'); }}
+          />
         ) : activeTab === 'mishnah' ? (
           <SuperMishnahPage
             initialRef={refFromMishnahPath(window.location.pathname)}
@@ -1967,14 +1979,14 @@ export default function App() {
       </main>
 
       {/* Community Growth Banner to prompt visitors - hidden on /chat, where it breaks the immersive feel */}
-      {activeTab !== 'chat' && activeTab !== 'daf' && activeTab !== 'mishnah' && (
+      {activeTab !== 'chat' && activeTab !== 'daf' && activeTab !== 'mishnah' && activeTab !== 'tanach' && (
         <CommunityGrowthBanner
           whatsappUrl={bannerUrl}
           onOpenShareModal={() => setShowWhatsAppShareModal(true)}
         />
       )}
 
-      {activeTab !== 'chat' && activeTab !== 'daf' && activeTab !== 'mishnah' && (
+      {activeTab !== 'chat' && activeTab !== 'daf' && activeTab !== 'mishnah' && activeTab !== 'tanach' && (
         <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-700/60 mt-8 relative">
           {(() => {
             const link = 'block text-sm text-slate-400 hover:text-indigo-300 transition-colors text-left';
@@ -2105,7 +2117,7 @@ export default function App() {
       )}
 
       {/* Launch announcement for Super Agent - shown site-wide, max 2x/device, 2-day window */}
-      {activeTab !== 'chat' && activeTab !== 'daf' && activeTab !== 'mishnah' && (
+      {activeTab !== 'chat' && activeTab !== 'daf' && activeTab !== 'mishnah' && activeTab !== 'tanach' && (
         <SuperAgentAnnouncement
           onTryNow={() => {
             setActiveTab('chat');
@@ -2116,7 +2128,7 @@ export default function App() {
       )}
 
       {/* Floating Prompt to grow WhatsApp Community - not over the daf, where it covers the notes panel */}
-      {activeTab !== 'daf' && activeTab !== 'mishnah' && (
+      {activeTab !== 'daf' && activeTab !== 'mishnah' && activeTab !== 'tanach' && (
         <WhatsAppGrowthPrompt
           whatsappUrl={bannerUrl}
           onOpenShareModal={() => setShowWhatsAppShareModal(true)}
