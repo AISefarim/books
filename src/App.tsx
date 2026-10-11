@@ -1041,6 +1041,10 @@ export default function App() {
     userStats,
   };
 
+  // Shown inside another site's app (e.g. Bnei Yitzhak): that app supplies the header and the way back,
+  // so Super Daf drops the AI Sefarim navbar and tabs and gives the screen to the daf.
+  const dafEmbedded = (() => { try { return window.self !== window.top; } catch { return true; } })();
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans">
       {/* On /chat, the full navbar (several rows tall) is only shown at
@@ -1945,7 +1949,8 @@ export default function App() {
             />
           ) : (
             <DafHub
-              header={<Navbar {...navbarProps} />}
+              header={dafEmbedded ? null : <Navbar {...navbarProps} />}
+              embedded={dafEmbedded}
               whatsappUrl={bannerUrl}
               onOpen={(r) => openSuperDaf(undefined, r)}
               onExit={() => { setActiveTab('sefarim'); handleHome(); window.history.pushState({}, '', '/'); }}

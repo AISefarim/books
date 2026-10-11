@@ -34,7 +34,7 @@ function Highlight({ text, words }: { text: string; words: string[] }) {
   return <>{text.split(re).map((part, i) => (i % 2 ? <mark key={i} className="bg-indigo-500/30 text-white rounded px-0.5">{part}</mark> : <Fragment key={i}>{part}</Fragment>))}</>;
 }
 
-export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: string) => void; onExit: () => void; whatsappUrl?: string; header?: ReactNode }) {
+export function DafHub({ onOpen, onExit, whatsappUrl, header, embedded }: { onOpen: (ref: string) => void; onExit: () => void; whatsappUrl?: string; header?: ReactNode; embedded?: boolean }) {
   const [items, setItems] = useState<DafMeta[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [today, setToday] = useState<Day | null>(null);
@@ -204,9 +204,9 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header }: { onOpen: (ref: 
       {header && <div>{header}</div>}
       <div className="max-w-5xl mx-auto px-4 sm:px-8">
         {/* title + dedication */}
-        <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 pt-5 pb-4">
+        <div className={`flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-4 ${embedded ? 'pt-3 pb-2' : 'pt-5 pb-4'}`}>
           <div className="flex items-center gap-2">
-            {!header && <button onClick={onExit} className="p-2 -ml-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>}
+            {!header && !embedded && <button onClick={onExit} className="p-2 -ml-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>}
             <ScrollText className="w-6 h-6 text-indigo-300" />
             <h1 className="text-2xl font-black tracking-tight">Super Daf</h1>
           </div>
