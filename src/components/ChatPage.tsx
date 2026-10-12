@@ -951,7 +951,7 @@ function PagesCounter() {
   return <>{n.toLocaleString()}</>;
 }
 
-export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryThumbnails = NO_THUMBS }: { onExit: () => void; books?: Book[]; media?: MediaItem[]; categoryThumbnails?: Record<string, string> }) {
+export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = NO_MEDIA, categoryThumbnails = NO_THUMBS }: { onExit: () => void; embedded?: boolean; books?: Book[]; media?: MediaItem[]; categoryThumbnails?: Record<string, string> }) {
   const [messages, setMessages] = useState<ChatMessage[]>(loadHistory);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -1080,13 +1080,14 @@ export function ChatPage({ onExit, books = NO_BOOKS, media = NO_MEDIA, categoryT
       <div className="absolute top-1/2 -right-24 w-72 h-72 bg-indigo-500/5 rounded-full blur-3xl pointer-events-none -z-10" />
       {openSource && <SourceModal source={openSource} onClose={() => setOpenSource(null)} />}
 
-      <button
+      {/* inside another app (iframe) the host app has its own way back */}
+      {!embedded && <button
         onClick={onExit}
         className="sm:hidden flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-200 mb-3 -mt-1"
       >
         <ArrowLeft className="w-3.5 h-3.5" />
         Back to AI Sefarim
-      </button>
+      </button>}
 
       <div className="relative text-center mb-5 sm:mb-8 px-2">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
