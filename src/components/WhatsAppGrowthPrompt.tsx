@@ -50,7 +50,9 @@ export function WhatsAppGrowthPrompt({ whatsappUrl, onOpenShareModal }: WhatsApp
     window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(shareMessage)}`, '_blank');
   };
 
-  if (!isVisible) return null;
+  // not inside another app (an iframe): the host app is the one asking people to share
+  const embedded = (() => { try { return window.self !== window.top; } catch { return true; } })();
+  if (!isVisible || embedded) return null;
 
   if (isMinimized) {
     return (

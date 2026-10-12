@@ -1041,13 +1041,17 @@ export default function App() {
     userStats,
   };
 
+  // Shown inside another site's app (e.g. Bnei Yitzhak): that app supplies the header and the way back,
+  // so Super Daf drops the AI Sefarim navbar and tabs and gives the screen to the daf.
+  const dafEmbedded = (() => { try { return window.self !== window.top; } catch { return true; } })();
+
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans">
       {/* On /chat, the full navbar (several rows tall) is only shown at
           the top on desktop - on mobile it moves to the bottom instead of
           eating the whole first screen. Unchanged on every other tab. */}
       {/* Super Daf is a full-screen reader and renders its own chrome. */}
-      {activeTab !== 'daf' && (
+      {activeTab !== 'daf' && !(activeTab === 'chat' && dafEmbedded) && (
         <div className={activeTab === 'chat' ? 'hidden sm:block' : ''}>
           <Navbar {...navbarProps} />
         </div>
@@ -1933,7 +1937,7 @@ export default function App() {
         ) : activeTab === 'about' ? (
           <AboutPage onContact={openContact} />
         ) : activeTab === 'chat' ? (
-          <ChatPage onExit={() => { setActiveTab('sefarim'); handleHome(); }} books={books} media={videos} categoryThumbnails={siteSettings.videoCategoryThumbnails} />
+          <ChatPage embedded={dafEmbedded} onExit={() => { setActiveTab('sefarim'); handleHome(); }} books={books} media={videos} categoryThumbnails={siteSettings.videoCategoryThumbnails} />
         ) : activeTab === 'daf' ? (
           dafRef ? (
             <SuperDafPage
@@ -1945,7 +1949,8 @@ export default function App() {
             />
           ) : (
             <DafHub
-              header={<Navbar {...navbarProps} />}
+              header={dafEmbedded ? null : <Navbar {...navbarProps} />}
+              embedded={dafEmbedded}
               whatsappUrl={bannerUrl}
               onOpen={(r) => openSuperDaf(undefined, r)}
               onExit={() => { setActiveTab('sefarim'); handleHome(); window.history.pushState({}, '', '/'); }}
@@ -2023,7 +2028,7 @@ export default function App() {
       )}
 
       {/* Mobile-only footer nav for /chat - kept as the absolute last element on the page */}
-      {activeTab === 'chat' && (
+      {activeTab === 'chat' && !dafEmbedded && (
         <div className="sm:hidden">
           <Navbar {...navbarProps} variant="footer" />
         </div>
