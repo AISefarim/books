@@ -42,7 +42,7 @@ interface BiurPos { who: string; view: string; refs: string[] }
 interface BiurAns { who: string; answer: string; refs: string[] }
 interface Biur { id: string; title: string; heTitle?: string; anchor: string | null; notes: { ref: string; n: number }[]; question: string | null; shitos: BiurPos[]; yesod: string | null; answers: BiurAns[]; body: string[]; lemaaseh: string | null; open: string | null; refs: string[]; sources: string[] }
 interface Biurim { entries?: Biur[]; thin?: boolean; _error?: string }
-interface Built { biurim?: Biurim | null; partial?: boolean; core: Comm[]; rishonim: Comm[]; acharonim: Comm[]; other: Comm[]; rambamSources: Comm[]; halachaSources: Comm[]; synthesis: Synthesis | null; halacha: Halacha | null; mesivta: Mesivta | null; pasukSources?: Comm[]; mishnahSources?: Comm[]; sodSources?: Comm[]; extras?: Extras | null }
+interface Built { baraitaSources?: Comm[]; biurim?: Biurim | null; partial?: boolean; core: Comm[]; rishonim: Comm[]; acharonim: Comm[]; other: Comm[]; rambamSources: Comm[]; halachaSources: Comm[]; synthesis: Synthesis | null; halacha: Halacha | null; mesivta: Mesivta | null; pasukSources?: Comm[]; mishnahSources?: Comm[]; sodSources?: Comm[]; extras?: Extras | null }
 interface Sugya {
   index: number; kind: 'mishnah' | 'gemara' | 'topic' | 'continued'; heading: string; from: string; to: string; segments: number[];
   prelude?: { from: string; to: string; segments: Seg[] }; continuation?: { from: string; to: string; segments: Seg[] }; continuesOn?: string;
@@ -654,7 +654,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       {phonePage && daf && createPortal(<VilnaViewer paper={surface === 'paper'} daf={daf} amud={phonePage} setAmud={setPhonePage} onClose={() => setPhonePage(null)} regions={pageRegions[phonePage]} focusIdx={focusIdx} headline={pageHeadline} onJump={(i) => { setPhonePage(null); scrollToSeg(i); }} />, document.body)}
       {/* ============ top bar ============ */}
       {focus && (
-        <button onClick={toggleFullscreen} className="fixed left-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[60] inline-flex items-center gap-1.5 rounded-full bg-slate-900/70 border border-slate-700 px-3 py-1.5 text-xs font-black text-slate-200 opacity-40 hover:opacity-100 active:opacity-100 backdrop-blur transition-opacity" aria-label="Exit focus mode" title="Exit focus mode (Esc)"><Minimize2 className="w-3.5 h-3.5" /> Exit</button>
+        <button onClick={toggleFullscreen} className="fixed left-3 top-[max(0.75rem,env(safe-area-inset-top))] z-[60] inline-flex items-center gap-1.5 rounded-full bg-slate-900/70 border border-slate-700 px-3 py-1.5 text-xs font-black text-slate-200 opacity-40 hover:opacity-100 active:opacity-100 backdrop-blur transition-opacity" aria-label="Exit focus mode" title="Exit focus mode (Esc)"><Minimize2 className="w-3.5 h-3.5" /> Exit</button>
       )}
       <header className={`${focus ? 'hidden' : 'flex'} shrink-0 h-12 sm:h-14 items-center gap-1.5 sm:gap-2 px-2 sm:px-4 bg-slate-950 text-slate-100 border-b border-slate-800`}>
         <button onClick={onExit} className="p-2 rounded-full hover:bg-slate-800 text-slate-300" aria-label="Back to AI Sefarim"><ArrowLeft className="w-5 h-5" /></button>
@@ -781,7 +781,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
       </div>
 
       {/* ============ dock ============ */}
-      {daf && !focus && (
+      {daf && (
         <nav className="shrink-0 bg-slate-950 border-t border-slate-800 px-2 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5">
           <div className={`mx-auto grid gap-1 lg:flex lg:items-center lg:justify-center lg:gap-3 lg:max-w-3xl ${['max-w-lg grid-cols-4', 'max-w-xl grid-cols-5', 'max-w-2xl grid-cols-6'][((daf.mishnayot || []).length ? 1 : 0) + (dafHasRambam(daf) ? 1 : 0)]}`}>
             {([
@@ -1251,6 +1251,7 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
                 ))}
               </div>
             ) : seg && built.mesivta ? <p className="text-slate-500">No commentary on Sefaria is anchored to this paragraph.</p> : seg ? <p className="text-slate-500 inline-flex items-center gap-2"><Loader2 className="w-4 h-4 animate-spin" /> Notes on their way.</p> : null}
+            <BaraitaSection built={built} seg={seg} />
             <ExtraSections built={built} seg={seg} />
             {syn?.rambam && !rambamHere && !words.__rambamOpen && (
               <button onClick={() => setWords((o) => ({ ...o, __rambamOpen: true }))} className="w-full text-left rounded-xl border border-amber-500/40 bg-amber-500/10 px-3 py-2 flex items-center gap-2 text-[12px] font-bold text-amber-800 hover:bg-amber-500/20">
@@ -1836,6 +1837,45 @@ function BiurCard({ b, n, focused, innerRef, book }: { b: Biur; n: number; focus
       {b.sources.length ? <p className="mt-3 text-[11px] text-slate-500">Sources: {[...new Set(b.sources.map((x) => workName(x)))].join(' · ')}</p> : null}
     </div>
   );
+}
+
+// A baraita Sefaria links to this line (the Tosefta, or the Sifra / Sifrei / Mekhilta): a short summary,
+// and on tap the baraita itself in Hebrew with the English below it.
+const baraitaSummaries: Record<string, Promise<string>> = {};
+function baraitaSummary(ref: string, anchor: string): Promise<string> {
+  const k = `${ref}|${anchor}`;
+  return (baraitaSummaries[k] ||= fetch(`${DAF_API}/baraita`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ref, anchor }) })
+    .then((r) => r.json()).then((d) => String(d.summary || '')).catch(() => ''));
+}
+function BaraitaCard({ b }: { b: Comm }) {
+  const [summary, setSummary] = useState('');
+  const [open, setOpen] = useState(false);
+  useEffect(() => { let live = true; baraitaSummary(b.ref, b.anchor).then((s) => { if (live) setSummary(s); }); return () => { live = false; }; }, [b.ref, b.anchor]);
+  return (
+    <div className="rounded-xl border border-teal-500/40 bg-teal-500/10 px-3.5 py-3">
+      <p className="flex items-center gap-2 text-[11px] font-black uppercase tracking-[0.16em] text-teal-300">
+        <span lang="he" style={{ fontFamily: HE_FONT, fontSize: '1rem', letterSpacing: 0 }}>ברייתא</span> The baraita
+        <span className="ml-auto normal-case tracking-normal font-bold"><SourceLink r={b.ref} /></span>
+      </p>
+      <p className="mt-1.5 leading-relaxed text-slate-200" style={{ fontFamily: EN_FONT, fontSize: '0.96rem' }}>
+        {summary ? <RefText text={summary} /> : <span className="text-slate-400">{firstSentence(b.en) || 'Summarizing…'}</span>}
+      </p>
+      <button onClick={() => setOpen((o) => !o)} className="mt-2 inline-flex items-center gap-1 text-[12px] font-bold text-teal-300">
+        {open ? 'Hide the baraita' : 'Read the baraita'} {open ? <ChevronDown className="w-3.5 h-3.5 rotate-180" /> : <ChevronDown className="w-3.5 h-3.5" />}
+      </button>
+      {open && (
+        <div className="mt-2 animate-in fade-in duration-150">
+          <p lang="he" dir="rtl" className="text-slate-100" style={{ fontFamily: HE_FONT, fontSize: '1.15rem', lineHeight: 1.7 }}>{b.he}</p>
+          {b.en && <Rich text={b.en} className="mt-1.5 text-slate-300" style={{ fontFamily: EN_FONT, fontSize: '0.92rem', lineHeight: 1.55 }} />}
+        </div>
+      )}
+    </div>
+  );
+}
+function BaraitaSection({ built, seg }: { built: Built; seg: Seg | null }) {
+  const items = (built.baraitaSources || []).filter((b) => !seg || b.anchor === seg.ref).filter((b, i, xs) => xs.findIndex((y) => y.ref === b.ref) === i);
+  if (!items.length) return null;
+  return <div className="space-y-3">{items.map((b) => <BaraitaCard key={b.ref} b={b} />)}</div>;
 }
 
 function ExtraSections({ built, seg }: { built: Built; seg: Seg | null }) {
