@@ -5,6 +5,13 @@ import remarkGfm from 'remark-gfm';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 import { auth } from '../lib/firebase';
 import type { Book, Video as MediaItem } from '../types';
+import { isBneiYitzhakEmbed, EMBED_SHARE_NAME, EMBED_SHARE_URL } from '../embed';
+
+// Embedded in the Bnei Yitzhak app (/chat?src=bneiyitzhak): no AI Sefarim
+// branding anywhere - not on screen, not in shared or exported text.
+const EMBED = isBneiYitzhakEmbed();
+const BRAND_TITLE = EMBED ? EMBED_SHARE_NAME : 'AI Sefarim Super Agent';
+const mentionsBrand = (t: string) => /ai sefarim/i.test(t);
 
 // Deployed Cloudflare Worker URL. Set VITE_CHAT_WORKER_URL in the AI Studio
 // Secrets panel (or .env) to override without a code change.
@@ -35,7 +42,9 @@ const ASCENT_STAGES = [
   { label: 'Ascending to Shamayim…', aside: '(where the Cloud lives. Both of them.)' },
   { label: 'Entering the cloud, like Moshe…', aside: '(Shemot 24:18. His trip took 40 days, ours about 40 seconds.)' },
   { label: 'No bread, no water, like Moshe…', aside: '(Shemot 34:28. You, however, are allowed a snack.)' },
-  { label: 'וַיֵּרֶד AI Sefarim בֶּעָנָן…', aside: '(Shemot 34:5, with one small edit)' },
+  EMBED
+    ? { label: 'Coming down from the cloud…', aside: '(Shemot 34:5)' }
+    : { label: 'וַיֵּרֶד AI Sefarim בֶּעָנָן…', aside: '(Shemot 34:5, with one small edit)' },
   { label: 'Almost down…', aside: '(the descent is always the slower part)' },
 ];
 
@@ -100,7 +109,7 @@ function AscentIndicator() {
 // ("a sage," "a she'eilah") rather than naming specific unverified
 // rabbi-to-rabbi exchanges - the journeys themselves are well-documented,
 // the framing shouldn't invent history to make a point.
-const LIBRARY_FACTS: { icon: typeof BookOpen; text: string }[] = [
+const ALL_LIBRARY_FACTS: { icon: typeof BookOpen; text: string }[] = [
   { icon: BookOpen, text: 'Nearly 100 sefarim in the library — most translated into English for the very first time' },
   { icon: Gift, text: 'Every book, video, and podcast on AI Sefarim is completely free' },
   { icon: Video, text: 'Hundreds of videos and podcasts, with new ones added regularly' },
@@ -114,6 +123,8 @@ const LIBRARY_FACTS: { icon: typeof BookOpen; text: string }[] = [
   { icon: BookOpen, text: 'Pardes Rimonim of the Ramak, Shenei Luchot HaBerit, and more: the classic Kabbalah sefarim in one searchable library' },
   { icon: Sparkles, text: 'Ask about gilgulim, kavanot, the sefirot, or a passage of the Zohar, and Super Agent answers from the actual texts' },
 ];
+
+const LIBRARY_FACTS = EMBED ? ALL_LIBRARY_FACTS.filter((f) => !mentionsBrand(f.text)) : ALL_LIBRARY_FACTS;
 
 const WAIT_CARDS = [
   {
@@ -433,7 +444,7 @@ function loadHistory(): ChatMessage[] {
 // Shared by the .txt export and the Google Docs export, so both always
 // carry identical content (including the links) - built once here.
 function buildTranscriptLines(messages: ChatMessage[]): string[] {
-  const lines: string[] = ['AI Sefarim Super Agent - Conversation Export', new Date().toLocaleString(), ''];
+  const lines: string[] = [`${BRAND_TITLE} - Conversation Export`, new Date().toLocaleString(), ''];
   for (const m of messages) {
     lines.push(m.role === 'user' ? 'YOU:' : 'SUPER AGENT:');
     lines.push(m.role === 'assistant' ? markdownToPlainText(m.content) : m.content);
@@ -448,8 +459,12 @@ function buildTranscriptLines(messages: ChatMessage[]): string[] {
     lines.push('---');
     lines.push('');
   }
-  lines.push(`Ask Super Agent yourself: ${SITE_URL}`);
-  lines.push(`Join our WhatsApp community: ${WHATSAPP_GROUP_URL}`);
+  if (EMBED) {
+    lines.push(`Ask Super Agent yourself: ${EMBED_SHARE_URL}`);
+  } else {
+    lines.push(`Ask Super Agent yourself: ${SITE_URL}`);
+    lines.push(`Join our WhatsApp community: ${WHATSAPP_GROUP_URL}`);
+  }
   return lines;
 }
 
@@ -483,7 +498,7 @@ async function exportToGoogleDocs(messages: ChatMessage[]): Promise<string> {
     throw new Error('Google did not grant Docs permission - please try again and approve the request.');
   }
 
-  const title = `AI Sefarim Super Agent - ${new Date().toLocaleDateString()}`;
+  const title = `${BRAND_TITLE} - ${new Date().toLocaleDateString()}`;
   const createRes = await fetch('https://docs.googleapis.com/v1/documents', {
     method: 'POST',
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
@@ -520,6 +535,7 @@ const MAX_SHARE_BODY = 800; // keep the Q&A itself short; the links always survi
 // Every copy/share action, whole-conversation or single-message, ends
 // with both of these - no exceptions.
 function appendLinks(body: string): string {
+  if (EMBED) return `${body}\n\n🔗 Ask Super Agent yourself: ${EMBED_SHARE_URL}`;
   return `${body}\n\n🔗 Ask Super Agent yourself: ${SITE_URL}\n💬 Join our WhatsApp community: ${WHATSAPP_GROUP_URL}`;
 }
 
@@ -565,7 +581,9 @@ function formatSourcesList(sources?: Source[]): string {
 // "invite a friend" link in the footer.
 function buildInviteMessage(): string {
   return appendLinks(
-    "🎙️ *AI Sefarim Super Agent*\n\nAsk anything from the Mishnah to modern day and get a real, grounded answer - every tractate of Gemara, all of the Rambam, the complete Beit Yosef and Shulchan Aruch, the full Arizal, the Zohar, and every AI Sefarim book, with sources you can check."
+    EMBED
+      ? `🎙️ *${BRAND_TITLE}*\n\nAsk anything from the Mishnah to modern day and get a real, grounded answer - every tractate of Gemara, all of the Rambam, the complete Beit Yosef and Shulchan Aruch, the full Arizal and the Zohar, with sources you can check.`
+      : "🎙️ *AI Sefarim Super Agent*\n\nAsk anything from the Mishnah to modern day and get a real, grounded answer - every tractate of Gemara, all of the Rambam, the complete Beit Yosef and Shulchan Aruch, the full Arizal, the Zohar, and every AI Sefarim book, with sources you can check."
   );
 }
 
@@ -573,7 +591,7 @@ function buildShareMessage(messages: ChatMessage[]): string {
   const lastUser = [...messages].reverse().find((m) => m.role === 'user');
   const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
 
-  let body = '🎙️ *AI Sefarim Super Agent*\n\n';
+  let body = `🎙️ *${BRAND_TITLE}*\n\n`;
   if (lastUser) body += `*Q:* ${lastUser.content}\n\n`;
   if (lastAssistant) {
     body += `*A:* ${truncate(markdownToPlainText(lastAssistant.content), MAX_SHARE_BODY)}`;
@@ -586,7 +604,7 @@ function buildSingleMessageText(m: ChatMessage, forSharing: boolean, question?: 
   const cleanContent = markdownToPlainText(m.content);
   const q = question?.trim();
   const body = forSharing
-    ? `🎙️ *AI Sefarim Super Agent*\n\n${q ? `*Q:* ${q}\n\n*A:* ` : ''}${truncate(cleanContent, MAX_SHARE_BODY)}`
+    ? `🎙️ *${BRAND_TITLE}*\n\n${q ? `*Q:* ${q}\n\n*A:* ` : ''}${truncate(cleanContent, MAX_SHARE_BODY)}`
     : `${q ? `Q: ${q}\n\nA: ` : ''}${cleanContent}`;
   return appendLinks(body + formatSourcesList(m.sources));
 }
@@ -911,7 +929,7 @@ const DvarTorah = memo(function DvarTorah() {
   );
 });
 
-const LEARN_NUDGES = [
+const ALL_LEARN_NUDGES = [
   'It is great to rely on me for answers, but you can learn all of this for yourself. The sefarim I am quoting are in the library, free, and many are translated into English.',
   'I can point you to the passage, but nothing beats opening the sefer. Every book on AI Sefarim is free to read.',
   'Do not just take my word for it. Tap any source under an answer and read the original. That is how you start to learn it yourself.',
@@ -919,15 +937,17 @@ const LEARN_NUDGES = [
   'Think of me as a study partner, not a replacement. The goal is for you to open the book and learn it for yourself.',
 ];
 
+const LEARN_NUDGES = EMBED ? ALL_LEARN_NUDGES.filter((t) => !mentionsBrand(t)) : ALL_LEARN_NUDGES;
+
 function LearnNudge() {
   const [i] = useState(() => Math.floor(Math.random() * LEARN_NUDGES.length));
   return (
     <div className="rounded-xl border border-sky-400/25 bg-sky-500/5 p-3">
       <p className="text-[11px] font-black uppercase tracking-wider text-sky-300">Learn it yourself</p>
       <p className="text-xs sm:text-[13px] text-slate-200 mt-1 leading-relaxed">{LEARN_NUDGES[i]}</p>
-      <div className="mt-2 flex flex-wrap gap-2">
+      {!EMBED && <div className="mt-2 flex flex-wrap gap-2">
         <a href="/" target="_blank" rel="noopener noreferrer" className="text-[11px] font-bold text-sky-950 bg-sky-300 hover:bg-sky-200 rounded-full px-3 py-1 active:scale-95 transition-all">Browse the free library</a>
-      </div>
+      </div>}
     </div>
   );
 }
@@ -1048,7 +1068,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
       }
       setMessages((prev) => [...prev, { role: 'assistant', content: data.answer, sources: data.sources }]);
     } catch {
-      setError('Could not reach the AI Sefarim library. Please check your connection and try again.');
+      setError(`Could not reach the ${EMBED ? '' : 'AI Sefarim '}library. Please check your connection and try again.`);
       setMessages((prev) => prev.slice(0, -1));
     } finally {
       setIsLoading(false);
@@ -1081,7 +1101,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
       {openSource && <SourceModal source={openSource} onClose={() => setOpenSource(null)} />}
 
       {/* inside another app (iframe) the host app has its own way back */}
-      {!embedded && <button
+      {!embedded && !EMBED && <button
         onClick={onExit}
         className="sm:hidden flex items-center gap-1.5 text-xs font-bold text-slate-400 hover:text-slate-200 mb-3 -mt-1"
       >
@@ -1091,23 +1111,36 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
 
       <div className="relative text-center mb-5 sm:mb-8 px-2">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-72 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none -z-10" />
-        <div className="hidden sm:inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border border-indigo-500/30 mb-4">
-          <Sparkles className="w-3.5 h-3.5" />
-          Powered by the AI Sefarim library
-        </div>
-        <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tighter leading-tight mb-2 sm:mb-3">
-          <span className="text-slate-50">AI Sefarim </span>
-          <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">Super Agent</span>
-        </h1>
-        <p className="hidden sm:block text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
-          Ask anything and Super Agent searches an entire Torah library on <span className="font-black text-slate-100">AI Sefarim</span> &mdash; hundreds of sources, fully indexed and instantly searchable &mdash;
-          to ground its answer in the actual texts, from the <span className="text-indigo-400 font-bold">Mishnah</span> to the present day.
-          Every tractate of <span className="text-indigo-400 font-bold">Gemara</span>, all of the <span className="text-indigo-400 font-bold">Rambam</span>, the complete <span className="text-indigo-400 font-bold">Beit Yosef</span> and <span className="text-indigo-400 font-bold">Shulchan Aruch</span>,
-          the full <span className="text-indigo-400 font-bold">Arizal</span>, the Zohar, and every AI Sefarim book &mdash; 3,300 years of Torah, one question away.
-        </p>
-        <p className="sm:hidden text-xs text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
-          Super Agent searches an entire Torah library on <span className="font-black text-slate-300">AI Sefarim</span> to ground its answers in the actual texts &mdash; Mishnah to modern day, Gemara, Rambam, Beit Yosef, Shulchan Aruch, the Arizal &amp; more.
-        </p>
+        {EMBED ? (
+          <>
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tighter leading-tight mb-2 sm:mb-3">
+              <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">Super Agent</span>
+            </h1>
+            <p className="text-xs sm:text-base text-slate-400 sm:text-slate-300 font-medium max-w-xs sm:max-w-2xl mx-auto leading-relaxed">
+              Ask anything in Torah. Super Agent searches a large library of sefarim &mdash; Mishnah to modern day: Gemara, Rambam, Beit Yosef, Shulchan Aruch, the Arizal and more &mdash; and shows its sources.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="hidden sm:inline-flex items-center gap-2 bg-indigo-500/10 text-indigo-400 px-4 py-1.5 rounded-full text-xs font-black uppercase tracking-wider border border-indigo-500/30 mb-4">
+              <Sparkles className="w-3.5 h-3.5" />
+              Powered by the AI Sefarim library
+            </div>
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-black tracking-tighter leading-tight mb-2 sm:mb-3">
+              <span className="text-slate-50">AI Sefarim </span>
+              <span className="bg-gradient-to-r from-indigo-400 via-purple-400 to-indigo-400 bg-clip-text text-transparent">Super Agent</span>
+            </h1>
+            <p className="hidden sm:block text-slate-300 font-medium max-w-2xl mx-auto leading-relaxed">
+              Ask anything and Super Agent searches an entire Torah library on <span className="font-black text-slate-100">AI Sefarim</span> &mdash; hundreds of sources, fully indexed and instantly searchable &mdash;
+              to ground its answer in the actual texts, from the <span className="text-indigo-400 font-bold">Mishnah</span> to the present day.
+              Every tractate of <span className="text-indigo-400 font-bold">Gemara</span>, all of the <span className="text-indigo-400 font-bold">Rambam</span>, the complete <span className="text-indigo-400 font-bold">Beit Yosef</span> and <span className="text-indigo-400 font-bold">Shulchan Aruch</span>,
+              the full <span className="text-indigo-400 font-bold">Arizal</span>, the Zohar, and every AI Sefarim book &mdash; 3,300 years of Torah, one question away.
+            </p>
+            <p className="sm:hidden text-xs text-slate-400 font-medium max-w-xs mx-auto leading-relaxed">
+              Super Agent searches an entire Torah library on <span className="font-black text-slate-300">AI Sefarim</span> to ground its answers in the actual texts &mdash; Mishnah to modern day, Gemara, Rambam, Beit Yosef, Shulchan Aruch, the Arizal &amp; more.
+            </p>
+          </>
+        )}
       </div>
 
       <div className="flex-1 flex flex-col gap-3 sm:gap-4 mb-4 px-1 sm:px-0">
@@ -1286,7 +1319,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
 
                 <LibraryShowcase books={books} media={media} thumbs={categoryThumbnails} />
 
-                <div className="mt-3 pt-3 border-t border-slate-700/40 flex flex-wrap items-center gap-2">
+                {!EMBED && <div className="mt-3 pt-3 border-t border-slate-700/40 flex flex-wrap items-center gap-2">
                   <button
                     type="button"
                     onClick={() => window.open(WHATSAPP_GROUP_URL, '_blank')}
@@ -1295,7 +1328,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
                     <MessageCircle className="w-3.5 h-3.5 fill-current" />
                     Join our WhatsApp community
                   </button>
-                </div>
+                </div>}
 
                 <div className="mt-2.5 flex items-start gap-1.5 text-[11px] text-slate-500 leading-relaxed">
                   <ShieldAlert className="w-3.5 h-3.5 text-amber-500/80 shrink-0 mt-0.5" />
@@ -1435,13 +1468,13 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
             </button>
           </>
         )}
-        <button
+        {!EMBED && <button
           onClick={() => shareToWhatsApp(buildInviteMessage())}
           className="flex items-center gap-1.5 text-[11px] font-black text-white bg-emerald-600 hover:bg-emerald-500 rounded-full px-3.5 py-1.5 shadow-sm shadow-emerald-600/30 transition-all active:scale-95"
         >
           <UserPlus className="w-3.5 h-3.5" />
           Invite a Friend
-        </button>
+        </button>}
       </div>
     </div>
   );

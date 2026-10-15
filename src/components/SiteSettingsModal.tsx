@@ -272,7 +272,7 @@ export function SiteSettingsModal({ currentSettings, onClose, onStatusMessage }:
                     )}
                     <input
                       type="file"
-                      ref={el => categoryInputRefs.current[category] = el}
+                      ref={el => { categoryInputRefs.current[category] = el; }}
                       onChange={(e) => handleCategoryThumbnailChange(category, e)}
                       accept="image/*"
                       className="absolute inset-0 opacity-0 cursor-pointer"

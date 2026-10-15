@@ -24,6 +24,7 @@ import { EditVideoModal } from './components/EditVideoModal';
 import { SiteSettingsModal } from './components/SiteSettingsModal';
 import { AddExistingBookModal } from './components/AddExistingBookModal';
 import { WhatsAppShareModal } from './components/WhatsAppShareModal';
+import { isBneiYitzhakEmbed } from './embed';
 import { WhatsAppGrowthPrompt } from './components/WhatsAppGrowthPrompt';
 import { SuperAgentAnnouncement } from './components/SuperAgentAnnouncement';
 import { CommunityGrowthBanner } from './components/CommunityGrowthBanner';
@@ -1044,6 +1045,8 @@ export default function App() {
   // Shown inside another site's app (e.g. Bnei Yitzhak): that app supplies the header and the way back,
   // so Super Daf drops the AI Sefarim navbar and tabs and gives the screen to the daf.
   const dafEmbedded = (() => { try { return window.self !== window.top; } catch { return true; } })();
+  // Inside the Bnei Yitzhak app's iframe the chat shows no AI Sefarim chrome at all.
+  const embedChat = activeTab === 'chat' && isBneiYitzhakEmbed();
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-50 font-sans">
@@ -1051,7 +1054,7 @@ export default function App() {
           the top on desktop - on mobile it moves to the bottom instead of
           eating the whole first screen. Unchanged on every other tab. */}
       {/* Super Daf is a full-screen reader and renders its own chrome. */}
-      {activeTab !== 'daf' && !(activeTab === 'chat' && dafEmbedded) && (
+      {activeTab !== 'daf' && !(activeTab === 'chat' && dafEmbedded) && !embedChat && (
         <div className={activeTab === 'chat' ? 'hidden sm:block' : ''}>
           <Navbar {...navbarProps} />
         </div>
@@ -2028,7 +2031,7 @@ export default function App() {
       )}
 
       {/* Mobile-only footer nav for /chat - kept as the absolute last element on the page */}
-      {activeTab === 'chat' && !dafEmbedded && (
+      {activeTab === 'chat' && !dafEmbedded && !embedChat && (
         <div className="sm:hidden">
           <Navbar {...navbarProps} variant="footer" />
         </div>
@@ -2109,7 +2112,7 @@ export default function App() {
       )}
 
       {/* Floating Prompt to grow WhatsApp Community - not over the daf, where it covers the notes panel */}
-      {activeTab !== 'daf' && (
+      {activeTab !== 'daf' && !embedChat && (
         <WhatsAppGrowthPrompt
           whatsappUrl={bannerUrl}
           onOpenShareModal={() => setShowWhatsAppShareModal(true)}
@@ -2117,7 +2120,7 @@ export default function App() {
       )}
 
       {/* Interactive Modal to share WhatsApp Community */}
-      {showWhatsAppShareModal && (
+      {showWhatsAppShareModal && !embedChat && (
         <WhatsAppShareModal
           whatsappUrl={bannerUrl}
           onClose={() => setShowWhatsAppShareModal(false)}
