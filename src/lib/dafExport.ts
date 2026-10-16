@@ -50,7 +50,7 @@ export function buildDafHtml(daf: any): string {
         parts.push(`<p class="en">${davidson(s.enHtml, esc(s.en))}</p>`);
       }
       core.forEach((c: any) => parts.push(`<p class="comm"><b>${esc(c.title)}</b> — ${esc(gistText(c.title, c.gist))}</p><div class="rashi" lang="he" dir="rtl">${esc(c.he)}</div>${c.en ? `<div class="cen">${md(c.en)}</div>` : ''}`));
-      h.forEach((x) => parts.push(`<div class="hal"><b>Halacha · ${esc(x.issue)}</b>${[['Rambam', x.rambam], ['Shulchan Arukh', x.shulchanArukh], ['Rema', x.rema]].filter(([, r]) => r).map(([w, r]: any) => `<p><b>${w}:</b> ${esc(r.short || r.ruling)} <span class="cite">${esc(r.ref)}</span></p>`).join('')}</div>`));
+      h.forEach((x) => parts.push(`<div class="hal"><b>Halacha · ${esc(x.issue)}</b>${[['Rambam', x.rambam], ['Shulchan Arukh', x.shulchanArukh], ['Rema', x.rema]].filter(([, r]) => r).map(([w, r]: any) => `<p><b>${w}:</b> ${md(r.short || r.ruling)} <span class="cite">${esc(r.ref)}</span></p>`).join('')}</div>`));
       if (m?.notes?.length) parts.push(`<div class="notes">${m.notes.map((n: any) => `<p><sup>${n.n}</sup> <b>${esc(workName(n.source, n.ref))}</b> — ${md(n.point)} <span class="cite">${esc(n.ref)}</span></p>`).join('')}</div>`);
       parts.push(`</article>`);
     });
@@ -64,6 +64,8 @@ export function buildDafHtml(daf: any): string {
 
   if (daf.summary?.takeaways?.length) parts.push(`<section class="box take"><h3>Take away from this daf</h3><ul>${daf.summary.takeaways.map((x: string) => `<li>${esc(x)}</li>`).join('')}</ul></section>`);
   parts.push(`<footer>${esc(daf.attribution)}<br>Saved from aisefarim.com/daf on ${new Date().toLocaleDateString()}.</footer>`);
+
+  const body = parts.join('\n').replace(/(<span class="cite">[^<]+<\/span>)\.? ?\1/g, '$1');
 
   return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${esc(daf.ref)} · Super Daf</title><style>
   body{margin:0;background:#f7f2e7;color:#1c1917;font:17px/1.65 Georgia,'Source Serif 4',serif}
@@ -86,8 +88,38 @@ export function buildDafHtml(daf: any): string {
   .rambam{border:2px solid #f59e0b;background:#fffbeb;border-radius:14px;padding:10px 14px;font-size:15px;margin:14px 0}
   .big{font-size:15px}.lesson{background:#4f46e5;color:#fff;border-radius:14px;padding:10px 14px}
   .cite{font:600 11px system-ui;color:#4f46e5}footer{margin-top:30px;font:12px system-ui;color:#a8a29e;text-align:center}
-  @media print{body{background:#fff}article,.hal,.rambam,.box{break-inside:avoid}}
-  </style></head><body><main>${parts.join('\n')}</main></body></html>`;
+  @page{size:Letter;margin:.6in .6in .7in;@bottom-center{content:"Super Daf · ${esc(daf.ref)} · AI Sefarim  —  " counter(page);font:8pt system-ui;color:#777}}
+  @media print{
+   *{-webkit-print-color-adjust:economy;print-color-adjust:economy}
+   html,body{background:#fff!important;color:#000}
+   body{font:10pt/1.38 Georgia,'Source Serif 4',serif}
+   main{max-width:none;padding:0}
+   header{margin-bottom:8pt}h1{font-size:17pt}.eyebrow{font-size:7.5pt}.ded{font-size:8.5pt}
+   .he{font-size:13pt;line-height:1.55;color:#000}
+   .inter td.he{font-size:11.5pt;width:38%}
+   .inter{font-size:9.5pt}.inter td{padding:1.5pt 5pt;border-top:.5pt solid #ccc}
+   .rashi{font-size:10.5pt;background:none;padding:0 0 1pt;margin:0;border-radius:0}
+   .box,.tldr,.notes,.hal,.rambam{background:none!important;border-radius:0}
+   .box{border:.75pt solid #999;padding:6pt 9pt;margin:8pt 0}
+   .box h3,.kind,.step,.eyebrow,.cite,sup{color:#000!important}
+   .take{border-color:#999}
+   .kind{font-size:8pt;border-bottom:1pt solid #000;padding-bottom:2pt;margin-top:14pt;break-after:avoid}
+   .tldr{border:0;border-left:2.5pt solid #000;padding:2pt 8pt;font-size:9.5pt;margin:6pt 0;break-inside:avoid}
+   .divider{margin:12pt 0;border-top:.75pt solid #999}
+   article{margin:8pt 0;padding-bottom:4pt;border-bottom:.5pt dotted #aaa;break-inside:auto}
+   .step{font-size:10pt;margin:2pt 0;break-after:avoid}.ref{font-size:7.5pt;color:#555;break-after:avoid}
+   .comm{background:none;border-top:.5pt solid #bbb;border-radius:0;padding:4pt 0 1pt;font-size:9.5pt;margin-top:4pt;break-after:avoid}
+   .cen{background:none;color:#222;font-size:9.5pt;padding:0 0 4pt;margin:0 0 4pt;border-radius:0}
+   .hal{border-left:2pt solid #000;padding:3pt 8pt;font-size:9.5pt;margin:5pt 0}
+   .notes{border:0;border-top:.5pt solid #bbb;padding:3pt 0;font-size:9pt;margin-top:4pt}
+   .rambam{border:.75pt solid #000;padding:5pt 9pt;font-size:9.5pt;margin:8pt 0}
+   .big{font-size:9.5pt}
+   .lesson{background:none;color:#000;border:.75pt solid #000;border-radius:0;padding:4pt 9pt;font-size:9.5pt;break-inside:avoid}
+   .cite{font-size:7.5pt;color:#444!important;font-weight:400}
+   footer{font-size:7.5pt;margin-top:12pt;color:#555}
+   tr,.he,.rashi,.hal,.lesson,.tldr,p{orphans:3;widows:3}tr{break-inside:avoid}
+  }
+  </style></head><body><main>${body}</main></body></html>`;
 }
 
 export function downloadDaf(daf: any) {
