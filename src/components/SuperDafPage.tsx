@@ -29,6 +29,8 @@ interface Synthesis {
 }
 interface Ruling { ref: string; short?: string; ruling: string; analysis?: string }
 interface HalachaItem { issue: string; refs?: string[]; rambam?: Ruling | null; shulchanArukh?: Ruling | null; rema?: Ruling | null; note?: string }
+// An item with no Rambam / Shulchan Arukh / Rema ruling is only a commentator's remark, not a halacha to show
+const hasRuling = (h: HalachaItem) => !!(h.rambam || h.shulchanArukh || h.rema);
 interface Halacha { available?: boolean; note?: string; items?: HalachaItem[]; caveat?: string; _error?: string }
 interface MUnit { he: string; en?: string; literal?: string; elucidation?: string; notes?: number[] }
 interface MNote { n: number; source: string; point: string; ref: string }
@@ -968,7 +970,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
           const syn = built?.synthesis && !built.synthesis._error ? built.synthesis : null;
           const steps = syn?.steps || [];
           const stepFor = (ref: string) => steps.find((st) => (st.refs || []).includes(ref));
-          const halItems = (built?.halacha?.items || []) as HalachaItem[];
+          const halItems = ((built?.halacha?.items || []) as HalachaItem[]).filter(hasRuling);
           const mes = built?.mesivta && !built.mesivta._error ? built.mesivta : null;
           const btn = (label: ReactNode, onClick: () => void, icon: any, dim = false) => { const Icon = icon; return <button onClick={onClick} className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-bold transition-colors ${t.chip} ${t.hover} ${dim ? 'opacity-45' : ''}`}><Icon className={`w-3.5 h-3.5 ${t.accent}`} />{label}</button>; };
           return (
@@ -1179,7 +1181,7 @@ function Panel({ daf, sugya, segIdx, tab, setTab, noteN, sugyaScoped, onBackToPa
   // links to the Rambam or his commentators (and in the whole-sugya view).
   const mes = seg ? built?.mesivta?.segments?.find((x) => x.ref === seg.ref) : null;
   const all = built ? [...built.core, ...built.rishonim, ...built.acharonim, ...built.other] : [];
-  const halAll = (built?.halacha?.items || []) as HalachaItem[];
+  const halAll = ((built?.halacha?.items || []) as HalachaItem[]).filter(hasRuling);
   const hal = seg ? halAll.filter((h) => (h.refs || []).includes(seg.ref)) : halAll;
   const srcs = seg ? all.filter((c) => c.anchor === seg.ref) : all;
   // The full Rambam card shows where he is relevant: a paragraph Sefaria links to the Rambam or his

@@ -30,7 +30,7 @@ export function buildDafHtml(daf: any): string {
     const b = sg.built || {};
     const syn = b.synthesis && !b.synthesis._error ? b.synthesis : null;
     const mes = b.mesivta && !b.mesivta._error ? b.mesivta : null;
-    const hal = (b.halacha?.items || []) as any[];
+    const hal = ((b.halacha?.items || []) as any[]).filter((x) => x.rambam || x.shulchanArukh || x.rema);
     if (si > 0) parts.push(`<div class="divider">❖</div>`);
     parts.push(`<section class="sugya"><p class="kind">${esc(kind[sg.kind] || sg.kind)} · ${esc(short(sg.from, daf.book))}–${esc(short(sg.to, daf.book))}</p>`);
     if (syn?.tldr) parts.push(`<p class="tldr"><b>In brief</b> ${esc(syn.tldr)}</p>`);
