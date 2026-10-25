@@ -133,6 +133,32 @@ function Marked({ text, startBold = false }: { text: string; startBold?: boolean
   return <>{parts.map((p, i) => { if (i > 0) bold = !bold; if (!p) return null; return bold ? <strong key={i}>{p}</strong> : <span key={i} className="sd-eluc">{p}</span>; })}</>;
 }
 const boldStarts = (units: { en?: string }[]) => { let b = false; return units.map((u) => { const at = b; if ((String(u.en || '').split('**').length - 1) % 2) b = !b; return at; }); };
+// The model that splits a Gemara paragraph into phrases sometimes drops or adds a "**", which flips
+// bold and plain for the rest of the paragraph (the elucidation comes out bold, the Gemara's words
+// plain). Davidson's own <b> marks are the truth: lay them over each phrase's English again.
+function fixBold<U extends { en?: string }>(units: U[], enHtml?: string): U[] {
+  if (!enHtml || !/<(b|strong)>/i.test(enHtml)) return units;
+  const ent = (t: string) => t.replace(/&nbsp;/g, ' ').replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+  let plain = ''; const mask: boolean[] = []; let bold = false;
+  for (const tk of enHtml.replace(/<br\s*\/?>/gi, ' ').split(/(<[^>]+>)/)) {
+    if (/^<\s*(b|strong)\s*>$/i.test(tk)) { bold = true; continue; }
+    if (/^<\s*\/\s*(b|strong)\s*>$/i.test(tk)) { bold = false; continue; }
+    if (tk.startsWith('<')) continue;
+    for (const ch of ent(tk)) { if (/\s/.test(ch) && (!plain || plain.endsWith(' '))) continue; plain += /\s/.test(ch) ? ' ' : ch; mask.push(bold); }
+  }
+  const norm = (t: string) => ent(t.replace(/<[^>]+>/g, '').replace(/\*\*/g, '')).replace(/\s+/g, ' ').trim();
+  const out: U[] = []; let cur = 0;
+  for (const u of units) {
+    const t = norm(String(u.en || ''));
+    const at = t ? plain.indexOf(t, cur) : -1;
+    if (at < 0 || at - cur > 40) return units; // can't line it up: leave the model's marks alone
+    let r = ''; let b = false;
+    for (let i = 0; i < t.length; i++) { const m = mask[at + i]; if (m !== b) { r += '**'; b = m; } r += t[i]; }
+    if (b) r += '**';
+    out.push({ ...u, en: r }); cur = at + t.length;
+  }
+  return out;
+}
 function Davidson({ html, text, className, style }: { html?: string; text: string; className?: string; style?: CSSProperties }) {
   const src = html && /<b>/i.test(html) ? html : `<b>${text}</b>`;
   const tokens = src.replace(/<br\s*\/?>/gi, ' ').split(/(<\/?b>|<\/?i>|<\/?strong>|<\/?em>)/gi);
@@ -1084,7 +1110,7 @@ function Reader({ daf, t, showHe, showEn, fontScale, panelIdx, noteN, isBookmark
 
                     {showEn && (m && m.units?.length ? (
                       <div className={`mt-2 rounded-xl overflow-hidden border ${t.rule}`}>
-                        {(() => { const starts = boldStarts(m.units); return m.units.map((u, k) => (
+                        {(() => { const us = fixBold(m.units, s.enHtml); const starts = boldStarts(us); return us.map((u, k) => (
                           <div key={k}>
                           <div className="sd-unit grid grid-cols-1 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.6fr)] gap-x-4 gap-y-0.5 px-3 py-1.5 cursor-pointer" onClick={() => openOn(idx, 'notes', u.notes?.[0] ?? null)}>
                             {showHe && <p lang="he" dir="rtl" className="text-right" style={{ fontFamily: HE_FONT, fontSize: `${1.05 * fontScale}rem`, lineHeight: 1.6 }}>{u.he}</p>}
@@ -2068,7 +2094,10 @@ function MishnahPeek({ daf, focusIdx, onGo, surface }: { daf: Daf; focusIdx: num
   const from = shown.idx < 0 ? shown.startsAt.match(/(\d+)([ab])/) : null;
   const back = from ? Number(daf.daf) - Number(from[1]) : 0;
   const paper = surface === 'paper';
-  const lines = shown.lines?.length ? shown.lines : [{ he: shown.he, enHtml: shown.en }];
+  // only the Mishnah itself: stop where the Gemara (or the next Mishnah) begins
+  const allLines = shown.lines?.length ? shown.lines : [{ he: shown.he, enHtml: shown.en }];
+  const cut = allLines.findIndex((l, i) => i > 0 && /^\s*<(?:b|strong)>\s*(GEMARA|MISHNA)/i.test(l.enHtml));
+  const lines = cut > 0 ? allLines.slice(0, cut) : allLines;
 
   return (
     <>
