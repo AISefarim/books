@@ -431,6 +431,7 @@ function SourceModal({ source, onClose }: { source: Source; onClose: () => void 
 }
 
 const HISTORY_KEY = 'super_agent_chat_history';
+const PENDING_KEY = 'super_agent_pending_question';
 
 function loadHistory(): ChatMessage[] {
   try {
@@ -1031,7 +1032,25 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
     };
   }, [isLoading]);
 
-  async function sendQuestion(question: string) {
+  // A question that is still waiting for its answer is remembered, so leaving the page (or the phone
+  // putting the app to sleep) doesn't lose it: when the chat opens again it is asked again.
+  useEffect(() => {
+    let q: string | null = null, job: string | undefined;
+    try {
+      const raw = JSON.parse(localStorage.getItem(PENDING_KEY) || 'null');
+      if (raw && typeof raw.q === 'string' && Date.now() - raw.at < 20 * 60 * 1000) { q = raw.q; job = raw.jobId || undefined; }
+      else localStorage.removeItem(PENDING_KEY);
+    } catch { /* ignore */ }
+    if (!q) return;
+    const last = messages[messages.length - 1];
+    if (last && last.role === 'user' && last.content === q) {
+      setMessages((prev) => prev.slice(0, -1));
+      setTimeout(() => sendQuestion(q as string, job), 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  async function sendQuestion(question: string, resumeJob?: string) {
     const trimmed = question.trim();
     if (!trimmed || isLoading) return;
 
@@ -1042,18 +1061,66 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setIsLoading(true);
+    try { localStorage.setItem(PENDING_KEY, JSON.stringify({ q: trimmed, at: Date.now() })); } catch { /* ignore */ }
+    // on a failure the question goes back into the box, so nothing has to be typed again
+    const giveUp = (msg: string) => {
+      setError(msg);
+      setInput(trimmed);
+      setMessages((prev) => prev.slice(0, -1));
+    };
 
     try {
       const history = nextMessages.slice(0, -1).map((m) => ({ role: m.role, content: m.content }));
       const u = auth.currentUser;
       const isGoogle = !!u && !u.isAnonymous && u.providerData.some((p) => p.providerId === 'google.com');
       const token = isGoogle ? await u!.getIdToken().catch(() => null) : null;
-      const res = await fetch(CHAT_WORKER_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
-        body: JSON.stringify({ question: trimmed, history }),
-      });
-      const data = await res.json();
+      // The question runs on the server (so it keeps going if the phone sleeps); this page just checks back
+      // for the answer. Starting it, and each check, is retried quietly; if the app was in the background we
+      // wait until it is back. An older server without jobs answers directly.
+      const whenVisible = async () => {
+        while (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+          await new Promise<void>((r) => {
+            const f = () => { if (document.visibilityState === 'visible') { document.removeEventListener('visibilitychange', f); r(); } };
+            document.addEventListener('visibilitychange', f);
+          });
+        }
+      };
+      const hdrs = { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) };
+      let res: Response | null = null, data: any = null, netFail = false;
+      let jobId: string | null = resumeJob || null;
+      for (let attempt = 0; attempt < 4 && !jobId; attempt++) {
+        if (attempt > 0) { await new Promise((r) => setTimeout(r, 1500 * attempt)); await whenVisible(); }
+        try {
+          res = await fetch(CHAT_WORKER_URL, { method: 'POST', headers: hdrs, body: JSON.stringify({ question: trimmed, history, async: true }), signal: AbortSignal.timeout(30000) });
+          data = await res.json().catch(() => ({}));
+          netFail = false;
+        } catch { res = null; data = null; netFail = true; }
+        if (data?.jobId) { jobId = data.jobId; break; }
+        if (!(netFail || (res && [500, 502, 503, 504].includes(res.status)))) break;
+      }
+      if (jobId) {
+        try { localStorage.setItem(PENDING_KEY, JSON.stringify({ q: trimmed, at: Date.now(), jobId })); } catch { /* ignore */ }
+        const t0 = Date.now();
+        let misses = 0;
+        res = null; data = null; netFail = true;
+        while (Date.now() - t0 < 15 * 60 * 1000) {
+          await new Promise((r) => setTimeout(r, 2500));
+          await whenVisible();
+          try {
+            const r = await fetch(`${CHAT_WORKER_URL.replace(/\/$/, '')}/job?id=${jobId}`, { signal: AbortSignal.timeout(20000) });
+            const d = await r.json().catch(() => ({}));
+            misses = 0;
+            if (d.pending) continue;
+            if (d.gone || r.status === 404) { netFail = true; break; }
+            res = r; data = d; netFail = false;
+            break;
+          } catch { if (++misses > 40) break; }
+        }
+      }
+      if (netFail || !res) {
+        giveUp(`Could not reach the ${EMBED ? '' : 'AI Sefarim '}library. Your question is still in the box - tap send to try again.`);
+        return;
+      }
       if (data.needSignIn) {
         setSignInFor(trimmed);
         setInput(trimmed);
@@ -1062,15 +1129,12 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
       }
       setGuestRemaining(typeof data.guestRemaining === 'number' ? data.guestRemaining : null);
       if (!res.ok || data.error) {
-        setError(data.error || 'Something went wrong. Please try again.');
-        setMessages((prev) => prev.slice(0, -1));
+        giveUp((data.error || 'Something went wrong.') + ' Your question is still in the box - tap send to try again.');
         return;
       }
       setMessages((prev) => [...prev, { role: 'assistant', content: data.answer, sources: data.sources }]);
-    } catch {
-      setError(`Could not reach the ${EMBED ? '' : 'AI Sefarim '}library. Please check your connection and try again.`);
-      setMessages((prev) => prev.slice(0, -1));
     } finally {
+      try { localStorage.removeItem(PENDING_KEY); } catch { /* ignore */ }
       setIsLoading(false);
     }
   }
