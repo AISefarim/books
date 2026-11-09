@@ -35,10 +35,10 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
   };
 
   return (
-    <div className="mb-16 relative bg-gradient-to-br from-indigo-900 to-slate-900 rounded-[3rem] overflow-hidden shadow-2xl text-white">
+    <div className="mb-16 relative bg-gradient-to-br from-amber-950 via-slate-900 to-slate-900 rounded-[3rem] overflow-hidden shadow-xl border border-slate-700/60 text-white">
       {/* Background blur effect */}
       <div 
-        className="absolute inset-0 opacity-20 bg-cover bg-center blur-2xl scale-110 transition-all duration-1000"
+        className="absolute inset-0 opacity-[0.07] bg-cover bg-center blur-2xl scale-110 transition-all duration-1000"
         style={{ backgroundImage: `url(${currentBook.cover})` }}
       />
       
@@ -52,7 +52,7 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
           </div>
           <h2 
             onClick={() => onSelect ? onSelect(currentBook) : onRead(currentBook.epub)}
-            className="text-3xl sm:text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full px-2 cursor-pointer hover:text-indigo-200 transition-colors"
+            className="text-3xl sm:text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white break-words hyphens-auto w-full px-2 cursor-pointer hover:text-indigo-200 transition-colors"
           >
             {currentBook.title}
           </h2>
@@ -67,7 +67,7 @@ export function FeaturedBooks({ books, onRead, onDownload, onSelect }: FeaturedB
           
           <h2 
             onClick={() => onSelect ? onSelect(currentBook) : onRead(currentBook.epub)}
-            className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full pb-2 cursor-pointer hover:text-indigo-200 transition-colors"
+            className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white break-words hyphens-auto w-full pb-2 cursor-pointer hover:text-indigo-200 transition-colors"
           >
             {currentBook.title}
           </h2>

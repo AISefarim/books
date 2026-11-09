@@ -1,8 +1,134 @@
 @import "tailwindcss";
 
-html, body {
-  background-color: #020617;
+/* ------------------------------------------------------------------
+   Light "library" theme (2026-11-09).
+   The components were written for a dark slate/indigo UI. Rather than
+   rewrite ~2,000 class names, the palette is remapped here: the dark
+   slate steps become warm paper tones and the light steps become ink;
+   neon accents become lapis blue, brass, and deep green.
+   ------------------------------------------------------------------ */
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, sans-serif;
+  --font-serif: "Newsreader", "Frank Ruhl Libre", Georgia, serif;
+
+  /* paper (was dark backgrounds) -> ink (was light text) */
+  --color-slate-950: #f6f1e8;
+  --color-slate-900: #fffdf8;
+  --color-slate-800: #f1eadf;
+  --color-slate-700: #e4dacb;
+  --color-slate-600: #bfb19c;
+  --color-slate-500: #8a7e6c;
+  --color-slate-400: #6b6051;
+  --color-slate-300: #4b4339;
+  --color-slate-200: #3a332c;
+  --color-slate-100: #2b2621;
+  --color-slate-50:  #211d19;
+
+  /* lapis blue (was neon indigo) */
+  --color-indigo-50:  #f1f4f9;
+  --color-indigo-100: #e4e9f2;
+  --color-indigo-200: #2d4a80;
+  --color-indigo-300: #2d4a80;
+  --color-indigo-400: #2b4a85;
+  --color-indigo-500: #2c4c8c;
+  --color-indigo-600: #233f78;
+  --color-indigo-700: #1b3263;
+  --color-indigo-800: #dce3ef;
+  --color-indigo-900: #e6ebf3;
+  --color-indigo-950: #edf1f7;
+
+  /* brass (was bright amber) */
+  --color-amber-50:  #fbf6ec;
+  --color-amber-100: #f5ead3;
+  --color-amber-200: #7d5418;
+  --color-amber-300: #8a5d1a;
+  --color-amber-400: #93641e;
+  --color-amber-500: #b07d2c;
+  --color-amber-600: #946519;
+  --color-amber-700: #7a5214;
+  --color-amber-800: #f1e4c9;
+  --color-amber-900: #f6ecd8;
+  --color-amber-950: #faf3e6;
+
+  /* deep green (was neon emerald) */
+  --color-emerald-50:  #f0f7f2;
+  --color-emerald-100: #e0efe5;
+  --color-emerald-200: #2a6a49;
+  --color-emerald-300: #2c7050;
+  --color-emerald-400: #2b7550;
+  --color-emerald-500: #2f8a5f;
+  --color-emerald-600: #257350;
+  --color-emerald-700: #1d5e41;
+  --color-emerald-800: #d9ebe0;
+  --color-emerald-900: #e3f1e8;
+  --color-emerald-950: #edf6f0;
+
+  /* rose */
+  --color-rose-200: #9c3149;
+  --color-rose-300: #a4364f;
+  --color-rose-400: #a93a54;
+  --color-rose-800: #f2d9df;
+  --color-rose-900: #f6e3e7;
+  --color-rose-950: #faeef1;
+
+  /* the smaller accent families: dark text steps, light tint steps */
+  --color-sky-200: #285f86;     --color-sky-300: #286690;     --color-sky-400: #2a6e9a;
+  --color-sky-900: #e4eff6;     --color-sky-950: #eef5fa;
+  --color-cyan-200: #22656f;    --color-cyan-300: #246c77;    --color-cyan-400: #26737e;
+  --color-cyan-900: #e2f0f1;    --color-cyan-950: #edf6f7;
+  --color-teal-200: #22665c;    --color-teal-300: #246d62;    --color-teal-400: #267468;
+  --color-teal-900: #e1efec;    --color-teal-950: #ecf6f4;
+  --color-blue-200: #2b4f8a;    --color-blue-300: #2c5596;    --color-blue-400: #2e5aa0;
+  --color-violet-200: #4f3a86;  --color-violet-300: #553f8f;  --color-violet-400: #5a4396;
+  --color-violet-900: #ece8f5;  --color-violet-950: #f3f0f9;
+  --color-purple-200: #5a3a80;  --color-purple-300: #613e8a;  --color-purple-400: #674292;
+  --color-purple-900: #eee7f4;  --color-purple-950: #f5f0f9;
+  --color-fuchsia-300: #8a3578; --color-fuchsia-400: #923a80;
+  --color-pink-300: #9a3560;    --color-pink-400: #a23a66;
+  --color-yellow-300: #85661a;  --color-yellow-400: #8c6b1c;
+  --color-orange-300: #9a5221;  --color-orange-400: #a35824;
 }
+
+html, body {
+  background-color: #f6f1e8;
+  color: #2b2621;
+}
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Headings: a book serif, calm weight, normal case */
+h1, h2, h3 {
+  font-family: var(--font-serif);
+  font-weight: 500 !important;
+  letter-spacing: -0.01em !important;
+  text-transform: none !important;
+}
+
+/* "text-white" was the main heading/body colour on the dark UI: make it ink,
+   but keep it white on filled buttons, badges and image overlays. */
+.text-white { color: #211d19; }
+:root { --on-fill: #fff; }
+:is([class*="bg-indigo-5"], [class*="bg-indigo-6"], [class*="bg-indigo-7"],
+    [class*="bg-emerald-5"], [class*="bg-emerald-6"], [class*="bg-emerald-7"],
+    [class*="bg-green-"], [class*="bg-[#"], [class*="bg-rose-5"], [class*="bg-rose-6"],
+    [class*="bg-red-"], [class*="bg-sky-5"], [class*="bg-sky-6"], [class*="bg-blue-5"], [class*="bg-blue-6"],
+    [class*="bg-violet-5"], [class*="bg-violet-6"], [class*="bg-purple-5"], [class*="bg-purple-6"],
+    [class*="bg-amber-5"], [class*="bg-amber-6"], [class*="bg-black"], [class*="from-black"],
+    [class*="from-indigo-5"], [class*="from-indigo-6"], [class*="from-emerald-5"], [class*="from-violet-5"],
+    [class*="from-purple-5"], [class*="from-sky-5"], [class*="from-amber-5"], [class*="from-rose-5"]).text-white,
+:is([class*="bg-indigo-5"], [class*="bg-indigo-6"], [class*="bg-indigo-7"],
+    [class*="bg-emerald-5"], [class*="bg-emerald-6"], [class*="bg-emerald-7"],
+    [class*="bg-green-"], [class*="bg-[#"], [class*="bg-rose-5"], [class*="bg-rose-6"],
+    [class*="bg-red-"], [class*="bg-sky-5"], [class*="bg-sky-6"], [class*="bg-blue-5"], [class*="bg-blue-6"],
+    [class*="bg-violet-5"], [class*="bg-violet-6"], [class*="bg-purple-5"], [class*="bg-purple-6"],
+    [class*="bg-amber-5"], [class*="bg-amber-6"], [class*="bg-black"], [class*="from-black"],
+    [class*="from-indigo-5"], [class*="from-indigo-6"], [class*="from-emerald-5"], [class*="from-violet-5"],
+    [class*="from-purple-5"], [class*="from-sky-5"], [class*="from-amber-5"], [class*="from-rose-5"]) .text-white { color: #fff; }
+
+/* soft paper shadows instead of neon glows */
+.shadow-lg, .shadow-xl, .shadow-2xl { --tw-shadow-color: rgb(60 45 25 / 0.12) !important; }
 
 @keyframes shimmer-sweep {
   0% { transform: translateX(-100%); }
@@ -20,12 +146,9 @@ html, body {
   animation: drift 6s ease-in-out infinite;
 }
 
-@keyframes glow-pulse {
-  0%, 100% { box-shadow: 0 0 35px -8px rgba(99, 102, 241, 0.55); }
-  50% { box-shadow: 0 0 50px -6px rgba(168, 85, 247, 0.7); }
-}
+/* the old neon glow pulse is retired: a quiet, still shadow instead */
 .animate-glow-pulse {
-  animation: glow-pulse 3s ease-in-out infinite;
+  box-shadow: 0 6px 20px -8px rgba(35, 63, 120, 0.35);
 }
 
 @keyframes float-up {
@@ -36,3 +159,8 @@ html, body {
 .animate-float-up {
   animation: float-up 3.2s ease-in-out infinite;
 }
+
+/* calmer micro-labels: the wide all-caps tracking read as "tech" */
+.tracking-widest { letter-spacing: 0.08em !important; }
+.tracking-wider { letter-spacing: 0.05em !important; }
+.tracking-tighter { letter-spacing: -0.01em !important; }

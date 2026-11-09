@@ -64,10 +64,10 @@ export function BookDetails({
         <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform" /> Back to Library
       </button>
 
-      <div className="relative bg-gradient-to-br from-indigo-900 to-slate-900 rounded-[3rem] overflow-hidden shadow-2xl text-white">
+      <div className="relative bg-gradient-to-br from-amber-950 via-slate-900 to-slate-900 rounded-[3rem] overflow-hidden shadow-xl border border-slate-700/60 text-white">
         {/* Background blur effect */}
         <div 
-          className="absolute inset-0 opacity-20 bg-cover bg-center blur-2xl scale-110 transition-all duration-1000"
+          className="absolute inset-0 opacity-[0.07] bg-cover bg-center blur-2xl scale-110 transition-all duration-1000"
           style={{ backgroundImage: `url(${book.cover})` }}
         />
         
@@ -75,7 +75,7 @@ export function BookDetails({
           
           {/* Mobile Title & Badge (Hidden on Desktop) */}
           <div className="md:hidden flex flex-col items-center text-center space-y-4 w-full order-1 overflow-hidden px-2">
-            <h2 className="text-3xl sm:text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full px-2">
+            <h2 className="text-3xl sm:text-4xl font-black uppercase leading-[0.9] tracking-tighter text-white break-words hyphens-auto w-full px-2">
               {book.title}
             </h2>
           </div>
@@ -83,7 +83,7 @@ export function BookDetails({
           {/* Left Content */}
           <div className="flex-1 space-y-6 text-center md:text-left order-3 md:order-1 overflow-hidden">
             
-            <h2 className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white drop-shadow-lg break-words hyphens-auto w-full pb-2">
+            <h2 className="hidden md:block text-5xl lg:text-6xl font-black uppercase leading-tight tracking-tighter text-white break-words hyphens-auto w-full pb-2">
               {book.title}
             </h2>
             

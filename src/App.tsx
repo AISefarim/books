@@ -1126,9 +1126,9 @@ export default function App() {
                        onClick={() => setIsPlayingWelcome(true)}
                        className="relative aspect-video rounded-2xl md:rounded-3xl overflow-hidden cursor-pointer group shadow-2xl border border-white/10 ring-4 ring-indigo-500/10 hover:ring-indigo-500/30 transition-all transform hover:-translate-y-1 hover:shadow-indigo-500/20"
                      >
-                        <div className="absolute inset-0 bg-slate-800">
+                        <div className="absolute inset-0 bg-[#16213a]">
                           {siteSettings.logoUrl && (
-                             <img src={siteSettings.logoUrl} className="w-full h-full object-cover opacity-50 group-hover:opacity-60 group-hover:scale-105 transition-all duration-700 blur-[2px]" alt="Thumbnail" />
+                             <img src={siteSettings.logoUrl} className="w-full h-full object-cover opacity-90 group-hover:opacity-100 group-hover:scale-105 transition-all duration-700" alt="Thumbnail" />
                           )}
                         </div>
                         <div className="absolute inset-0 bg-gradient-to-tr from-indigo-900/60 via-transparent to-transparent mix-blend-overlay" />

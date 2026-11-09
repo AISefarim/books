@@ -214,18 +214,18 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header, embedded }: { onOp
 
         {/* the dedication, set like the dedication page of a sefer */}
         <div className="mb-5 text-center">
-          <div className="mx-auto flex max-w-md items-center gap-3 text-[#d9ccad]/45" aria-hidden="true"><span className="h-px flex-1 bg-gradient-to-r from-transparent to-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-gradient-to-l from-transparent to-current" /></div>
-          <p className="mt-3 text-[11px] sm:text-xs font-black uppercase tracking-[0.28em] text-[#d9ccad]/70">Super Daf is dedicated to</p>
-          <p className="mt-1.5 text-[30px] sm:text-[40px] leading-tight text-[#f1e9d6]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 600 }}>Carol Serouya</p>
-          <p className="mt-0.5 text-base sm:text-lg italic text-[#d9ccad]/85" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif" }}>the best mother and wife</p>
-          <div className="mx-auto mt-3 flex max-w-md items-center gap-3 text-[#d9ccad]/45" aria-hidden="true"><span className="h-px flex-1 bg-gradient-to-r from-transparent to-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-gradient-to-l from-transparent to-current" /></div>
+          <div className="mx-auto flex max-w-md items-center gap-3 text-[#b39864]" aria-hidden="true"><span className="h-px flex-1 bg-gradient-to-r from-transparent to-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-gradient-to-l from-transparent to-current" /></div>
+          <p className="mt-3 text-[11px] sm:text-xs font-black uppercase tracking-[0.28em] text-[#8a6c3c]">Super Daf is dedicated to</p>
+          <p className="mt-1.5 text-[30px] sm:text-[40px] leading-tight text-[#2a2117]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 600 }}>Carol Serouya</p>
+          <p className="mt-0.5 text-base sm:text-lg italic text-[#6e5634]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif" }}>the best mother and wife</p>
+          <div className="mx-auto mt-3 flex max-w-md items-center gap-3 text-[#b39864]" aria-hidden="true"><span className="h-px flex-1 bg-gradient-to-r from-transparent to-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-gradient-to-l from-transparent to-current" /></div>
         </div>
 
         {/* device tip */}
         {!hideTip && (
-          <div className="mb-4 flex items-center gap-3 rounded-2xl border border-sky-400/25 bg-sky-500/[0.08] px-4 py-2.5 text-sm text-sky-100">
+          <div className="mb-4 flex items-center gap-3 rounded-2xl border border-sky-400/25 bg-sky-500/[0.08] px-4 py-2.5 text-sm text-slate-300">
             <span className="flex shrink-0 items-center gap-1 text-sky-300" aria-hidden="true"><Tablet className="w-4 h-4" /><Monitor className="w-4 h-4" /></span>
-            <p className="min-w-0 flex-1"><b>Best on a tablet or computer</b>, with the Gemara and the notes side by side. <span className="text-sky-200/80">Works great on your phone too <Smartphone className="inline w-3.5 h-3.5 -mt-0.5" /></span></p>
+            <p className="min-w-0 flex-1"><b>Best on a tablet or computer</b>, with the Gemara and the notes side by side. <span className="text-slate-400">Works great on your phone too <Smartphone className="inline w-3.5 h-3.5 -mt-0.5" /></span></p>
             <button onClick={() => { setHideTip(true); try { localStorage.setItem('sd_device_tip', '1'); } catch { /* ignore */ } }} className="shrink-0 p-1 rounded-full text-sky-300/80 hover:text-white hover:bg-white/10" aria-label="Dismiss"><X className="w-4 h-4" /></button>
           </div>
         )}
@@ -233,18 +233,18 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header, embedded }: { onOp
         {/* ===== today's daf: composed like a page of Gemara - the title in the
              center, today's real Rashi and Tosafot in faint columns around it ===== */}
         <div className="relative">
-        {today && <button onClick={() => share(today.ref, dafPath(today.ref))} className="absolute bottom-6 right-6 sm:bottom-7 sm:right-8 z-10 inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/5 hover:bg-white/10 px-3 py-1.5 text-xs font-black text-slate-200 backdrop-blur" aria-label={`Share ${today.ref}`}><Share2 className="w-3.5 h-3.5" /> Share</button>}
-        <div role="link" tabIndex={0} aria-label={today ? `Start learning ${today.ref}` : 'Today’s daf'} onClick={() => today && onOpen(today.ref)} onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && today) { e.preventDefault(); onOpen(today.ref); } }} className="group relative block w-full cursor-pointer overflow-hidden rounded-[28px] border border-white/10 px-6 sm:px-10 pt-6 sm:pt-7 pb-9 sm:pb-11 text-center shadow-[0_30px_80px_-30px_rgba(0,0,0,0.9)] transition-transform hover:-translate-y-0.5"
-          style={{ background: 'radial-gradient(120% 90% at 50% 0%, rgba(99,102,241,0.18) 0%, rgba(99,102,241,0.04) 45%, transparent 70%), linear-gradient(180deg, #121527 0%, #0d0f1c 100%)' }}>
+        {today && <button onClick={() => share(today.ref, dafPath(today.ref))} className="absolute bottom-6 right-6 sm:bottom-7 sm:right-8 z-10 inline-flex items-center gap-1.5 rounded-full border border-[#d8c8a6] bg-white/70 hover:bg-white px-3 py-1.5 text-xs font-black text-slate-300 backdrop-blur" aria-label={`Share ${today.ref}`}><Share2 className="w-3.5 h-3.5" /> Share</button>}
+        <div role="link" tabIndex={0} aria-label={today ? `Start learning ${today.ref}` : 'Today’s daf'} onClick={() => today && onOpen(today.ref)} onKeyDown={(e) => { if ((e.key === 'Enter' || e.key === ' ') && today) { e.preventDefault(); onOpen(today.ref); } }} className="group relative block w-full cursor-pointer overflow-hidden rounded-[28px] border border-[#d8c8a6] px-6 sm:px-10 pt-6 sm:pt-7 pb-9 sm:pb-11 text-center shadow-[0_24px_60px_-30px_rgba(80,55,20,0.45)] transition-transform hover:-translate-y-0.5"
+          style={{ background: 'radial-gradient(120% 90% at 50% 0%, rgba(176,125,44,0.10) 0%, transparent 65%), linear-gradient(180deg, #fffbf2 0%, #f7efdf 100%)' }}>
           {/* a printed page's double rule */}
-          <span aria-hidden="true" className="pointer-events-none absolute inset-3 rounded-[20px] border border-[#d9ccad]/15" />
-          <span aria-hidden="true" className="pointer-events-none absolute inset-[18px] rounded-[16px] border border-[#d9ccad]/[0.07]" />
+          <span aria-hidden="true" className="pointer-events-none absolute inset-3 rounded-[20px] border border-[#b39864]/40" />
+          <span aria-hidden="true" className="pointer-events-none absolute inset-[18px] rounded-[16px] border border-[#b39864]/20" />
           {/* running head */}
-          <div dir="rtl" className="relative flex items-baseline justify-between gap-4 px-2 text-[#d9ccad]/60" style={{ fontFamily: HE_FONT }}>
+          <div dir="rtl" className="relative flex items-baseline justify-between gap-4 px-2 text-[#8a6c3c]" style={{ fontFamily: HE_FONT }}>
             <span className="text-base sm:text-lg">{todayHe ? `מסכת ${todayHe.replace(/\s+\S+$/, '')}` : ''}</span>
             <span className="text-base sm:text-lg">{todayHe ? `דף ${todayHe.split(' ').pop()}` : ''}</span>
           </div>
-          <div className="relative mx-2 mt-2 h-px bg-gradient-to-r from-transparent via-[#d9ccad]/25 to-transparent" />
+          <div className="relative mx-2 mt-2 h-px bg-gradient-to-r from-transparent via-[#b39864]/50 to-transparent" />
 
           <div className="relative mt-5 md:grid md:grid-cols-[1fr_1.7fr_1fr] md:gap-7 md:items-stretch">
             {/* Tosafot - outer column */}
@@ -256,12 +256,12 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header, embedded }: { onOp
               </p>
               {today ? (
                 <>
-                  <p lang="he" dir="rtl" className="mt-4 text-[60px] sm:text-[92px] leading-none text-[#f1e9d6]" style={{ fontFamily: HE_FONT, fontWeight: 700 }}>{todayHe || today.ref}</p>
+                  <p lang="he" dir="rtl" className="mt-4 text-[60px] sm:text-[92px] leading-none text-[#2a2117]" style={{ fontFamily: HE_FONT, fontWeight: 700 }}>{todayHe || today.ref}</p>
                   <p className="mt-3 text-lg sm:text-2xl font-semibold tracking-[0.08em] text-slate-300">{today.ref}</p>
-                  <div className="mx-auto mt-6 flex w-40 items-center gap-3 text-[#d9ccad]/50" aria-hidden="true">
+                  <div className="mx-auto mt-6 flex w-40 items-center gap-3 text-[#b39864]" aria-hidden="true">
                     <span className="h-px flex-1 bg-current" /><span className="text-[10px]">◆</span><span className="h-px flex-1 bg-current" />
                   </div>
-                  <span className="mt-8 inline-flex w-full max-w-[21rem] sm:w-auto sm:max-w-none items-center justify-center gap-3 rounded-full bg-indigo-600 text-white px-10 sm:px-14 py-4 sm:py-5 text-xl sm:text-2xl font-black tracking-tight ring-[6px] ring-indigo-400/20 shadow-[0_20px_60px_-12px_rgba(99,102,241,0.8)] group-hover:bg-indigo-500 group-hover:ring-indigo-300/35 group-hover:gap-4 transition-all">
+                  <span className="mt-8 inline-flex w-full max-w-[21rem] sm:w-auto sm:max-w-none items-center justify-center gap-3 rounded-full bg-indigo-600 text-white px-10 sm:px-14 py-4 sm:py-5 text-xl sm:text-2xl font-black tracking-tight ring-[6px] ring-indigo-500/10 shadow-[0_14px_34px_-14px_rgba(35,63,120,0.55)] group-hover:bg-indigo-500 group-hover:ring-indigo-300/35 group-hover:gap-4 transition-all">
                     <BookOpen className="w-6 h-6 sm:w-7 sm:h-7" /> Start learning <ArrowRight className="w-6 h-6 sm:w-7 sm:h-7" />
                   </span>
                   {todayMeta?.sugyot ? <p className="mt-3 text-xs font-semibold text-slate-500">{todayMeta.sugyot} sugyot</p> : null}
@@ -372,8 +372,8 @@ export function DafHub({ onOpen, onExit, whatsappUrl, header, embedded }: { onOp
 function Column({ label, text }: { label: string; text?: string }) {
   return (
     <div aria-hidden="true" className="hidden md:flex flex-col select-none" dir="rtl">
-      <span className="mb-2 text-sm font-bold text-[#d9ccad]/45" style={{ fontFamily: HE_FONT }}>{label}</span>
-      <p className="flex-1 overflow-hidden text-justify text-[12.5px] leading-[1.6] text-[#d9ccad]/[0.22]"
+      <span className="mb-2 text-sm font-bold text-[#b39864]" style={{ fontFamily: HE_FONT }}>{label}</span>
+      <p className="flex-1 overflow-hidden text-justify text-[12.5px] leading-[1.6] text-[#6e5634]/30"
         style={{ fontFamily: "'Noto Rashi Hebrew', 'Frank Ruhl Libre', serif", maskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)', WebkitMaskImage: 'linear-gradient(to bottom, #000 0%, #000 70%, transparent 100%)', maxHeight: 300 }}>
         {text || ''}
       </p>
