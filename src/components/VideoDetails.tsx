@@ -219,14 +219,14 @@ ${url}`;
         />
       </div>
 
-      <div className={`bg-slate-900 rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-800 ${inSeries ? "mb-6" : "mb-16"} flex flex-col md:flex-row gap-8 items-center`}>
+      <div className={`bg-slate-900 rounded-[3rem] p-5 md:p-12 shadow-xl border border-slate-800 ${inSeries ? "mb-4 md:mb-6" : "mb-16"} flex flex-col md:flex-row gap-4 md:gap-8 items-center`}>
         {/* Left side: Thumbnail / Graphic */}
         {video.type !== 'audio' ? (
           <div 
             onClick={() => {
               window.open(video.url, '_blank');
             }}
-            className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-950/40 flex items-center justify-center overflow-hidden shadow-inner border border-slate-700 relative group block cursor-pointer"
+            className="hidden md:flex md:w-1/3 aspect-square rounded-[2rem] bg-indigo-950/40 items-center justify-center overflow-hidden shadow-inner border border-slate-700 relative group block cursor-pointer"
           >
             {((video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]) ? (
               <img src={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]} alt={video.folder || video.category} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-700" />
@@ -243,7 +243,7 @@ ${url}`;
             onClick={() => {
               window.open(video.url, '_blank');
             }}
-            className="w-full md:w-1/3 aspect-square rounded-[2rem] bg-indigo-950/40 flex items-center justify-center overflow-hidden shadow-inner border border-indigo-500/30 relative group cursor-pointer"
+            className="hidden md:flex md:w-1/3 aspect-square rounded-[2rem] bg-indigo-950/40 items-center justify-center overflow-hidden shadow-inner border border-indigo-500/30 relative group cursor-pointer"
           >
             {((video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]) ? (
               <img src={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]} alt={video.folder || video.category} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" />
@@ -264,8 +264,8 @@ ${url}`;
         )}
 
         {/* Right side: Info and Actions */}
-        <div className="flex flex-col gap-6 w-full md:w-2/3">
-          <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 md:gap-6 w-full md:w-2/3">
+          <div className="flex flex-col gap-3 md:gap-4">
             <div className="flex flex-wrap items-center gap-3">
               <span className="bg-indigo-950/60 text-indigo-400 text-xs font-black uppercase tracking-widest px-3 py-1.5 rounded-lg border border-indigo-500/30">
                 {video.category || (video.type === 'audio' ? 'Podcast' : 'General')}
@@ -324,9 +324,14 @@ ${url}`;
               )}
             </div>
             
-            <h1 className="text-3xl md:text-5xl font-black text-slate-50 tracking-tight leading-tight">
-              {video.title}
-            </h1>
+            <div className="flex items-center gap-3">
+              {((video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]) && (
+                <img src={(video.folder && folderThumbnails?.[video.folder]) || categoryThumbnails?.[video.category]} alt="" className="md:hidden w-16 h-16 shrink-0 rounded-xl object-cover border border-slate-700" />
+              )}
+              <h1 className="text-2xl md:text-5xl font-black text-slate-50 tracking-tight leading-tight">
+                {video.title}
+              </h1>
+            </div>
           </div>
 
           {video.type === 'audio' && (
@@ -343,7 +348,7 @@ ${url}`;
             </div>
           )}
 
-          <div className="flex flex-wrap gap-4 pt-4">
+          <div className="flex flex-col gap-3 md:pt-2">
             {video.type !== 'audio' && (
               <a
                 href={video.url}
@@ -353,61 +358,27 @@ ${url}`;
                   const updated = recordDeviceWatch(video.id, video);
                   setDeviceStats(updated);
                 }}
-                className="bg-indigo-600 text-white px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-indigo-700 transition-all shadow-xl hover:shadow-2xl active:scale-95 group"
+                className="w-full md:w-auto md:self-start bg-indigo-600 text-white px-8 py-4 md:py-5 rounded-2xl text-lg md:text-xl font-black uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-indigo-700 transition-all shadow-xl active:scale-95 group"
               >
-                <Play className="w-6 h-6 fill-current group-hover:scale-110 transition-transform" /> Play Now
+                <Play className="w-7 h-7 fill-current group-hover:scale-110 transition-transform" /> Play Now
               </a>
             )}
-            
-            {video.type === 'audio' ? (
-              <>
-                <button
-                  type="button"
-                  onClick={handleShareToWhatsApp}
-                  className="bg-[#25D366] hover:bg-[#20bd5a] text-slate-950 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 transition-all shadow-xl shadow-[#25D366]/20 active:scale-95 cursor-pointer"
-                  title="Share this episode to WhatsApp with show notes"
-                >
-                  <MessageCircle className="w-6 h-6 fill-slate-950" /> Share on WhatsApp
-                </button>
-
-                <button
-                  onClick={handleShare}
-                  className="bg-slate-950 text-slate-200 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-slate-800 transition-all border border-slate-700 shadow-sm active:scale-95"
-                >
-                  {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />} 
-                  {copied ? 'Copied!' : 'Copy Info'}
-                </button>
-              </>
-            ) : (
-              <button
-                onClick={handleShare}
-                className="bg-slate-950 text-slate-200 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-slate-800 transition-all border border-slate-700 shadow-sm active:scale-95"
-              >
-                {copied ? <Check className="w-6 h-6 text-emerald-500" /> : <Share2 className="w-6 h-6" />} 
-                {copied ? 'Copied!' : 'Share Shiur'}
-              </button>
-            )}
-
-            {onOpenWhatsAppShare && (
-              <button
-                type="button"
-                onClick={onOpenWhatsAppShare}
-                className="bg-[#25D366]/20 text-emerald-300 px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 hover:bg-[#25D366]/30 transition-all border border-[#25D366]/40 shadow-sm active:scale-95"
-                title="Share our WhatsApp community with friends"
-              >
-                <MessageCircle className="w-6 h-6 text-[#25D366] fill-[#25D366]" /> Invite Friends
-              </button>
-            )}
-
-            {onToggleSave && (
-              <button
-                onClick={(e) => onToggleSave(video.id, e)}
-                className={`px-8 py-4 rounded-2xl text-base md:text-lg font-black uppercase tracking-widest flex items-center gap-3 transition-all border shadow-sm active:scale-95 ${isSaved ? 'bg-indigo-50 text-indigo-700 border-indigo-200 hover:bg-indigo-100' : 'bg-slate-950 text-slate-200 border-slate-700 hover:bg-slate-800'}`}
-              >
-                <Bookmark className={`w-6 h-6 ${isSaved ? 'fill-indigo-700' : ''}`} /> 
-                {isSaved ? 'Saved' : 'Save'}
-              </button>
-            )}
+            <div className="flex gap-2">
+              {video.type === 'audio' ? (
+                <>
+                  <SmallAction onClick={handleShareToWhatsApp} title="Share this episode to WhatsApp with show notes" icon={<MessageCircle className="w-4 h-4" />} label="Share" />
+                  <SmallAction onClick={handleShare} title="Copy the episode info" icon={copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4" />} label={copied ? 'Copied' : 'Copy'} />
+                </>
+              ) : (
+                <SmallAction onClick={handleShare} title="Share this shiur" icon={copied ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4" />} label={copied ? 'Copied' : 'Share'} />
+              )}
+              {onOpenWhatsAppShare && (
+                <SmallAction onClick={onOpenWhatsAppShare} title="Share our WhatsApp community with friends" icon={<MessageCircle className="w-4 h-4 text-[#25D366] fill-[#25D366]" />} label="Invite" />
+              )}
+              {onToggleSave && (
+                <SmallAction onClick={(e) => onToggleSave(video.id, e)} title={isSaved ? 'Saved' : 'Save for later'} active={isSaved} icon={<Bookmark className={`w-4 h-4 ${isSaved ? 'fill-current' : ''}`} />} label={isSaved ? 'Saved' : 'Save'} />
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -703,11 +674,13 @@ function SeriesNav({ nav, onSelect }: { nav: SeriesNeighbors; onSelect: (v: Vide
   const pct = Math.round(((index + 1) / series.length) * 100);
 
   return (
-    <nav aria-label="Series navigation" className="mb-16 rounded-[2rem] border border-indigo-200/30 bg-indigo-950 p-5 md:p-8 shadow-lg">
-      <div className="mb-5">
-        <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">{series[index]?.category || 'This series'}</p>
-        <h2 className="mt-1 text-2xl md:text-3xl text-slate-50 leading-tight">{name}</h2>
-        <div className="mt-3 flex items-center gap-3">
+    <nav aria-label="Series navigation" className="mb-16 rounded-[2rem] border border-indigo-200/30 bg-indigo-950 p-4 md:p-8 shadow-lg">
+      <div className="mb-3 md:mb-5">
+        {series[index]?.category && series[index].category !== name && (
+          <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">{series[index].category}</p>
+        )}
+        <h2 className="mt-0.5 text-xl md:text-3xl text-slate-50 leading-tight">{name}</h2>
+        <div className="mt-2 md:mt-3 flex items-center gap-3">
           <div className="h-2 flex-1 rounded-full bg-indigo-800 overflow-hidden" aria-hidden="true">
             <div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
           </div>
@@ -715,43 +688,43 @@ function SeriesNav({ nav, onSelect }: { nav: SeriesNeighbors; onSelect: (v: Vide
         </div>
       </div>
 
-      <div className="flex flex-col md:flex-row-reverse gap-3">
+      <div className="flex flex-col md:flex-row-reverse gap-2 md:gap-3">
         {next ? (
           <button
             type="button"
             onClick={() => onSelect(next)}
-            className="md:flex-1 flex items-center gap-4 rounded-2xl bg-indigo-600 px-5 py-4 text-left text-white shadow-md hover:bg-indigo-700 active:scale-[0.99] transition-all"
+            className="md:flex-1 flex items-center gap-4 rounded-2xl bg-indigo-600 px-4 py-3 md:px-5 md:py-4 text-left text-white shadow-md hover:bg-indigo-700 active:scale-[0.99] transition-all"
           >
             <span className="min-w-0 flex-1">
               <span className="block text-xs font-bold uppercase tracking-wider opacity-85">
                 {nextSection ? `Next section · ${nextSection}` : 'Next episode'}
               </span>
-              <span className="mt-0.5 block text-lg font-semibold leading-snug">{next.title}</span>
+              <span className="mt-0.5 block text-base md:text-lg font-semibold leading-snug">{next.title}</span>
             </span>
             <span className="shrink-0 flex h-11 w-11 items-center justify-center rounded-full bg-white/15">
               <ChevronRight className="h-6 w-6" />
             </span>
           </button>
         ) : (
-          <div className="md:flex-1 flex items-center gap-3 rounded-2xl border border-dashed border-indigo-200/40 px-5 py-4 text-slate-300">
-            <CheckCircle2 className="h-6 w-6 shrink-0 text-emerald-500" />
-            <span className="text-base leading-snug">You're up to date. This is the latest episode in this series.</span>
+          <div className="md:flex-1 flex items-center gap-3 rounded-2xl border border-dashed border-indigo-200/40 px-4 py-2.5 md:px-5 md:py-4 text-slate-300">
+            <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 shrink-0 text-emerald-500" />
+            <span className="text-sm md:text-base leading-snug">You're up to date. This is the latest episode.</span>
           </div>
         )}
         {prev && (
           <button
             type="button"
             onClick={() => onSelect(prev)}
-            className="md:flex-1 flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-900 px-5 py-4 text-left text-slate-100 hover:bg-slate-800 active:scale-[0.99] transition-all"
+            className="md:flex-1 flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-2.5 md:px-5 md:py-4 text-left text-slate-100 hover:bg-slate-800 active:scale-[0.99] transition-all"
           >
-            <span className="shrink-0 flex h-11 w-11 items-center justify-center rounded-full bg-slate-800">
+            <span className="shrink-0 flex h-9 w-9 md:h-11 md:w-11 items-center justify-center rounded-full bg-slate-800">
               <ChevronLeft className="h-6 w-6" />
             </span>
             <span className="min-w-0 flex-1">
               <span className="block text-xs font-bold uppercase tracking-wider text-slate-400">
                 {prevSection ? `Previous section · ${prevSection}` : 'Previous episode'}
               </span>
-              <span className="mt-0.5 block text-lg font-semibold leading-snug">{prev.title}</span>
+              <span className="mt-0.5 block text-sm md:text-lg font-semibold leading-snug">{prev.title}</span>
             </span>
           </button>
         )}
@@ -761,7 +734,7 @@ function SeriesNav({ nav, onSelect }: { nav: SeriesNeighbors; onSelect: (v: Vide
         type="button"
         onClick={() => setOpen(o => !o)}
         aria-expanded={open}
-        className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-base font-semibold text-slate-200 hover:bg-slate-800"
+        className="mt-2 md:mt-4 w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-2.5 md:py-3.5 text-sm md:text-base font-semibold text-slate-200 hover:bg-slate-800"
       >
         <ListOrdered className="h-5 w-5" /> {open ? 'Hide the episode list' : `See all ${series.length} episodes`}
       </button>
@@ -786,5 +759,22 @@ function SeriesNav({ nav, onSelect }: { nav: SeriesNeighbors; onSelect: (v: Vide
         </ol>
       )}
     </nav>
+  );
+}
+
+function SmallAction({ onClick, icon, label, title, active }: {
+  onClick: (e: React.MouseEvent) => void; icon: React.ReactNode; label: string; title?: string; active?: boolean;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      title={title}
+      className={`flex-1 md:flex-none flex items-center justify-center gap-1.5 rounded-xl border px-3 md:px-4 py-2.5 text-sm font-semibold transition-all active:scale-95 ${
+        active ? 'bg-indigo-50 text-indigo-700 border-indigo-200' : 'bg-slate-950 text-slate-200 border-slate-700 hover:bg-slate-800'
+      }`}
+    >
+      {icon} {label}
+    </button>
   );
 }
