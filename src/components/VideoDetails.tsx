@@ -672,6 +672,8 @@ function SeriesNav({ nav, onSelect }: { nav: SeriesNeighbors; onSelect: (v: Vide
     if (box && cur) box.scrollTop = cur.offsetTop - box.clientHeight / 2 + cur.clientHeight / 2;
   }, [open, index]);
   const pct = Math.round(((index + 1) / series.length) * 100);
+  // "up to date" only when this device has played every episode of the series, not just because this is the newest
+  const missed = series.filter((v, i) => i !== index && !hasDeviceWatched(v.id)).length;
 
   return (
     <nav aria-label="Series navigation" className="mb-16 rounded-[2rem] border border-indigo-200/30 bg-indigo-950 p-4 md:p-8 shadow-lg">
@@ -707,8 +709,10 @@ function SeriesNav({ nav, onSelect }: { nav: SeriesNeighbors; onSelect: (v: Vide
           </button>
         ) : (
           <div className="md:flex-1 flex items-center gap-3 rounded-2xl border border-dashed border-indigo-200/40 px-4 py-2.5 md:px-5 md:py-4 text-slate-300">
-            <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 shrink-0 text-emerald-500" />
-            <span className="text-sm md:text-base leading-snug">You're up to date. This is the latest episode.</span>
+            {missed === 0 ? <CheckCircle2 className="h-5 w-5 md:h-6 md:w-6 shrink-0 text-emerald-500" /> : <Clock className="h-5 w-5 md:h-6 md:w-6 shrink-0 text-indigo-400" />}
+            <span className="text-sm md:text-base leading-snug">
+              {missed === 0 ? "You're up to date: you've heard every episode in this series." : `This is the latest episode so far. You haven't heard ${missed} earlier ${missed === 1 ? 'episode' : 'episodes'} yet.`}
+            </span>
           </div>
         )}
         {prev && (
