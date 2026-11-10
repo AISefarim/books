@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getWeeklyParasha, matchParashaFolder } from './lib/weeklyParasha';
 import { collection, onSnapshot, deleteDoc, doc, updateDoc, increment, setDoc, writeBatch } from 'firebase/firestore';
 import { ref, deleteObject, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { signInAnonymously, onAuthStateChanged, signOut, GoogleAuthProvider, signInWithPopup, User } from 'firebase/auth';
@@ -44,6 +45,8 @@ import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getD
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
+  const [weeklyParasha, setWeeklyParasha] = useState<string | null>(null);
+  useEffect(() => { getWeeklyParasha().then(setWeeklyParasha); }, []);
   const [audios, setAudios] = useState<Audio[]>([]);
   const [activeTab, setActiveTab] = useState<'sefarim' | 'videos' | 'podcasts' | 'library' | 'audio' | 'media' | 'chat' | 'daf' | 'contact' | 'about'>('sefarim');
 
@@ -1757,7 +1760,7 @@ export default function App() {
                   disableFolders={selectedCategory === 'Top Rated' || selectedCategory === 'Recently Uploaded'}
                   mediaLabel="Media"
                   currentCategory={selectedCategory}
-                  featuredSeries={selectedCategory ? (siteSettings.categoryFeaturedSeries?.[selectedCategory] || (selectedCategory === 'AI Parasha' ? 'Bereshit' : undefined)) : undefined}
+                  featuredSeries={selectedCategory ? ((selectedCategory === 'AI Parasha' ? matchParashaFolder(weeklyParasha, [...new Set(videos.filter(v => v.category === 'AI Parasha').map(v => v.folder || '').filter(Boolean))]) : null) || siteSettings.categoryFeaturedSeries?.[selectedCategory] || (selectedCategory === 'AI Parasha' ? 'Bereshit' : undefined)) : undefined}
                   onSetFeaturedSeries={(series) => {
                     if (selectedCategory) {
                       handleSetCategoryFeaturedSeries(selectedCategory, series);
