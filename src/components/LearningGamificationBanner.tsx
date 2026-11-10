@@ -8,6 +8,8 @@ interface LearningGamificationBannerProps {
   currentMediaType?: 'video' | 'podcast';
   onViewLibrary?: () => void;
   className?: string;
+  /** one slim line that opens the full card on tap (used on the shiur page) */
+  compact?: boolean;
 }
 
 export function LearningGamificationBanner({
@@ -15,14 +17,44 @@ export function LearningGamificationBanner({
   currentMediaCounts = false,
   currentMediaType = 'video',
   onViewLibrary,
-  className = ''
+  className = '',
+  compact = false
 }: LearningGamificationBannerProps) {
   const [showMilestones, setShowMilestones] = useState(false);
   const deviceStats = getDeviceWatchStats();
   const stats = getGamificationStats(totalWatchedCount, deviceStats.totalXp);
+  const [open, setOpen] = useState(false);
+
+  if (compact && !open) {
+    return (
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-expanded={false}
+        className={`w-full flex items-center gap-3 rounded-2xl border border-emerald-500/35 bg-slate-900 px-4 py-2.5 text-left text-sm shadow-sm hover:bg-slate-800 transition-colors ${className}`}
+      >
+        <Trophy className="w-4 h-4 shrink-0 text-emerald-400" />
+        <span className="font-bold text-slate-50 tabular-nums">{stats.totalScore ?? stats.totalXp}</span>
+        <span className="text-slate-300 whitespace-nowrap">Torah Points</span>
+        <span className="text-slate-500">·</span>
+        <span className={`whitespace-nowrap ${stats.colorClass}`}>Level {stats.level}</span>
+        <span className="ml-auto flex items-center gap-2 shrink-0">
+          <span className="hidden min-[380px]:block w-14 h-1.5 rounded-full bg-slate-800 overflow-hidden">
+            <span className="block h-full bg-emerald-500" style={{ width: `${stats.progressPercent}%` }} />
+          </span>
+          <ChevronDown className="w-4 h-4 text-slate-400" />
+        </span>
+      </button>
+    );
+  }
 
   return (
-    <div className={`rounded-3xl bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 border-2 border-emerald-500/35 p-4 sm:p-6 shadow-xl transition-all duration-300 ${className}`}>
+    <div className={`rounded-3xl bg-gradient-to-r from-slate-900 via-emerald-950/40 to-slate-900 border-2 border-emerald-500/35 p-4 sm:p-6 shadow-xl transition-all duration-300 ${compact ? 'relative' : ''} ${className}`}>
+      {compact && (
+        <button type="button" onClick={() => setOpen(false)} aria-label="Collapse" className="absolute top-3 right-3 p-1.5 rounded-lg text-slate-400 hover:bg-slate-800">
+          <ChevronUp className="w-5 h-5" />
+        </button>
+      )}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
         {/* Left: Your Score & Activity Breakdown */}
         <div className="flex items-start sm:items-center gap-4">

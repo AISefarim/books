@@ -210,15 +210,6 @@ ${url}`;
         </a>
       )}
 
-      {/* Your Personal Viewing Total Banner with subtle gamification - placed ABOVE the video card */}
-      <div className="mb-8">
-        <LearningGamificationBanner
-          totalWatchedCount={deviceStats.totalWatchedCount}
-          currentMediaCounts={true}
-          currentMediaType={video.type === 'audio' ? 'podcast' : 'video'}
-        />
-      </div>
-
       <div className={`bg-slate-900 rounded-[3rem] p-5 md:p-12 shadow-xl border border-slate-800 ${inSeries ? "mb-4 md:mb-6" : "mb-16"} flex flex-col md:flex-row gap-4 md:gap-8 items-center`}>
         {/* Left side: Thumbnail / Graphic */}
         {video.type !== 'audio' ? (
@@ -384,6 +375,15 @@ ${url}`;
       </div>
 
       {inSeries && nav && <SeriesNav nav={nav} onSelect={onSelectVideo} />}
+
+      <div className="mb-16 -mt-10">
+        <LearningGamificationBanner
+          compact
+          totalWatchedCount={deviceStats.totalWatchedCount}
+          currentMediaCounts={true}
+          currentMediaType={video.type === 'audio' ? 'podcast' : 'video'}
+        />
+      </div>
 
       {/* Read This In The Book Section */}
       {linkedBook && (
