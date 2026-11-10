@@ -17,7 +17,7 @@ import { FeaturedBooks } from './components/FeaturedBooks';
 import { BookDetails } from './components/BookDetails';
 import { VideoGrid } from './components/VideoGrid';
 import { VideoDetails } from './components/VideoDetails';
-import { seriesEpisodes } from './lib/seriesOrder';
+import { seriesNeighbors } from './lib/seriesOrder';
 import { LoginModal } from './components/LoginModal';
 import { EpubReader } from './components/EpubReader';
 import { ConfirmModal } from './components/ConfirmModal';
@@ -1250,7 +1250,7 @@ export default function App() {
         ) : selectedVideo ? (
           <VideoDetails
             video={selectedVideo}
-            series={seriesEpisodes(selectedVideo, videos)}
+            nav={seriesNeighbors(selectedVideo, videos)}
             relatedVideos={(() => {
               const targetList = selectedVideo.type === 'audio' ? (audios as unknown as Video[]) : videos;
               const allInFolder = targetList.filter(v => (v.folder || '') === (selectedVideo.folder || ''));

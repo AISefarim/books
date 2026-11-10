@@ -3,6 +3,7 @@ import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye
 import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Video, Book } from '../types';
+import type { SeriesNeighbors } from '../lib/seriesOrder';
 import { AudioPlayer } from './AudioPlayer';
 import { dafRefForMedia, dafPath } from '../lib/daf';
 import { useReadyDafs } from '../lib/useReadyDafs';
@@ -13,8 +14,8 @@ import { getDeviceWatchStats, recordDeviceWatch, hasDeviceWatched, calculateMedi
 interface VideoDetailsProps {
   video: Video;
   relatedVideos: Video[];
-  /** every episode of this shiur's series, in learning order (includes this one) */
-  series?: Video[];
+  /** where this shiur sits in its series */
+  nav?: SeriesNeighbors;
   onBack: () => void;
   onSelectVideo: (video: Video) => void;
   categoryThumbnails?: Record<string, string>;
@@ -30,7 +31,7 @@ interface VideoDetailsProps {
 export function VideoDetails({
   video,
   relatedVideos,
-  series = [],
+  nav,
   onBack,
   onSelectVideo,
   categoryThumbnails,
@@ -179,13 +180,10 @@ ${url}`;
     }
   };
 
-  const seriesIndex = series.findIndex(v => v.id === video.id);
-  const inSeries = seriesIndex !== -1 && series.length > 1;
-  const prevEpisode = inSeries && seriesIndex > 0 ? series[seriesIndex - 1] : undefined;
-  const nextEpisode = inSeries && seriesIndex < series.length - 1 ? series[seriesIndex + 1] : undefined;
+  const inSeries = !!nav && nav.index !== -1 && (nav.series.length > 1 || !!nav.prev || !!nav.next);
+  const nextEpisode = nav?.next;
   const upNextVideo = nextEpisode ?? relatedVideos.find(v => v.id !== video.id);
   const otherRelated = relatedVideos.filter(v => v.id !== video.id && v.id !== upNextVideo?.id).slice(0, 8);
-  const seriesName = video.subfolder || video.folder || video.category;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
@@ -414,16 +412,7 @@ ${url}`;
         </div>
       </div>
 
-      {inSeries && (
-        <SeriesNav
-          series={series}
-          index={seriesIndex}
-          name={seriesName}
-          prev={prevEpisode}
-          next={nextEpisode}
-          onSelect={onSelectVideo}
-        />
-      )}
+      {inSeries && nav && <SeriesNav nav={nav} onSelect={onSelectVideo} />}
 
       {/* Read This In The Book Section */}
       {linkedBook && (
@@ -702,14 +691,8 @@ ${url}`;
   );
 }
 
-function SeriesNav({ series, index, name, prev, next, onSelect }: {
-  series: Video[];
-  index: number;
-  name: string;
-  prev?: Video;
-  next?: Video;
-  onSelect: (v: Video) => void;
-}) {
+function SeriesNav({ nav, onSelect }: { nav: SeriesNeighbors; onSelect: (v: Video) => void }) {
+  const { series, index, name, prev, next, prevSection, nextSection } = nav;
   const [open, setOpen] = useState(false);
   const listRef = React.useRef<HTMLOListElement>(null);
   React.useEffect(() => {
@@ -717,60 +700,86 @@ function SeriesNav({ series, index, name, prev, next, onSelect }: {
     const cur = box?.querySelector<HTMLElement>('[aria-current="true"]');
     if (box && cur) box.scrollTop = cur.offsetTop - box.clientHeight / 2 + cur.clientHeight / 2;
   }, [open, index]);
-  const step = (v: Video | undefined, dir: 'prev' | 'next') => (
-    <button
-      type="button"
-      disabled={!v}
-      onClick={() => v && onSelect(v)}
-      className={`min-w-0 flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${
-        dir === 'next'
-          ? 'flex-row-reverse text-right bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700'
-          : 'bg-slate-950 border-slate-700 text-slate-200 hover:bg-slate-800'
-      }`}
-    >
-      {dir === 'prev' ? <ChevronLeft className="w-6 h-6 shrink-0" /> : <ChevronRight className="w-6 h-6 shrink-0" />}
-      <span className="min-w-0">
-        <span className="block text-[11px] font-bold uppercase tracking-wider opacity-80">{dir === 'prev' ? 'Previous' : 'Next'}</span>
-        <span className="block text-sm md:text-base font-semibold truncate">{v ? v.title : dir === 'prev' ? 'This is the first episode' : 'This is the latest episode'}</span>
-      </span>
-    </button>
-  );
+  const pct = Math.round(((index + 1) / series.length) * 100);
+
   return (
-    <nav aria-label="Series navigation" className="bg-slate-900 rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-800 mb-16">
-      <div className="flex items-center justify-between gap-3 mb-4">
-        <p className="min-w-0 text-sm md:text-base text-slate-300 truncate">
-          <span className="font-semibold text-slate-50">{name}</span>
-          <span className="mx-2 text-slate-500">·</span>
-          Episode {index + 1} of {series.length}
-        </p>
-        <button
-          type="button"
-          onClick={() => setOpen(o => !o)}
-          aria-expanded={open}
-          className="shrink-0 flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800"
-        >
-          <ListOrdered className="w-4 h-4" /> {open ? 'Hide episodes' : 'All episodes'}
-        </button>
+    <nav aria-label="Series navigation" className="mb-16 rounded-[2rem] border border-indigo-200/30 bg-indigo-950 p-5 md:p-8 shadow-lg">
+      <div className="mb-5">
+        <p className="text-xs font-bold uppercase tracking-wider text-indigo-400">{series[index]?.category || 'This series'}</p>
+        <h2 className="mt-1 text-2xl md:text-3xl text-slate-50 leading-tight">{name}</h2>
+        <div className="mt-3 flex items-center gap-3">
+          <div className="h-2 flex-1 rounded-full bg-indigo-800 overflow-hidden" aria-hidden="true">
+            <div className="h-full rounded-full bg-indigo-500" style={{ width: `${pct}%` }} />
+          </div>
+          <span className="shrink-0 text-sm font-semibold text-slate-300 tabular-nums">Episode {index + 1} of {series.length}</span>
+        </div>
       </div>
-      <div className="grid grid-cols-2 gap-3">
-        {step(prev, 'prev')}
-        {step(next, 'next')}
+
+      <div className="flex flex-col md:flex-row-reverse gap-3">
+        {next ? (
+          <button
+            type="button"
+            onClick={() => onSelect(next)}
+            className="md:flex-1 flex items-center gap-4 rounded-2xl bg-indigo-600 px-5 py-4 text-left text-white shadow-md hover:bg-indigo-700 active:scale-[0.99] transition-all"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs font-bold uppercase tracking-wider opacity-85">
+                {nextSection ? `Next section · ${nextSection}` : 'Next episode'}
+              </span>
+              <span className="mt-0.5 block text-lg font-semibold leading-snug">{next.title}</span>
+            </span>
+            <span className="shrink-0 flex h-11 w-11 items-center justify-center rounded-full bg-white/15">
+              <ChevronRight className="h-6 w-6" />
+            </span>
+          </button>
+        ) : (
+          <div className="md:flex-1 flex items-center gap-3 rounded-2xl border border-dashed border-indigo-200/40 px-5 py-4 text-slate-300">
+            <CheckCircle2 className="h-6 w-6 shrink-0 text-emerald-500" />
+            <span className="text-base leading-snug">You're up to date. This is the latest episode in this series.</span>
+          </div>
+        )}
+        {prev && (
+          <button
+            type="button"
+            onClick={() => onSelect(prev)}
+            className="md:flex-1 flex items-center gap-4 rounded-2xl border border-slate-700 bg-slate-900 px-5 py-4 text-left text-slate-100 hover:bg-slate-800 active:scale-[0.99] transition-all"
+          >
+            <span className="shrink-0 flex h-11 w-11 items-center justify-center rounded-full bg-slate-800">
+              <ChevronLeft className="h-6 w-6" />
+            </span>
+            <span className="min-w-0 flex-1">
+              <span className="block text-xs font-bold uppercase tracking-wider text-slate-400">
+                {prevSection ? `Previous section · ${prevSection}` : 'Previous episode'}
+              </span>
+              <span className="mt-0.5 block text-lg font-semibold leading-snug">{prev.title}</span>
+            </span>
+          </button>
+        )}
       </div>
+
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        aria-expanded={open}
+        className="mt-4 w-full flex items-center justify-center gap-2 rounded-2xl border border-slate-700 bg-slate-900 px-4 py-3.5 text-base font-semibold text-slate-200 hover:bg-slate-800"
+      >
+        <ListOrdered className="h-5 w-5" /> {open ? 'Hide the episode list' : `See all ${series.length} episodes`}
+      </button>
       {open && (
-        <ol ref={listRef} className="mt-4 max-h-80 overflow-y-auto rounded-2xl border border-slate-800 divide-y divide-slate-800 relative">
+        <ol ref={listRef} className="mt-3 max-h-96 overflow-y-auto rounded-2xl border border-slate-700 bg-slate-900 divide-y divide-slate-800 relative">
           {series.map((v, i) => (
             <li key={v.id}>
               <button
                 type="button"
                 aria-current={i === index ? 'true' : undefined}
                 onClick={() => i !== index && onSelect(v)}
-                className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${
-                  i === index ? 'bg-indigo-950 text-indigo-300 font-semibold cursor-default' : 'text-slate-200 hover:bg-slate-800'
+                className={`w-full flex items-start gap-3 px-4 py-3.5 text-left text-base transition-colors ${
+                  i === index ? 'bg-indigo-900 text-indigo-300 font-semibold cursor-default' : 'text-slate-200 hover:bg-slate-800'
                 }`}
               >
-                <span className="w-8 shrink-0 text-right tabular-nums text-slate-500">{i + 1}</span>
-                <span className="min-w-0 flex-1 truncate">{v.title}</span>
-                {i === index && <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider">Now playing</span>}
+                <span className="w-7 shrink-0 text-right tabular-nums text-slate-500">{i + 1}</span>
+                <span className="min-w-0 flex-1 leading-snug">{v.title}</span>
+                {i === index && <span className="shrink-0 mt-0.5 text-[11px] font-bold uppercase tracking-wider">Playing</span>}
               </button>
             </li>
           ))}
