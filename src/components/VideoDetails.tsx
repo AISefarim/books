@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark, Headphones, MessageCircle, BookOpen, Smartphone, CheckCircle2, Clock, Zap } from 'lucide-react';
+import { ArrowLeft, Share2, Check, ExternalLink, PlayCircle, Play, Calendar, Eye, Star, MessageSquare, Send, Bookmark, Headphones, MessageCircle, BookOpen, Smartphone, CheckCircle2, Clock, Zap, ChevronLeft, ChevronRight, ListOrdered } from 'lucide-react';
 import { updateDoc, doc, arrayUnion, increment } from 'firebase/firestore';
 import { db } from '../lib/firebase';
 import { Video, Book } from '../types';
@@ -13,6 +13,8 @@ import { getDeviceWatchStats, recordDeviceWatch, hasDeviceWatched, calculateMedi
 interface VideoDetailsProps {
   video: Video;
   relatedVideos: Video[];
+  /** every episode of this shiur's series, in learning order (includes this one) */
+  series?: Video[];
   onBack: () => void;
   onSelectVideo: (video: Video) => void;
   categoryThumbnails?: Record<string, string>;
@@ -28,6 +30,7 @@ interface VideoDetailsProps {
 export function VideoDetails({
   video,
   relatedVideos,
+  series = [],
   onBack,
   onSelectVideo,
   categoryThumbnails,
@@ -176,8 +179,13 @@ ${url}`;
     }
   };
 
-  const upNextVideo = relatedVideos[0];
-  const otherRelated = relatedVideos.slice(1, 9);
+  const seriesIndex = series.findIndex(v => v.id === video.id);
+  const inSeries = seriesIndex !== -1 && series.length > 1;
+  const prevEpisode = inSeries && seriesIndex > 0 ? series[seriesIndex - 1] : undefined;
+  const nextEpisode = inSeries && seriesIndex < series.length - 1 ? series[seriesIndex + 1] : undefined;
+  const upNextVideo = nextEpisode ?? relatedVideos.find(v => v.id !== video.id);
+  const otherRelated = relatedVideos.filter(v => v.id !== video.id && v.id !== upNextVideo?.id).slice(0, 8);
+  const seriesName = video.subfolder || video.folder || video.category;
 
   return (
     <div className="animate-in fade-in slide-in-from-bottom-8 duration-500">
@@ -213,7 +221,7 @@ ${url}`;
         />
       </div>
 
-      <div className="bg-slate-900 rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-800 mb-16 flex flex-col md:flex-row gap-8 items-center">
+      <div className={`bg-slate-900 rounded-[3rem] p-6 md:p-12 shadow-xl border border-slate-800 ${inSeries ? "mb-6" : "mb-16"} flex flex-col md:flex-row gap-8 items-center`}>
         {/* Left side: Thumbnail / Graphic */}
         {video.type !== 'audio' ? (
           <div 
@@ -406,6 +414,17 @@ ${url}`;
         </div>
       </div>
 
+      {inSeries && (
+        <SeriesNav
+          series={series}
+          index={seriesIndex}
+          name={seriesName}
+          prev={prevEpisode}
+          next={nextEpisode}
+          onSelect={onSelectVideo}
+        />
+      )}
+
       {/* Read This In The Book Section */}
       {linkedBook && (
         <div className="bg-gradient-to-r from-slate-900 via-indigo-950/40 to-slate-900 rounded-[2.5rem] p-6 md:p-8 shadow-xl border border-indigo-500/20 mb-16 max-w-4xl mx-auto animate-in slide-in-from-bottom-4 fade-in duration-500">
@@ -562,7 +581,7 @@ ${url}`;
         <div className="mt-16 animate-in slide-in-from-bottom-10 fade-in duration-700 delay-200 fill-mode-both">
           <div className="flex items-center justify-between mb-8">
             <h3 className="text-2xl font-black text-slate-50 uppercase tracking-tighter flex items-center gap-3">
-              <PlayCircle className="w-6 h-6 text-indigo-500" /> {video.type === 'audio' ? 'Suggested Shiur' : 'Up Next'}
+              <PlayCircle className="w-6 h-6 text-indigo-500" /> {nextEpisode ? 'Next in this series' : video.type === 'audio' ? 'Suggested Shiur' : 'Up Next'}
             </h3>
             <span className="text-sm font-bold text-slate-400 uppercase tracking-widest hidden sm:block">
               {relatedVideos.length} Related
@@ -680,5 +699,83 @@ ${url}`;
         </div>
       )}
     </div>
+  );
+}
+
+function SeriesNav({ series, index, name, prev, next, onSelect }: {
+  series: Video[];
+  index: number;
+  name: string;
+  prev?: Video;
+  next?: Video;
+  onSelect: (v: Video) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const listRef = React.useRef<HTMLOListElement>(null);
+  React.useEffect(() => {
+    const box = listRef.current;
+    const cur = box?.querySelector<HTMLElement>('[aria-current="true"]');
+    if (box && cur) box.scrollTop = cur.offsetTop - box.clientHeight / 2 + cur.clientHeight / 2;
+  }, [open, index]);
+  const step = (v: Video | undefined, dir: 'prev' | 'next') => (
+    <button
+      type="button"
+      disabled={!v}
+      onClick={() => v && onSelect(v)}
+      className={`min-w-0 flex items-center gap-3 rounded-2xl border px-4 py-3.5 text-left transition-all active:scale-[0.98] disabled:opacity-40 disabled:cursor-not-allowed ${
+        dir === 'next'
+          ? 'flex-row-reverse text-right bg-indigo-600 border-indigo-600 text-white hover:bg-indigo-700'
+          : 'bg-slate-950 border-slate-700 text-slate-200 hover:bg-slate-800'
+      }`}
+    >
+      {dir === 'prev' ? <ChevronLeft className="w-6 h-6 shrink-0" /> : <ChevronRight className="w-6 h-6 shrink-0" />}
+      <span className="min-w-0">
+        <span className="block text-[11px] font-bold uppercase tracking-wider opacity-80">{dir === 'prev' ? 'Previous' : 'Next'}</span>
+        <span className="block text-sm md:text-base font-semibold truncate">{v ? v.title : dir === 'prev' ? 'This is the first episode' : 'This is the latest episode'}</span>
+      </span>
+    </button>
+  );
+  return (
+    <nav aria-label="Series navigation" className="bg-slate-900 rounded-[2rem] p-4 md:p-6 shadow-sm border border-slate-800 mb-16">
+      <div className="flex items-center justify-between gap-3 mb-4">
+        <p className="min-w-0 text-sm md:text-base text-slate-300 truncate">
+          <span className="font-semibold text-slate-50">{name}</span>
+          <span className="mx-2 text-slate-500">·</span>
+          Episode {index + 1} of {series.length}
+        </p>
+        <button
+          type="button"
+          onClick={() => setOpen(o => !o)}
+          aria-expanded={open}
+          className="shrink-0 flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800"
+        >
+          <ListOrdered className="w-4 h-4" /> {open ? 'Hide episodes' : 'All episodes'}
+        </button>
+      </div>
+      <div className="grid grid-cols-2 gap-3">
+        {step(prev, 'prev')}
+        {step(next, 'next')}
+      </div>
+      {open && (
+        <ol ref={listRef} className="mt-4 max-h-80 overflow-y-auto rounded-2xl border border-slate-800 divide-y divide-slate-800 relative">
+          {series.map((v, i) => (
+            <li key={v.id}>
+              <button
+                type="button"
+                aria-current={i === index ? 'true' : undefined}
+                onClick={() => i !== index && onSelect(v)}
+                className={`w-full flex items-center gap-3 px-4 py-3 text-left text-sm transition-colors ${
+                  i === index ? 'bg-indigo-950 text-indigo-300 font-semibold cursor-default' : 'text-slate-200 hover:bg-slate-800'
+                }`}
+              >
+                <span className="w-8 shrink-0 text-right tabular-nums text-slate-500">{i + 1}</span>
+                <span className="min-w-0 flex-1 truncate">{v.title}</span>
+                {i === index && <span className="shrink-0 text-[11px] font-bold uppercase tracking-wider">Now playing</span>}
+              </button>
+            </li>
+          ))}
+        </ol>
+      )}
+    </nav>
   );
 }
