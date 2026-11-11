@@ -126,6 +126,18 @@ h1, h2, h3 {
     [class*="bg-amber-5"], [class*="bg-amber-6"], [class*="bg-black"], [class*="from-black"],
     [class*="from-indigo-5"], [class*="from-indigo-6"], [class*="from-emerald-5"], [class*="from-violet-5"],
     [class*="from-purple-5"], [class*="from-sky-5"], [class*="from-amber-5"], [class*="from-rose-5"]):not(:is([class*="00/1"], [class*="00/2"], [class*="00/3"], [class*="00/4"])) .text-white { color: #fff; }
+
+/* on those solid fills, the pale accent labels (indigo-200 "Continue learning" etc.) were remapped to dark ink
+   for the light cards, so they turned dark-on-dark: keep them light there */
+:is([class*="bg-indigo-5"], [class*="bg-indigo-6"], [class*="bg-indigo-7"],
+    [class*="bg-emerald-5"], [class*="bg-emerald-6"], [class*="bg-emerald-7"],
+    [class*="bg-green-"], [class*="bg-[#"], [class*="bg-rose-5"], [class*="bg-rose-6"],
+    [class*="bg-red-"], [class*="bg-sky-5"], [class*="bg-sky-6"], [class*="bg-blue-5"], [class*="bg-blue-6"],
+    [class*="bg-violet-5"], [class*="bg-violet-6"], [class*="bg-purple-5"], [class*="bg-purple-6"],
+    [class*="bg-amber-5"], [class*="bg-amber-6"], [class*="bg-black"], [class*="from-black"],
+    [class*="from-indigo-5"], [class*="from-indigo-6"], [class*="from-emerald-5"], [class*="from-violet-5"],
+    [class*="from-purple-5"], [class*="from-sky-5"], [class*="from-amber-5"], [class*="from-rose-5"]):not(:is([class*="00/1"], [class*="00/2"], [class*="00/3"], [class*="00/4"])) :is([class*="text-indigo-2"], [class*="text-indigo-3"], [class*="text-emerald-2"], [class*="text-emerald-3"],
+    [class*="text-amber-2"], [class*="text-amber-3"], [class*="text-violet-2"], [class*="text-sky-2"], [class*="text-rose-2"]) { color: rgb(255 255 255 / 0.82); }
 /* (a faint tint such as bg-blue-500/10 is a light card in this theme, so its text stays ink; e.g. the Hebrew rank
    name on the learning-level card was white on pale blue) */
 

@@ -780,7 +780,7 @@ function SageQuote() {
   return (
     <div key={i} className="animate-in fade-in duration-500 rounded-xl border border-indigo-400/25 bg-indigo-500/5 p-3">
       <p className="text-[11px] font-black uppercase tracking-wider text-indigo-300">Words of the Sages</p>
-      <p className="mt-1.5 text-base font-bold text-indigo-100 leading-snug" lang="he" dir="rtl">{q.he}</p>
+      <p className="mt-1.5 text-base font-bold text-indigo-700 leading-snug" lang="he" dir="rtl">{q.he}</p>
       <p className="text-xs text-slate-200 leading-snug mt-1.5">{q.en}</p>
       <p className="text-[11px] text-indigo-300/70 italic mt-1">{q.who}</p>
     </div>
