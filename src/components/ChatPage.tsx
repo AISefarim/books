@@ -1312,7 +1312,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
                 <Sparkles className="w-3.5 h-3.5 text-white animate-pulse" />
               </div>
             </div>
-            <div className="relative max-w-[96%] sm:max-w-[85%] rounded-2xl p-[1.5px] bg-gradient-to-br from-indigo-500/70 via-purple-500/50 to-indigo-500/70">
+            <div className="relative max-w-[96%] sm:max-w-[85%] rounded-2xl p-[1.5px] bg-gradient-to-br from-indigo-400/70 via-purple-500/50 to-indigo-400/70">
               <div className="absolute -top-10 -left-10 w-32 h-32 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(99,102,241,0.2), transparent 70%)' }} />
               <div className="absolute -bottom-10 -right-6 w-28 h-28 rounded-full pointer-events-none" style={{ background: 'radial-gradient(circle, rgba(168,85,247,0.2), transparent 70%)' }} />
               <div className="relative bg-slate-900 rounded-[calc(1rem-1.5px)] px-4 sm:px-5 py-3.5 sm:py-4 text-slate-400 text-sm overflow-hidden">
