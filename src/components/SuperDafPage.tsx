@@ -640,6 +640,10 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
         .sd-dark .text-stone-500 { color:#a8a6a3; }
         .sd-dark .text-stone-400 { color:#76757a; }
         .sd-dark .text-indigo-700 { color:#a5b4fc; }
+        .sd-dark .sd-dock { background:#0c0c0e; border-top-color:#2e2e33; }
+        .sd-dark .sd-dock .sd-dock-btn { color:#a8a6a3; }
+        .sd-dark .sd-dock .sd-dock-btn:hover { color:#e8e6e3; background:#202024; }
+        .sd-dark .sd-dock .sd-dock-btn.sd-dock-on { color:#a5b4fc; background:rgba(165,180,252,.1); }
         .sd-dark .bg-indigo-600 { background:#5b5fd6; }
         .sd-dark .bg-slate-900 { background:#1b1b1e; }
         .sd-lowp .text-slate-100, .sd-lowp .text-slate-200 { color:#292524; }
@@ -810,7 +814,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
 
       {/* ============ dock ============ */}
       {daf && (
-        <nav className="shrink-0 bg-slate-950 border-t border-slate-800 px-2 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5">
+        <nav className="sd-dock shrink-0 bg-slate-950 border-t border-slate-800 px-2 pb-[max(env(safe-area-inset-bottom),0.4rem)] pt-1.5">
           <div className={`mx-auto grid gap-1 lg:flex lg:items-center lg:justify-center lg:gap-3 lg:max-w-3xl ${['max-w-lg grid-cols-4', 'max-w-xl grid-cols-5', 'max-w-2xl grid-cols-6'][((daf.mishnayot || []).length ? 1 : 0) + (dafHasRambam(daf) ? 1 : 0)]}`}>
             {([
               // "Our Mishnah" comes first and stands out - it lives here so it never covers the text
@@ -856,7 +860,7 @@ export function SuperDafPage({ initialRef, pinnedPodcastId, media, onExit }: { i
                   if (id === 'mishnah') { window.dispatchEvent(new Event('sd-mishnah-toggle')); return; }
                   if (id === 'ask') { setTab('ask'); setLowerCollapsed(false); setSheet(null); return; }
                   setSheet(sheet?.kind === id ? null : { kind: id } as Sheet);
-                }} className={`flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-2 rounded-xl py-1.5 lg:py-2 lg:px-3 text-[10px] lg:text-xs font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
+                }} className={`sd-dock-btn ${active ? 'sd-dock-on ' : ''}flex flex-col lg:flex-row items-center justify-center gap-0.5 lg:gap-2 rounded-xl py-1.5 lg:py-2 lg:px-3 text-[10px] lg:text-xs font-bold transition-colors disabled:opacity-30 ${active ? 'text-indigo-300 bg-indigo-500/10' : 'text-slate-400 hover:text-slate-100'}`}>
                   <Icon className="w-5 h-5" />{label}
                 </button>
               );
