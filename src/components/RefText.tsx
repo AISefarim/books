@@ -58,6 +58,7 @@ function HebrewRuns({ text }: { text: string }) {
 
 // A citation: to its place in Super Daf when there is one, else to Sefaria.
 export function CiteLink({ r, className, style, children }: { r: string; className?: string; style?: CSSProperties; children: ReactNode }) {
+  if (!r) return <span className={className} style={style}>{children}</span>;  // no reference: plain text, never a crash
   const spot = superDafSpot(r);
   if (spot) return <a href={spot.path} className={className} style={style} title={`${r} - open in Super Daf`} onClick={(e) => goToSpot(e, spot)}>{children}</a>;
   return <a href={sefariaUrl(r)} target="_blank" rel="noopener noreferrer" className={className} style={style} title={`${r} - on Sefaria`} onClick={(e) => e.stopPropagation()}>{children}</a>;

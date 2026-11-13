@@ -5,7 +5,8 @@ export const DAF_API =
   ((import.meta as any).env?.VITE_CHAT_WORKER_URL || 'https://aisefarim-chat.abrahamserouya.workers.dev') + '/daf';
 
 export function sefariaUrl(ref: string): string {
-  return 'https://www.sefaria.org/' + encodeURIComponent(ref.replace(/ /g, '_')).replace(/%3A/g, '.').replace(/%2C/g, ',');
+  if (!ref) return 'https://www.sefaria.org/';  // a source with no reference must not crash the page
+  return 'https://www.sefaria.org/' + encodeURIComponent(String(ref).replace(/ /g, '_')).replace(/%3A/g, '.').replace(/%2C/g, ',');
 }
 
 // "Bekhorot 17" -> "/daf/Bekhorot/17"
