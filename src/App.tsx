@@ -38,6 +38,7 @@ import { ChatPage } from './components/ChatPage';
 import { ContactPage } from './components/ContactPage';
 import { AboutPage } from './components/AboutPage';
 import { SuperDafPage } from './components/SuperDafPage';
+import { SuperDafErrorBoundary } from './components/SuperDafErrorBoundary';
 import { DafHub } from './components/DafHub';
 import { SuperDafHero } from './components/SuperDafHero';
 import { refFromPath, dafFromTitle, dafPath, dafRefForMedia, loadReadyDafs } from './lib/daf';
@@ -1948,6 +1949,7 @@ export default function App() {
           <ChatPage embedded={dafEmbedded} onExit={() => { setActiveTab('sefarim'); handleHome(); }} books={books} media={videos} categoryThumbnails={siteSettings.videoCategoryThumbnails} />
         ) : activeTab === 'daf' ? (
           dafRef ? (
+            <SuperDafErrorBoundary key={dafRef} dafRef={dafRef}>
             <SuperDafPage
               key={dafRef}
               initialRef={dafRef}
@@ -1955,6 +1957,7 @@ export default function App() {
               media={videos}
               onExit={() => { window.history.pushState({}, '', '/daf'); setDafRef(null); window.scrollTo(0, 0); }}
             />
+            </SuperDafErrorBoundary>
           ) : (
             <DafHub
               header={dafEmbedded ? null : <Navbar {...navbarProps} />}
