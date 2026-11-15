@@ -6,6 +6,8 @@ export interface Book {
   buyLink: string;
   category?: string;
   series?: string;
+  /** optional section inside a series, e.g. "Shemot Rabbah" inside "Midrash Rabbah" */
+  subseries?: string;
   cover: string;
   epub: string;
   coverPath: string;

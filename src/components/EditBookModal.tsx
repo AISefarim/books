@@ -14,6 +14,7 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
   const [desc, setDesc] = useState(book.desc);
   const [category, setCategory] = useState(book.category || '');
   const [series, setSeries] = useState(book.series || '');
+  const [subseries, setSubseries] = useState(book.subseries || '');
   const [buyLink, setBuyLink] = useState(book.buyLink || '');
   const [order, setOrder] = useState(book.order?.toString() || '');
   const [isFeatured, setIsFeatured] = useState(book.isFeatured || false);
@@ -32,6 +33,7 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
         desc,
         category,
         series: series.trim(),
+        subseries: subseries.trim(),
         buyLink,
         isFeatured,
       };
@@ -107,6 +109,16 @@ export function EditBookModal({ book, onSave, onClose }: EditBookModalProps) {
                 value={series}
                 onChange={(e) => setSeries(e.target.value)}
                 placeholder="e.g. Harry Potter, The Rambam Series"
+                className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-slate-400 ml-2">Section in Series (optional)</label>
+              <input
+                type="text"
+                value={subseries}
+                onChange={(e) => setSubseries(e.target.value)}
+                placeholder="e.g. Shemot Rabbah (groups books inside the series)"
                 className="w-full px-6 py-4 bg-slate-950 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium"
               />
             </div>

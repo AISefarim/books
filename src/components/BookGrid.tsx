@@ -613,24 +613,54 @@ export function BookGrid({ books, isLoading, isAdmin, onEdit, onDelete, onRead, 
             </div>
           </SortableContext>
         </DndContext>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10">
-          {seriesBooks.map((book) => (
-            <BookCard
-              key={book.id}
-              book={book}
-              isAdmin={isAdmin}
-              onEdit={onEdit}
-              onDelete={onDelete}
-              onRead={onRead}
-              onDownload={onDownload}
-              onSelect={() => onSelectBook(book)}
-              isSaved={savedBookIds.includes(book.id)}
-              onToggleSave={onToggleSave}
-            />
-          ))}
-        </div>
-      )}
+      ) : (() => {
+        const card = (book: Book) => (
+          <BookCard
+            key={book.id}
+            book={book}
+            isAdmin={isAdmin}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onRead={onRead}
+            onDownload={onDownload}
+            onSelect={() => onSelectBook(book)}
+            isSaved={savedBookIds.includes(book.id)}
+            onToggleSave={onToggleSave}
+          />
+        );
+        const gridCls = "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-10";
+        // A series whose books carry a section (subseries) is shown in sections, e.g. Midrash Rabbah -> Shemot Rabbah, Eichah Rabbah
+        if (!selectedSeries || !seriesBooks.some(b => (b.subseries || '').trim())) {
+          return <div className={gridCls}>{seriesBooks.map(card)}</div>;
+        }
+        const groups = new Map<string, Book[]>();
+        for (const b of seriesBooks) {
+          const k = (b.subseries || '').trim();
+          if (!groups.has(k)) groups.set(k, []);
+          groups.get(k)!.push(b);
+        }
+        const byOrderThenTitle = (a: Book, b: Book) => (a.order || 0) - (b.order || 0) || a.title.localeCompare(b.title, undefined, { numeric: true });
+        const names = Array.from(groups.keys()).sort((a, b) => {
+          if (!a) return 1; if (!b) return -1;          // books with no section go last
+          const fa = groups.get(a)!.slice().sort(byOrderThenTitle)[0], fb = groups.get(b)!.slice().sort(byOrderThenTitle)[0];
+          return (fa.order || 0) - (fb.order || 0) || (fa.createdAt || 0) - (fb.createdAt || 0);
+        });
+        return (
+          <div className="space-y-12">
+            {names.map(name => (
+              <section key={name || '_other'} className="space-y-6">
+                <div className="flex items-baseline gap-3 border-b border-slate-800 pb-2">
+                  <h3 className="text-lg sm:text-xl font-black text-slate-100 tracking-tight">{name || 'More in this series'}</h3>
+                  <span className="text-xs font-bold uppercase tracking-widest text-slate-500">
+                    {groups.get(name)!.length} {groups.get(name)!.length === 1 ? 'volume' : 'volumes'}
+                  </span>
+                </div>
+                <div className={gridCls}>{groups.get(name)!.slice().sort(byOrderThenTitle).map(card)}</div>
+              </section>
+            ))}
+          </div>
+        );
+      })()}
     </div>
   );
 }
