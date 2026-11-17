@@ -44,6 +44,25 @@ import { SuperDafHero } from './components/SuperDafHero';
 import { refFromPath, dafFromTitle, dafPath, dafRefForMedia, loadReadyDafs } from './lib/daf';
 import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats, registerMediaList, recordWebsiteVisit } from './lib/deviceTracker';
 
+// Shiurim page sections, in display order. Categories not listed here appear under Miscellaneous.
+const SHIURIM_SECTIONS: { key: string; title: string; he: string; blurb: string; groups: { title?: string; cats: string[] }[] }[] = [
+  {
+    key: 'nigleh', title: 'Nigleh', he: 'נִגְלֶה', blurb: 'The revealed Torah',
+    groups: [
+      { title: 'Tanach & Midrash', cats: ['AI Parasha', 'AI Tanach', 'AI Shemot Rabbah', 'AI Tanna DeBe Eliyahu'] },
+      { title: 'Talmud & Halacha', cats: ['AI Daf', 'AI Rambam', 'AI Halacha Yomit', 'AI Mishnah'] },
+    ],
+  },
+  {
+    key: 'nistar', title: 'Nistar', he: 'נִסְתָּר', blurb: 'The hidden Torah: Kabbalah and Chassidut',
+    groups: [
+      { title: 'Kabbalah', cats: ['Miniseries: Introduction to Kabbalah', 'AI Zohar', 'AI Etz Chaim', 'AI Shaar Hakavanot', 'AI Pardes Rimonim', 'AI Shaar HaGilgulim'] },
+      { title: 'Chassidut', cats: ['AI Likkutei Moharan'] },
+    ],
+  },
+];
+const shiurimLabel = (cat: string) => cat.replace(/^AI\s+/, '').replace(/^Miniseries:\s*/, '').replace('Shaar Hakavanot', "Sha'ar HaKavanot").replace('Shaar HaGilgulim', "Sha'ar HaGilgulim");
+
 export default function App() {
   const [books, setBooks] = useState<Book[]>([]);
   const [videos, setVideos] = useState<Video[]>([]);
@@ -966,7 +985,15 @@ export default function App() {
   }
 
   const strictVideoCategories = siteSettings.videoCategories || ["AI Daf", "AI Parasha", "AI Mishnah", "AI Rambam", "AI Tanach", "Miscellaneous"];
-  const videoCategories = Array.from(new Set([...strictVideoCategories, ...videos.map(v => v.category).filter(Boolean)])).sort() as string[];
+  const allVideoCategories = Array.from(new Set([...strictVideoCategories, ...videos.map(v => v.category).filter(Boolean)])).sort() as string[];
+  // Shiurim page layout (owner, 2026-11-17): Nigleh / Nistar / Miscellaneous. Any category not placed here falls into Miscellaneous.
+  const shiurimSections = SHIURIM_SECTIONS.map(s => ({
+    ...s,
+    groups: s.groups.map(g => ({ ...g, cats: g.cats.filter(c => allVideoCategories.includes(c)) })).filter(g => g.cats.length),
+  }));
+  const placedCategories = new Set(shiurimSections.flatMap(s => s.groups.flatMap(g => g.cats)));
+  const otherCategories = allVideoCategories.filter(c => !placedCategories.has(c));
+  const videoCategories = [...placedCategories, ...otherCategories] as string[];
 
   const recentlyUploadedVideos = React.useMemo(() => {
     return [...videos]
@@ -1622,7 +1649,7 @@ export default function App() {
                          ? 'bg-indigo-600 text-white shadow-md ring-2 ring-indigo-600 ring-offset-1' 
                          : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border-2 border-slate-700'
                      }`}
-                  >{cat}</button>
+                  >{shiurimLabel(cat)}</button>
                 ))}
               </div>
               </div>
@@ -1648,21 +1675,8 @@ export default function App() {
                   />
                 )}
 
-                <div>
-                  <div className="flex items-center justify-between mb-6">
-                    <div>
-                      <h2 className="text-xl sm:text-2xl font-black text-slate-100 uppercase tracking-tight flex items-center gap-2.5">
-                        <Folder className="w-5 h-5 text-indigo-400" />
-                        Browse by Category
-                      </h2>
-                      <p className="text-xs sm:text-sm text-slate-400 font-medium mt-0.5">
-                        Explore media organized by topic and series
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {videoCategories.map(cat => {
+                {(() => {
+                  const renderCard = (cat: string) => {
                       const catItems = videos.filter(v => v.category === cat);
                       const videoCount = catItems.filter(v => v.type !== 'audio').length;
                       const podcastCount = catItems.filter(v => v.type === 'audio').length;
@@ -1691,7 +1705,7 @@ export default function App() {
                               <PlayCircle className="w-12 h-12 text-indigo-300 group-hover:text-indigo-500 transition-colors group-hover:scale-110 duration-300" />
                             )}
                           </div>
-                          <h3 className="font-black text-xl text-slate-100 text-center uppercase tracking-tighter group-hover:text-indigo-400 transition-colors">{cat}</h3>
+                          <h3 className="font-black text-xl text-slate-100 text-center uppercase tracking-tighter group-hover:text-indigo-400 transition-colors">{shiurimLabel(cat)}</h3>
                           <p className="text-center text-slate-400 text-sm font-medium mt-2">
                             {countText}
                           </p>
@@ -1705,9 +1719,38 @@ export default function App() {
                           )}
                         </div>
                       );
-                    })}
-                  </div>
-                </div>
+                  };
+                  const grid = (cats: string[]) => (
+                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">{cats.map(renderCard)}</div>
+                  );
+                  const sections = [
+                    ...shiurimSections,
+                    ...(otherCategories.length ? [{ key: 'misc', title: 'Miscellaneous', he: '', blurb: 'Special series and other shiurim', groups: [{ cats: otherCategories }] }] : []),
+                  ];
+                  return (
+                    <div className="space-y-12">
+                      {sections.map(sec => (
+                        <section key={sec.key} id={`shiurim-${sec.key}`}>
+                          <div className="flex items-end justify-between gap-4 mb-6 pb-3 border-b border-slate-800">
+                            <div>
+                              <h2 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">{sec.title}</h2>
+                              <p className="text-xs sm:text-sm text-slate-400 font-medium mt-1">{sec.blurb}</p>
+                            </div>
+                            {sec.he && <span className="text-2xl sm:text-3xl text-slate-400 font-serif" dir="rtl" lang="he">{sec.he}</span>}
+                          </div>
+                          <div className="space-y-8">
+                            {sec.groups.map((g, gi) => (
+                              <div key={gi}>
+                                {g.title && <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{g.title}</h3>}
+                                {grid(g.cats)}
+                              </div>
+                            ))}
+                          </div>
+                        </section>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             ) : (
               <>
