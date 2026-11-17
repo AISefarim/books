@@ -1579,7 +1579,7 @@ export default function App() {
                   <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search videos & podcasts..."
+                    placeholder="Search shiurim..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="w-full pl-12 pr-36 py-3 bg-slate-900 border-2 border-slate-800 rounded-2xl focus:outline-none focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10 transition-all font-medium text-slate-200 shadow-sm"
@@ -1589,7 +1589,7 @@ export default function App() {
                        <VideoIcon className="w-3.5 h-3.5" />
                        <Headphones className="w-3 h-3" />
                      </div>
-                      <span className="text-[11px] font-black uppercase tracking-wider">{selectedCategory ? (selectedCategory === 'Recently Uploaded' ? `${displayedVideos.length} Recent` : `${filteredVideos.length} Media`) : `${videos.length} Media`}</span>
+                      <span className="text-[11px] font-black uppercase tracking-wider">{selectedCategory ? (selectedCategory === 'Recently Uploaded' ? `${displayedVideos.length} Recent` : `${filteredVideos.length} Shiurim`) : `${videos.length} Shiurim`}</span>
                   </div>
                 </div>
                 
@@ -1613,7 +1613,7 @@ export default function App() {
                        ? 'bg-indigo-600 text-white shadow-md' 
                        : 'bg-slate-900 text-slate-400 hover:bg-slate-800 border-2 border-slate-700'
                    }`}
-                >All Media</button>
+                >All Shiurim</button>
                 <button
                     onClick={() => {
                         setSelectedCategory(selectedCategory === 'Recently Uploaded' ? null : 'Recently Uploaded');
@@ -1993,7 +1993,7 @@ export default function App() {
                   <div>
                     <h2 className="text-xl font-bold text-slate-200 uppercase tracking-widest flex items-center gap-2.5">
                       <Eye className="w-5 h-5 text-emerald-400" />
-                      <span>Videos & Podcasts Watched ({videos.filter(v => deviceStats.watchedIds.includes(v.id)).length})</span>
+                      <span>Shiurim Watched ({videos.filter(v => deviceStats.watchedIds.includes(v.id)).length})</span>
                     </h2>
                     <p className="text-xs text-slate-400 font-medium mt-1">
                       All media you have viewed on this device (combined videos and podcasts)

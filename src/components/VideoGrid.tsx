@@ -117,19 +117,10 @@ function SortableVideoWrapper({ video, isAdmin, onEdit, onDelete, onSelectVideo,
   );
 }
 
-function getMediaBreakdownText(mediaItems: Video[], mediaLabel = 'Media') {
-  const videoCount = mediaItems.filter(v => v.type !== 'audio').length;
-  const podcastCount = mediaItems.filter(v => v.type === 'audio').length;
-  if (videoCount > 0 && podcastCount > 0) {
-    return `${videoCount} ${videoCount === 1 ? 'Video' : 'Videos'} • ${podcastCount} ${podcastCount === 1 ? 'Podcast' : 'Podcasts'}`;
-  }
-  if (videoCount > 0) {
-    return `${videoCount} ${videoCount === 1 ? 'Video' : 'Videos'}`;
-  }
-  if (podcastCount > 0) {
-    return `${podcastCount} ${podcastCount === 1 ? 'Podcast' : 'Podcasts'}`;
-  }
-  return `0 ${mediaLabel}s`;
+function getMediaBreakdownText(mediaItems: Video[], _mediaLabel = 'Media') {
+  // owner, 2026-11-17: no videos/podcasts split, just shiurim
+  const n = mediaItems.length;
+  return `${n} ${n === 1 ? 'Shiur' : 'Shiurim'}`;
 }
 
 function SortableFolderWrapper({ folder, items, folderThumbnails, isAdmin, onUpdateFolderThumbnail, onSelectFolder, mediaLabel = 'Media', isFeatured = false, onToggleFeature, currentCategory }: any) {
@@ -322,7 +313,7 @@ function SubfolderCard({
           {subfolder}
         </h3>
         <p className="text-xs font-bold mt-1.5 uppercase tracking-widest text-slate-400">
-          {items && items.length > 0 ? getMediaBreakdownText(items, mediaLabel) : `${count} ${count === 1 ? mediaLabel : `${mediaLabel}s`}`}
+          {items && items.length > 0 ? getMediaBreakdownText(items, mediaLabel) : `${count} ${count === 1 ? "Shiur" : "Shiurim"}`}
         </p>
       </div>
     </div>

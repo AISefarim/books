@@ -108,14 +108,7 @@ export function FeaturedCategorySeries({
   const videoCount = sortedEpisodes.filter(v => v.type !== 'audio').length;
   const podcastCount = sortedEpisodes.filter(v => v.type === 'audio').length;
   
-  let typeBreakdown = `${sortedEpisodes.length} Episodes`;
-  if (videoCount > 0 && podcastCount > 0) {
-    typeBreakdown = `${videoCount} Videos • ${podcastCount} Podcasts`;
-  } else if (podcastCount > 0) {
-    typeBreakdown = `${podcastCount} Podcast Episodes`;
-  } else if (videoCount > 0) {
-    typeBreakdown = `${videoCount} Video Episodes`;
-  }
+  const typeBreakdown = `${sortedEpisodes.length} ${sortedEpisodes.length === 1 ? 'Shiur' : 'Shiurim'}`;
 
   // Calculate estimated total duration
   const totalMinutes = sortedEpisodes.reduce((acc, ep) => acc + parseMinutesFromDuration(ep.duration), 0);
@@ -194,11 +187,11 @@ export function FeaturedCategorySeries({
             <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-indigo-500/15 text-indigo-300 border border-indigo-500/30 text-[11px] font-black uppercase tracking-wider">
               {podcastCount > videoCount ? (
                 <>
-                  <Headphones className="w-3.5 h-3.5 text-indigo-400" /> Podcast Series
+                  <Headphones className="w-3.5 h-3.5 text-indigo-400" /> Shiur Series
                 </>
               ) : (
                 <>
-                  <VideoIcon className="w-3.5 h-3.5 text-indigo-400" /> Video Series
+                  <VideoIcon className="w-3.5 h-3.5 text-indigo-400" /> Shiur Series
                 </>
               )}
             </span>

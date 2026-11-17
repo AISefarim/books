@@ -116,7 +116,7 @@ export function Navbar({ isAdmin, onToggleAdmin, onHome, logoUrl, activeTab, onT
                   <Headphones className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                 </div>
                 <span>{mediaCount.toLocaleString()}</span>
-                <span className="hidden sm:inline md:hidden xl:inline">Videos &amp; Podcasts</span>
+                <span className="hidden sm:inline md:hidden xl:inline">Shiurim</span>
               </div>
             </div>
           </div>
