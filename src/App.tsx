@@ -1720,42 +1720,58 @@ export default function App() {
                     ...shiurimSections,
                     ...(otherCategories.length ? [{ key: 'misc', title: 'Miscellaneous', he: '', blurb: 'Special series and other shiurim', groups: [{ cats: otherCategories }] }] : []),
                   ];
-                  const REALM_STYLE: Record<string, { ring: string; chip: string; accent: string; glyph: string }> = {
-                    nigleh: { ring: 'border-indigo-500 ring-4 ring-indigo-500/20', chip: 'bg-indigo-600 text-white', accent: 'text-indigo-400', glyph: '📖' },
-                    nistar: { ring: 'border-amber-500 ring-4 ring-amber-500/20', chip: 'bg-amber-600 text-white', accent: 'text-amber-500', glyph: '✨' },
-                    misc: { ring: 'border-slate-500 ring-4 ring-slate-500/20', chip: 'bg-slate-600 text-white', accent: 'text-slate-400', glyph: '📁' },
+                  const REALM_STYLE: Record<string, { bg: string; glow: string; accent: string; label: string }> = {
+                    nigleh: { bg: 'linear-gradient(135deg, #0c1f45 0%, #17386f 55%, #22508f 100%)', glow: 'rgba(120,170,255,0.35)', accent: '#d9c79c', label: 'Revealed Torah' },
+                    nistar: { bg: 'linear-gradient(135deg, #160d2b 0%, #2c1a4d 55%, #4a2a5e 100%)', glow: 'rgba(224,194,122,0.35)', accent: '#e8c97a', label: 'Hidden Torah' },
+                    misc: { bg: 'linear-gradient(135deg, #1f2329 0%, #353b44 60%, #4a525d 100%)', glow: 'rgba(210,215,222,0.25)', accent: '#d6d9de', label: 'Everything Else' },
                   };
                   const active = sections.find(s => s.key === shiurimRealm) || sections[0];
                   const countFor = (sec: typeof sections[number]) => {
                     const cats = sec.groups.flatMap(g => g.cats);
-                    return { cats: cats.length, eps: videos.filter(v => cats.includes(v.category)).length };
+                    return { cats, eps: videos.filter(v => cats.includes(v.category)).length };
                   };
                   return (
                     <div>
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5 mb-10">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-12">
                         {sections.map(sec => {
                           const st = REALM_STYLE[sec.key] || REALM_STYLE.misc;
                           const on = sec.key === active.key;
                           const n = countFor(sec);
+                          const thumbs = n.cats.map(c => siteSettings.videoCategoryThumbnails?.[c]).filter(Boolean).slice(0, 5) as string[];
                           return (
                             <button
                               key={sec.key}
                               type="button"
                               aria-pressed={on}
                               onClick={() => setShiurimRealm(sec.key)}
-                              className={`text-left rounded-[1.75rem] p-5 sm:p-6 border-2 transition-all duration-300 bg-slate-900 ${on ? `${st.ring} shadow-xl` : 'border-slate-800 hover:border-slate-600 hover:shadow-lg opacity-80 hover:opacity-100'}`}
+                              style={{ background: st.bg, color: '#ffffff', boxShadow: on ? `0 18px 40px -12px ${st.glow}, 0 0 0 3px ${st.accent}` : '0 6px 18px -8px rgba(0,0,0,0.35)' }}
+                              className={`relative overflow-hidden text-left rounded-[2rem] p-6 sm:p-7 min-h-[200px] md:min-h-[260px] flex flex-col transition-all duration-300 ${on ? 'md:-translate-y-1' : 'opacity-85 hover:opacity-100 hover:-translate-y-0.5'}`}
                             >
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <div className="text-2xl mb-1" aria-hidden>{st.glyph}</div>
-                                  <div className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">{sec.title}</div>
-                                </div>
-                                {sec.he && <span className={`text-3xl sm:text-4xl font-serif leading-none ${st.accent}`} dir="rtl" lang="he">{sec.he}</span>}
+                              <div aria-hidden className="pointer-events-none absolute -right-10 -top-10 w-56 h-56 rounded-full blur-3xl" style={{ background: st.glow }} />
+                              {sec.he && (
+                                <span aria-hidden dir="rtl" lang="he" className="pointer-events-none absolute right-5 bottom-2 font-serif leading-none select-none" style={{ fontSize: '6.5rem', color: st.accent, opacity: 0.16 }}>{sec.he}</span>
+                              )}
+                              <div className="relative flex items-center justify-between gap-3">
+                                <span className="text-[11px] font-black uppercase tracking-[0.2em]" style={{ color: st.accent }}>{st.label}</span>
+                                {on && (
+                                  <span className="px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider" style={{ background: st.accent, color: '#111827' }}>Viewing</span>
+                                )}
                               </div>
-                              <p className="text-sm text-slate-400 font-medium mt-2">{sec.blurb}</p>
-                              <div className="mt-4 flex items-center gap-2 flex-wrap">
-                                <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${on ? st.chip : 'bg-slate-800 text-slate-400'}`}>{n.cats} series</span>
-                                <span className="text-xs text-slate-400 font-semibold">{n.eps} shiurim</span>
+                              <div className="relative mt-3 flex items-baseline gap-3 flex-wrap">
+                                <span className="font-serif font-bold text-4xl sm:text-5xl tracking-tight" style={{ color: '#ffffff' }}>{sec.title}</span>
+                                {sec.he && <span dir="rtl" lang="he" className="font-serif text-3xl sm:text-4xl" style={{ color: st.accent }}>{sec.he}</span>}
+                              </div>
+                              <p className="relative mt-2 text-sm sm:text-base font-medium" style={{ color: 'rgba(255,255,255,0.78)' }}>{sec.blurb}</p>
+                              <div className="relative mt-auto pt-6 flex items-end justify-between gap-3">
+                                <div className="flex -space-x-3">
+                                  {thumbs.map((src, i) => (
+                                    <img key={i} src={src} alt="" className="w-11 h-11 sm:w-12 sm:h-12 rounded-full object-cover" style={{ border: `2px solid ${st.accent}`, background: '#0b1020' }} />
+                                  ))}
+                                </div>
+                                <div className="text-right">
+                                  <div className="text-2xl font-black leading-none" style={{ color: '#ffffff' }}>{n.eps}</div>
+                                  <div className="text-[11px] font-bold uppercase tracking-wider mt-1" style={{ color: 'rgba(255,255,255,0.7)' }}>shiurim · {n.cats.length} series</div>
+                                </div>
                               </div>
                             </button>
                           );
