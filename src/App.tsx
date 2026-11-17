@@ -118,6 +118,8 @@ export default function App() {
   const [selectedVideo, setSelectedVideo] = useState<Video | null>(null);
   const [status, setStatus] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [shiurimRealm, setShiurimRealmState] = useState<string>(() => { try { return localStorage.getItem('shiurimRealm') || 'nigleh'; } catch { return 'nigleh'; } });
+  const setShiurimRealm = (k: string) => { setShiurimRealmState(k); try { localStorage.setItem('shiurimRealm', k); } catch { /* private mode */ } };
   const [searchQuery, setSearchQuery] = useState('');
   const [itemToDelete, setItemToDelete] = useState<{ id: string, coverPath: string, epubPath: string } | null>(null);
   const [siteSettings, setSiteSettings] = useState<{ 
@@ -1678,16 +1680,7 @@ export default function App() {
                 {(() => {
                   const renderCard = (cat: string) => {
                       const catItems = videos.filter(v => v.category === cat);
-                      const videoCount = catItems.filter(v => v.type !== 'audio').length;
-                      const podcastCount = catItems.filter(v => v.type === 'audio').length;
-                      let countText = `${catItems.length} items`;
-                      if (videoCount > 0 && podcastCount > 0) {
-                        countText = `${videoCount} videos • ${podcastCount} podcasts`;
-                      } else if (podcastCount > 0) {
-                        countText = `${podcastCount} podcasts`;
-                      } else {
-                        countText = `${videoCount} videos`;
-                      }
+                      const countText = `${catItems.length} shiurim`;
 
                       return (
                         <div 
@@ -1727,27 +1720,63 @@ export default function App() {
                     ...shiurimSections,
                     ...(otherCategories.length ? [{ key: 'misc', title: 'Miscellaneous', he: '', blurb: 'Special series and other shiurim', groups: [{ cats: otherCategories }] }] : []),
                   ];
+                  const REALM_STYLE: Record<string, { ring: string; chip: string; accent: string; glyph: string }> = {
+                    nigleh: { ring: 'border-indigo-500 ring-4 ring-indigo-500/20', chip: 'bg-indigo-600 text-white', accent: 'text-indigo-400', glyph: '📖' },
+                    nistar: { ring: 'border-amber-500 ring-4 ring-amber-500/20', chip: 'bg-amber-600 text-white', accent: 'text-amber-500', glyph: '✨' },
+                    misc: { ring: 'border-slate-500 ring-4 ring-slate-500/20', chip: 'bg-slate-600 text-white', accent: 'text-slate-400', glyph: '📁' },
+                  };
+                  const active = sections.find(s => s.key === shiurimRealm) || sections[0];
+                  const countFor = (sec: typeof sections[number]) => {
+                    const cats = sec.groups.flatMap(g => g.cats);
+                    return { cats: cats.length, eps: videos.filter(v => cats.includes(v.category)).length };
+                  };
                   return (
-                    <div className="space-y-12">
-                      {sections.map(sec => (
-                        <section key={sec.key} id={`shiurim-${sec.key}`}>
-                          <div className="flex items-end justify-between gap-4 mb-6 pb-3 border-b border-slate-800">
-                            <div>
-                              <h2 className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">{sec.title}</h2>
-                              <p className="text-xs sm:text-sm text-slate-400 font-medium mt-1">{sec.blurb}</p>
-                            </div>
-                            {sec.he && <span className="text-2xl sm:text-3xl text-slate-400 font-serif" dir="rtl" lang="he">{sec.he}</span>}
-                          </div>
-                          <div className="space-y-8">
-                            {sec.groups.map((g, gi) => (
-                              <div key={gi}>
-                                {g.title && <h3 className="text-xs font-black uppercase tracking-widest text-slate-400 mb-4">{g.title}</h3>}
-                                {grid(g.cats)}
+                    <div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-5 mb-10">
+                        {sections.map(sec => {
+                          const st = REALM_STYLE[sec.key] || REALM_STYLE.misc;
+                          const on = sec.key === active.key;
+                          const n = countFor(sec);
+                          return (
+                            <button
+                              key={sec.key}
+                              type="button"
+                              aria-pressed={on}
+                              onClick={() => setShiurimRealm(sec.key)}
+                              className={`text-left rounded-[1.75rem] p-5 sm:p-6 border-2 transition-all duration-300 bg-slate-900 ${on ? `${st.ring} shadow-xl` : 'border-slate-800 hover:border-slate-600 hover:shadow-lg opacity-80 hover:opacity-100'}`}
+                            >
+                              <div className="flex items-start justify-between gap-3">
+                                <div>
+                                  <div className="text-2xl mb-1" aria-hidden>{st.glyph}</div>
+                                  <div className="text-2xl sm:text-3xl font-black text-slate-100 tracking-tight">{sec.title}</div>
+                                </div>
+                                {sec.he && <span className={`text-3xl sm:text-4xl font-serif leading-none ${st.accent}`} dir="rtl" lang="he">{sec.he}</span>}
                               </div>
-                            ))}
-                          </div>
-                        </section>
-                      ))}
+                              <p className="text-sm text-slate-400 font-medium mt-2">{sec.blurb}</p>
+                              <div className="mt-4 flex items-center gap-2 flex-wrap">
+                                <span className={`px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider ${on ? st.chip : 'bg-slate-800 text-slate-400'}`}>{n.cats} series</span>
+                                <span className="text-xs text-slate-400 font-semibold">{n.eps} shiurim</span>
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <section key={active.key} id={`shiurim-${active.key}`} className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                        <div className="space-y-10">
+                          {active.groups.map((g, gi) => (
+                            <div key={gi}>
+                              {g.title && (
+                                <div className="flex items-center gap-3 mb-4">
+                                  <h3 className={`text-sm font-black uppercase tracking-widest ${(REALM_STYLE[active.key] || REALM_STYLE.misc).accent}`}>{g.title}</h3>
+                                  <div className="flex-1 h-px bg-slate-800" />
+                                </div>
+                              )}
+                              {grid(g.cats)}
+                            </div>
+                          ))}
+                        </div>
+                      </section>
                     </div>
                   );
                 })()}
