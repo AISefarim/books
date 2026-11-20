@@ -974,6 +974,10 @@ function PagesCounter() {
 
 export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = NO_MEDIA, categoryThumbnails = NO_THUMBS }: { onExit: () => void; embedded?: boolean; books?: Book[]; media?: MediaItem[]; categoryThumbnails?: Record<string, string> }) {
   const [messages, setMessages] = useState<ChatMessage[]>(loadHistory);
+  // Long histories made the app slow on phones: draw only the latest messages unless asked.
+  const [showAll, setShowAll] = useState(false);
+  const VISIBLE = 20;
+  const hiddenCount = showAll ? 0 : Math.max(0, messages.length - VISIBLE);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [factStart, setFactStart] = useState(0);
@@ -1007,7 +1011,8 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
 
   useEffect(() => {
     try {
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(messages));
+      // Keep only the most recent messages on the device so the app stays fast.
+      localStorage.setItem(HISTORY_KEY, JSON.stringify(messages.slice(-60)));
     } catch {
       // Ignore storage write errors (e.g. private browsing, quota)
     }
@@ -1222,7 +1227,14 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
           </div>
         )}
 
-        {messages.map((m, i) => (
+        {hiddenCount > 0 && (
+          <div className="flex justify-center">
+            <button onClick={() => setShowAll(true)} className="text-xs px-3 py-1.5 rounded-full border border-slate-700 text-slate-400 hover:text-slate-200">
+              Show {hiddenCount} earlier message{hiddenCount === 1 ? '' : 's'}
+            </button>
+          </div>
+        )}
+        {messages.slice(hiddenCount).map((m, j) => { const i = j + hiddenCount; return (
           <div key={i} className={`flex items-start gap-2 ${m.role === 'user' ? 'justify-end' : 'justify-start'}`}>
             {m.role === 'assistant' && (
               <div className="hidden sm:flex shrink-0 w-7 h-7 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 items-center justify-center mt-1 shadow-md shadow-indigo-500/30">
@@ -1303,7 +1315,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
               )}
             </div>
           </div>
-        ))}
+        );})}
 
         {isLoading && (
           <div ref={loadingRef} className="flex items-start gap-2 justify-start scroll-mt-16">
