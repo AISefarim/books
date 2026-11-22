@@ -859,7 +859,8 @@ export function calculateMediaPoints(
   durationMinutes: number;
 } {
   const durationMinutes = parseDurationMinutes(durationStr);
-  let basePoints = 10;
+  // Episodes with no saved length are the standard ~18-22 min deep dives (the length the site shows for them): score them as 15+ min
+  let basePoints = durationMinutes > 0 ? 10 : 15;
   let isPodcastBonus = false;
 
   // Higher scores for longer podcasts and videos (any media whose length is known)
