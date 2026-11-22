@@ -49,6 +49,7 @@ const SHIURIM_SECTIONS: { key: string; title: string; he: string; blurb: string;
   {
     key: 'nigleh', title: 'Nigleh', he: 'נִגְלֶה', blurb: 'The revealed Torah',
     groups: [
+      { title: 'Moadim', cats: ['AI Chanukah'] },
       { title: 'Tanach & Midrash', cats: ['AI Parasha', 'AI Tanach', 'AI Shemot Rabbah', 'AI Tanna DeBe Eliyahu'] },
       { title: 'Talmud & Halacha', cats: ['AI Daf', 'AI Rambam', 'AI Halacha Yomit', 'AI Mishnah'] },
     ],
