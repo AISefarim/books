@@ -1184,8 +1184,10 @@ export default function App() {
       {/* site-wide dedication (owner, 2026-11-22) */}
       <div className="text-center pt-3 pb-1 px-4" aria-label="Dedication">
         <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.28em] text-[#8a6c3c]">AI Sefarim is dedicated in honor of</p>
-        <p className="text-[19px] sm:text-[22px] leading-tight text-[#2a2117]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 600 }}>Carol Serouya</p>
-        <p className="text-[12px] sm:text-[13px] text-[#6e5634]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif" }}>my beloved wife</p>
+        <div className="mx-auto mt-1 flex max-w-[16rem] items-center gap-3 text-[#b39864]" aria-hidden="true"><span className="h-px flex-1 bg-gradient-to-r from-transparent to-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-gradient-to-l from-transparent to-current" /></div>
+        <p className="mt-1 text-[30px] sm:text-[40px] leading-tight text-[#2a2117]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 700, letterSpacing: '0.01em' }}>Carol Serouya</p>
+        <p dir="rtl" lang="he" className="mt-1 text-[16px] sm:text-[19px] text-[#6e5634]" style={{ fontFamily: "'Frank Ruhl Libre', 'SBL Hebrew', 'Times New Roman', serif" }}>רַבּוֹת בָּנוֹת עָשׂוּ חָיִל וְאַתְּ עָלִית עַל כֻּלָּנָה</p>
+        <p className="text-[10px] uppercase tracking-[0.2em] text-[#8a6c3c]">Mishlei 31:29</p>
       </div>
 
       <main className={activeTab === 'chat' || activeTab === 'daf' ? 'max-w-7xl mx-auto px-1 sm:px-6 lg:p-12 pt-2 sm:pt-4' : 'max-w-7xl mx-auto p-6 lg:p-12 pt-4'}>
@@ -2079,8 +2081,9 @@ export default function App() {
           <div className="mb-10 text-center">
             <div className="mx-auto flex max-w-xs items-center gap-3 text-[#b39864]" aria-hidden="true"><span className="h-px flex-1 bg-gradient-to-r from-transparent to-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-gradient-to-l from-transparent to-current" /></div>
             <p className="mt-3 text-[11px] font-black uppercase tracking-[0.28em] text-[#8a6c3c]">Dedicated in honor of</p>
-            <p className="mt-1 text-[26px] leading-tight text-[#2a2117]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 600 }}>Carol Serouya</p>
-            <p className="text-sm text-[#6e5634]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif" }}>my beloved wife</p>
+            <p className="mt-1 text-[34px] leading-tight text-[#2a2117]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 700 }}>Carol Serouya</p>
+            <p dir="rtl" lang="he" className="mt-1 text-[18px] text-[#6e5634]" style={{ fontFamily: "'Frank Ruhl Libre', 'SBL Hebrew', 'Times New Roman', serif" }}>רַבּוֹת בָּנוֹת עָשׂוּ חָיִל וְאַתְּ עָלִית עַל כֻּלָּנָה</p>
+            <p className="text-[10px] uppercase tracking-[0.2em] text-[#8a6c3c]">Mishlei 31:29</p>
             <div className="mx-auto mt-3 flex max-w-xs items-center gap-3 text-[#b39864]" aria-hidden="true"><span className="h-px flex-1 bg-gradient-to-r from-transparent to-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-gradient-to-l from-transparent to-current" /></div>
           </div>
           {(() => {
