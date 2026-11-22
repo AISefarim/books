@@ -1180,6 +1180,13 @@ export default function App() {
         </div>
       )}
 
+      {/* site-wide dedication (owner, 2026-11-22) */}
+      <div className="text-center pt-3 pb-1 px-4" aria-label="Dedication">
+        <p className="text-[10px] sm:text-[11px] font-black uppercase tracking-[0.28em] text-[#8a6c3c]">AI Sefarim is dedicated in honor of</p>
+        <p className="text-[19px] sm:text-[22px] leading-tight text-[#2a2117]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 600 }}>Carol Serouya</p>
+        <p className="text-[12px] sm:text-[13px] text-[#6e5634]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif" }}>my beloved wife</p>
+      </div>
+
       <main className={activeTab === 'chat' || activeTab === 'daf' ? 'max-w-7xl mx-auto px-1 sm:px-6 lg:p-12 pt-2 sm:pt-4' : 'max-w-7xl mx-auto p-6 lg:p-12 pt-4'}>
         {status && (
           <div
@@ -2068,6 +2075,13 @@ export default function App() {
 
       {activeTab !== 'chat' && activeTab !== 'daf' && (
         <footer className="max-w-7xl mx-auto px-6 py-12 text-center border-t border-slate-700/60 mt-8 relative">
+          <div className="mb-10 text-center">
+            <div className="mx-auto flex max-w-xs items-center gap-3 text-[#b39864]" aria-hidden="true"><span className="h-px flex-1 bg-gradient-to-r from-transparent to-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-gradient-to-l from-transparent to-current" /></div>
+            <p className="mt-3 text-[11px] font-black uppercase tracking-[0.28em] text-[#8a6c3c]">Dedicated in honor of</p>
+            <p className="mt-1 text-[26px] leading-tight text-[#2a2117]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 600 }}>Carol Serouya</p>
+            <p className="text-sm text-[#6e5634]" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif" }}>my beloved wife</p>
+            <div className="mx-auto mt-3 flex max-w-xs items-center gap-3 text-[#b39864]" aria-hidden="true"><span className="h-px flex-1 bg-gradient-to-r from-transparent to-current" /><span className="text-[9px]">◆</span><span className="h-px flex-1 bg-gradient-to-l from-transparent to-current" /></div>
+          </div>
           {(() => {
             const link = 'block text-sm text-slate-400 hover:text-indigo-300 transition-colors text-left';
             const head = 'text-[11px] font-black uppercase tracking-[0.18em] text-slate-500 mb-3 text-left';
