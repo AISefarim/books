@@ -15,7 +15,7 @@ const WEBSITE_SESSION_KEY = 'ai_sefarim_website_session_active';
 
 // XP and Session multipliers:
 // - Video / podcast: +1 session, +10 XP (base)
-// - Longer podcasts: scale up to 50 XP
+// - Longer podcasts: scale up; 45+ min earns much more (50-130 XP)
 // - 2nd+ video/podcast of the day: 1.2x multiplier
 // - EPUB reading: +2 sessions, +25 XP
 // - Book download: +2 sessions, +35 XP
@@ -865,19 +865,19 @@ export function calculateMediaPoints(
   // Higher scores for longer podcasts and videos (any media whose length is known)
   if (durationMinutes > 0) {
     if (durationMinutes >= 120) {
-      basePoints = 50;
+      basePoints = 130;
       isPodcastBonus = true;
     } else if (durationMinutes >= 90) {
-      basePoints = 40;
+      basePoints = 100;
       isPodcastBonus = true;
     } else if (durationMinutes >= 75) {
-      basePoints = 35;
+      basePoints = 85;
       isPodcastBonus = true;
     } else if (durationMinutes >= 60) {
-      basePoints = 30;
+      basePoints = 70;
       isPodcastBonus = true;
     } else if (durationMinutes >= 45) {
-      basePoints = 25;
+      basePoints = 50;   // 45+ minutes earns much more (owner, 2026-11-22)
       isPodcastBonus = true;
     } else if (durationMinutes >= 30) {
       basePoints = 20;
