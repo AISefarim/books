@@ -862,8 +862,8 @@ export function calculateMediaPoints(
   let basePoints = 10;
   let isPodcastBonus = false;
 
-  // Higher scores for longer podcasts
-  if (mediaType === 'audio') {
+  // Higher scores for longer podcasts and videos (any media whose length is known)
+  if (durationMinutes > 0) {
     if (durationMinutes >= 120) {
       basePoints = 50;
       isPodcastBonus = true;
