@@ -60,33 +60,19 @@ export function RecentlyUploadedSection({
       <div className="absolute top-0 right-0 w-80 h-80 bg-emerald-500/5 rounded-full blur-3xl pointer-events-none" />
 
       {/* Header */}
-      <div className="relative z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4 pb-3.5 border-b border-slate-800/80">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center justify-center text-emerald-400 shadow-sm shrink-0">
-            <Clock className="w-5 h-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="text-lg sm:text-xl font-black text-slate-100 uppercase tracking-tight">
-                Recently Uploaded
-              </h2>
-              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> 5 Most Recent
-              </span>
-            </div>
-            <p className="text-xs text-slate-400 font-medium">
-              Latest uploads added to the library in chronological order
-            </p>
-          </div>
+      <div className="relative z-10 flex items-end justify-between gap-3 mb-3">
+        <div>
+          <h2 className="text-lg sm:text-xl font-black text-slate-100 tracking-tight flex items-center gap-2">
+            <Clock className="w-4 h-4 text-emerald-400" /> Recently Uploaded
+          </h2>
+          <p className="text-xs text-slate-400 font-medium mt-0.5">The newest shiurim, newest first</p>
         </div>
-
         {onViewAll && (
           <button
             onClick={onViewAll}
-            className="px-3 py-1.5 rounded-xl text-xs font-bold text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700/80 transition-all flex items-center gap-1.5 shadow-sm self-start sm:self-auto shrink-0 active:scale-95"
+            className="text-xs font-bold text-slate-400 hover:text-emerald-400 transition-colors flex items-center gap-0.5 shrink-0"
           >
-            <span>View Grid ({videos.length})</span>
-            <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
+            View all <ChevronRight className="w-3.5 h-3.5" />
           </button>
         )}
       </div>
@@ -103,17 +89,10 @@ export function RecentlyUploadedSection({
             <div
               key={video.id}
               onClick={() => onSelectVideo(video)}
-              className="group cursor-pointer bg-slate-950/80 hover:bg-slate-900/90 rounded-xl p-2.5 sm:p-3 border border-slate-800/80 hover:border-slate-700 transition-all duration-200 flex items-center gap-3 shadow-sm hover:shadow-md hover:-translate-y-0.5 active:translate-y-0"
+              className="group cursor-pointer bg-slate-950/80 hover:bg-slate-900/90 rounded-xl p-2.5 sm:p-3 border border-slate-800/60 hover:border-slate-700 transition-all duration-200 flex items-center gap-3"
             >
-              {/* Rank Index */}
-              <div className="shrink-0 w-6 text-center">
-                <span className={`text-xs font-black font-mono ${rank <= 3 ? 'text-emerald-400' : 'text-slate-500'}`}>
-                  #{rank}
-                </span>
-              </div>
-
               {/* Thumbnail / Icon with Play overlay */}
-              <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-lg overflow-hidden bg-slate-900 border border-slate-800/90 shrink-0 flex items-center justify-center group/thumb">
+              <div className="relative w-14 h-14 rounded-lg overflow-hidden bg-slate-900 border border-slate-800/90 shrink-0 flex items-center justify-center group/thumb">
                 {thumbnail ? (
                   <img
                     src={thumbnail}
@@ -134,59 +113,19 @@ export function RecentlyUploadedSection({
                 </div>
               </div>
 
-              {/* Middle: Title & Metadata */}
-              <div className="flex-1 min-w-0 pr-1">
-                <h4 className="font-bold text-slate-100 group-hover:text-emerald-400 text-xs sm:text-sm leading-snug truncate transition-colors">
+              {/* Middle: Title & one quiet meta line */}
+              <div className="flex-1 min-w-0">
+                <h4 className="font-bold text-slate-100 group-hover:text-emerald-400 text-[14px] leading-snug line-clamp-2 transition-colors">
                   {video.title}
                 </h4>
-
-                <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                  {/* Category Pill - uniform styling */}
-                  <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md border bg-slate-900 text-slate-300 border-slate-700/80">
-                    {video.category}
-                  </span>
-
-                  {/* Watched on this device indicator */}
+                <p className="mt-1 text-[11px] text-slate-400 font-medium truncate">
+                  {video.category.replace(/^AI /, '')}
+                  {' · '}{new Date(video.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                  {video.duration ? ` · ${video.duration}` : ''}
                   {hasDeviceWatched(video.id) && (
-                    <span className="text-[10px] font-bold text-emerald-300 bg-emerald-500/15 border border-emerald-500/40 px-2 py-0.5 rounded-md flex items-center gap-1 shadow-sm">
-                      <CheckCircle2 className="w-3 h-3 text-emerald-400" /> Viewed by you
-                    </span>
+                    <span className="text-emerald-400 font-semibold"> · <CheckCircle2 className="inline w-3 h-3 -mt-0.5" /> Viewed</span>
                   )}
-
-                  {/* Series / Folder */}
-                  {video.folder && (
-                    <span className="text-[10px] text-slate-400 font-medium truncate max-w-[100px] hidden sm:inline-block">
-                      {video.folder}
-                    </span>
-                  )}
-
-                  {/* Duration */}
-                  {video.duration && (
-                    <span className="text-[10px] text-emerald-400 font-semibold hidden sm:inline-block">
-                      • {video.duration}
-                    </span>
-                  )}
-
-                  {/* Upload Date */}
-                  <span className="text-[10px] text-slate-400 font-medium">
-                    • {new Date(video.createdAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                  </span>
-
-                  {/* Views */}
-                  {video.views !== undefined && (
-                    <span className="text-[10px] text-slate-400 items-center gap-1 hidden md:inline-flex">
-                      <Eye className="w-3 h-3 text-slate-500" /> {video.views}
-                    </span>
-                  )}
-
-                  {/* Ratings */}
-                  {video.ratingsCount ? (
-                    <span className="text-[10px] text-amber-400 font-bold items-center gap-0.5 hidden md:inline-flex">
-                      <Star className="w-3 h-3 fill-amber-400" />
-                      {(video.ratingsSum! / video.ratingsCount).toFixed(1)}
-                    </span>
-                  ) : null}
-                </div>
+                </p>
               </div>
 
               {/* Action Buttons on Right */}
