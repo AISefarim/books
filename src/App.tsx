@@ -1555,62 +1555,23 @@ export default function App() {
                   const mins = videos.reduce((t, v) => t + (parseDurationMinutes(v.duration) || 20), 0);
                   const hours = Math.round(mins / 60);
                   return hours > 0 ? (
-                    <div className="mb-4 text-center">
-                      <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#8a6c3c]">The AI Sefarim shiurim library</p>
-                      <p className="mt-1 text-[26px] sm:text-[32px] leading-tight text-slate-100" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 700 }}>
-                        About{' '}
-                        <span className="inline-block align-baseline px-3 py-0.5 mx-1 rounded-xl text-[36px] sm:text-[46px] leading-none" style={{ color: '#7a1f2b', background: 'linear-gradient(180deg, rgba(212,175,55,0.18), rgba(212,175,55,0.32))', border: '1.5px solid rgba(179,152,100,0.7)', boxShadow: '0 2px 10px -4px rgba(122,31,43,0.35)' }}>
-                          {hours.toLocaleString()} hours
-                        </span>{' '}
-                        of Torah
-                      </p>
-                      <p className="text-xs text-slate-400">{videos.length.toLocaleString()} shiurim and podcasts, free</p>
-                    </div>
+                    <p className="mb-6 text-center text-[15px] sm:text-[17px] text-slate-300" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif" }}>
+                      <span className="font-bold px-2 py-0.5 rounded-lg whitespace-nowrap" style={{ color: '#7a1f2b', background: 'rgba(212,175,55,0.2)', border: '1px solid rgba(179,152,100,0.55)' }}>
+                        {hours.toLocaleString()} hours
+                      </span>{' '}
+                      of Torah <span className="text-slate-500">· {videos.length.toLocaleString()} shiurim, free</span>
+                    </p>
                   ) : null;
                 })()}
-                <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-center justify-between bg-slate-900 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-700 shadow-sm max-w-4xl mx-auto md:mx-0">
-                  <div className="flex items-center gap-3 w-auto justify-start">
-                    <div className="bg-indigo-500/10 p-2 rounded-xl border border-indigo-500/20 shrink-0 hidden sm:block">
-                      <Bookmark className="w-4 h-4 md:w-5 md:h-5 text-indigo-400" />
-                    </div>
-                    <div className="flex flex-row items-baseline gap-2 text-left">
-                      <h3 className="font-black text-slate-100 text-[14px] sm:text-base leading-tight">My Library</h3>
-                      <p className="text-[11px] sm:text-xs text-slate-400 font-medium hidden sm:block">{savedBookIds.length + savedVideoIds.length} saved items</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between sm:justify-end gap-3">
-                    {/* Total Viewed Counter - Desktop only to keep mobile header clean and spacious */}
-                    {(() => {
-                      const gStats = getGamificationStats(deviceStats.totalWatchedCount, deviceStats.totalXp);
-                      return (
-                        <div 
-                          className="hidden md:flex items-center gap-2 px-3.5 py-1.5 sm:px-4 sm:py-2 rounded-xl bg-emerald-500/15 border-2 border-emerald-500/35 text-emerald-300 text-xs sm:text-sm font-bold shadow-sm"
-                          title={`Level ${gStats.level} of ${gStats.maxLevel || 50}: ${gStats.rankTitle} (${gStats.rankHebrew}) · Score: ${gStats.totalScore ?? gStats.totalXp}`}
-                        >
-                          <Trophy className="w-4 h-4 text-emerald-400 shrink-0" />
-                          <span>Score:</span>
-                          <span className="font-black text-white bg-emerald-500/30 px-2 py-0.5 rounded-lg border border-emerald-400/40 text-xs sm:text-sm">
-                            {deviceStats.totalScore ?? deviceStats.totalXp}
-                          </span>
-                          <span className="text-xs sm:text-sm text-emerald-300 font-black px-2 py-0.5 rounded-lg bg-emerald-500/20 border border-emerald-500/30 flex items-center gap-1.5 font-serif">
-                            <span>{gStats.rankIcon}</span>
-                            <span>{gStats.rankHebrew}</span>
-                          </span>
-                        </div>
-                      );
-                    })()}
-
-                    <button
-                      onClick={() => {
-                        setActiveTab('library');
-                        window.scrollTo({ top: 0, behavior: 'smooth' });
-                      }}
-                      className="w-auto px-4 py-1.5 sm:px-5 sm:py-2 bg-indigo-500/10 text-indigo-300 hover:bg-indigo-600 hover:text-white rounded-xl text-[10px] sm:text-[11px] font-black uppercase tracking-widest transition-all text-center border border-indigo-500/30 hover:border-indigo-600 shadow-sm shrink-0 whitespace-nowrap"
-                    >
-                      View Library
-                    </button>
-                  </div>
+                <div className="-mt-3 mb-6 flex justify-center">
+                  <button
+                    onClick={() => { setActiveTab('library'); window.scrollTo({ top: 0, behavior: 'smooth' }); }}
+                    className="inline-flex items-center gap-1.5 text-[12px] font-semibold text-slate-400 hover:text-indigo-300 transition-colors"
+                  >
+                    <Bookmark className="w-3.5 h-3.5" />
+                    My Library{savedBookIds.length + savedVideoIds.length > 0 ? ` · ${savedBookIds.length + savedVideoIds.length} saved` : ''}
+                    <span aria-hidden="true">→</span>
+                  </button>
                 </div>
                 <div className="mb-10 space-y-4">
                 <div className="flex flex-col md:flex-row gap-4 items-center justify-between">
