@@ -8,6 +8,7 @@ import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
 import { db, storage, auth } from './lib/firebase';
+import { applyRemoteStats, startStatsAutoSave, resetStatsSync } from './lib/accountSync';
 import { Book, Video, Audio } from './types';
 import { compressImage } from './lib/imageUtils';
 import { Navbar } from './components/Navbar';
@@ -227,19 +228,40 @@ export default function App() {
 
         if (!user.isAnonymous) {
           const userDocRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'users', user.uid);
+          resetStatsSync();
+          startStatsAutoSave();
+          // first answer after sign-in: combine this device with the account; after that the account is the
+          // source of truth, so removing a saved item on one device removes it everywhere
+          let firstSnap = true;
+          // a device that already synced with this account takes the account's list as is, so an item
+          // removed elsewhere doesn't come back; a device joining the account for the first time adds its own
+          const SYNCED_KEY = 'ai_sefarim_synced_uid';
           unsubscribeUserDoc = onSnapshot(userDocRef, (docSnap) => {
+            if (docSnap.metadata.hasPendingWrites) return;   // our own save echoing back
+            let joinedBefore = false;
+            try { joinedBefore = localStorage.getItem(SYNCED_KEY) === user.uid; } catch { /* ignore */ }
+            const isFirst = firstSnap && !joinedBefore;
+            firstSnap = false;
+            try { localStorage.setItem(SYNCED_KEY, user.uid); } catch { /* ignore */ }
             if (docSnap.exists()) {
               const data = docSnap.data();
               if (Array.isArray(data.savedBookIds)) {
-                setSavedBookIds(prev => Array.from(new Set([...prev, ...data.savedBookIds])));
+                setSavedBookIds(prev => isFirst ? Array.from(new Set([...prev, ...data.savedBookIds])) : (JSON.stringify(prev) === JSON.stringify(data.savedBookIds) ? prev : data.savedBookIds));
               }
               if (Array.isArray(data.savedVideoIds)) {
-                setSavedVideoIds(prev => Array.from(new Set([...prev, ...data.savedVideoIds])));
+                setSavedVideoIds(prev => isFirst ? Array.from(new Set([...prev, ...data.savedVideoIds])) : (JSON.stringify(prev) === JSON.stringify(data.savedVideoIds) ? prev : data.savedVideoIds));
               }
+              applyRemoteStats(data.stats);
               if (data.readingProgress && typeof data.readingProgress === 'object') {
+                const at = (data.readingProgressAt && typeof data.readingProgressAt === 'object') ? data.readingProgressAt : {};
                 Object.entries(data.readingProgress).forEach(([bookId, cfi]) => {
-                  if (typeof cfi === 'string' && !localStorage.getItem(`epub-progress-${bookId}`)) {
+                  if (typeof cfi !== 'string') return;
+                  const localAt = Number(localStorage.getItem(`epub-progress-at-${bookId}`)) || 0;
+                  const remoteAt = Number((at as any)[bookId]) || 0;
+                  // the place read most recently, on whichever device
+                  if (!localStorage.getItem(`epub-progress-${bookId}`) || remoteAt > localAt) {
                     localStorage.setItem(`epub-progress-${bookId}`, cfi);
+                    if (remoteAt) localStorage.setItem(`epub-progress-at-${bookId}`, String(remoteAt));
                   }
                 });
               }
@@ -258,6 +280,7 @@ export default function App() {
                 createdAt: Date.now(),
                 updatedAt: Date.now()
               }, { merge: true }).catch(() => {});
+              applyRemoteStats(undefined);   // first sign-in: the account starts with this device's progress
             }
           });
         }

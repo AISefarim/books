@@ -92,13 +92,16 @@ export function EpubReader({ book, onClose }: EpubReaderProps) {
 
     newRendition.on('relocated', (location: any) => {
       if (location?.start?.cfi) {
+        const now = Date.now();
         localStorage.setItem(`epub-progress-${book.id}`, location.start.cfi);
+        localStorage.setItem(`epub-progress-at-${book.id}`, String(now));
         if (auth.currentUser && !auth.currentUser.isAnonymous) {
           const userRef = doc(db, 'artifacts', 'ai-sefarim', 'public', 'data', 'users', auth.currentUser.uid);
           setDoc(userRef, {
             readingProgress: {
               [book.id]: location.start.cfi
             },
+            readingProgressAt: { [book.id]: now },
             updatedAt: Date.now()
           }, { merge: true }).catch(() => {});
         }
