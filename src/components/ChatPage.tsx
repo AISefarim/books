@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo, memo } from 'react';
-import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText, UserPlus, Video, Headphones, ShieldAlert, Gift, Compass, LogIn } from 'lucide-react';
+import { Sparkles, Send, BookOpen, Loader2, X, ExternalLink, Download, Trash2, MessageCircle, MessageSquare, ArrowLeft, Copy, Check, FileText, UserPlus, Video, Headphones, ShieldAlert, Gift, Compass, LogIn, Square, Pencil } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
@@ -980,6 +980,8 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
   const hiddenCount = showAll ? 0 : Math.max(0, messages.length - VISIBLE);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const stopRef = useRef(false);   // Stop button: abandon the answer being waited for
+  const jobRef = useRef<string | null>(null);   // the server job to cancel on Stop
   const [factStart, setFactStart] = useState(0);
   const [factCount, setFactCount] = useState(1);
   const [waitCount, setWaitCount] = useState(1);
@@ -1066,6 +1068,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
     setInput('');
     if (textareaRef.current) textareaRef.current.style.height = 'auto';
     setIsLoading(true);
+    stopRef.current = false;
     try { localStorage.setItem(PENDING_KEY, JSON.stringify({ q: trimmed, at: Date.now() })); } catch { /* ignore */ }
     // on a failure the question goes back into the box, so nothing has to be typed again
     const giveUp = (msg: string) => {
@@ -1100,7 +1103,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
           data = await res.json().catch(() => ({}));
           netFail = false;
         } catch { res = null; data = null; netFail = true; }
-        if (data?.jobId) { jobId = data.jobId; break; }
+        if (data?.jobId) { jobId = data.jobId; jobRef.current = jobId; break; }
         if (!(netFail || (res && [500, 502, 503, 504].includes(res.status)))) break;
       }
       if (jobId) {
@@ -1110,6 +1113,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
         res = null; data = null; netFail = true;
         while (Date.now() - t0 < 15 * 60 * 1000) {
           await new Promise((r) => setTimeout(r, 2500));
+          if (stopRef.current) break;
           await whenVisible();
           try {
             const r = await fetch(`${CHAT_WORKER_URL.replace(/\/$/, '')}/job?id=${jobId}`, { signal: AbortSignal.timeout(20000) });
@@ -1121,6 +1125,12 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
             break;
           } catch { if (++misses > 40) break; }
         }
+      }
+      if (stopRef.current) {
+        // stopped by the reader: the question goes back into the box to edit or resend
+        setInput(trimmed);
+        setMessages((prev) => prev.slice(0, -1));
+        return;
       }
       if (netFail || !res) {
         giveUp(`Could not reach the ${EMBED ? '' : 'AI Sefarim '}library. Your question is still in the box - tap send to try again.`);
@@ -1140,6 +1150,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
       setMessages((prev) => [...prev, { role: 'assistant', content: data.answer, sources: data.sources }]);
     } finally {
       try { localStorage.removeItem(PENDING_KEY); } catch { /* ignore */ }
+      jobRef.current = null;
       setIsLoading(false);
     }
   }
@@ -1253,7 +1264,19 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
                   <Markdown text={m.content} sources={m.sources} onOpenSource={setOpenSource} />
                 </div>
               ) : (
-                <p className="whitespace-pre-wrap leading-relaxed text-[15px]">{m.content}</p>
+                <>
+                  <p className="whitespace-pre-wrap leading-relaxed text-[15px]">{m.content}</p>
+                  {!isLoading && (
+                    <button
+                      onClick={() => { setInput(m.content); setMessages((prev) => prev.slice(0, i)); setTimeout(() => textareaRef.current?.focus(), 0); }}
+                      className="mt-1.5 flex items-center gap-1 text-[10px] font-bold text-indigo-100/80 hover:text-white ml-auto"
+                      aria-label="Edit this question"
+                      title="Edit this question and ask again"
+                    >
+                      <Pencil className="w-3 h-3" /> Edit
+                    </button>
+                  )}
+                </>
               )}
 
               {m.sources && m.sources.length > 0 && (
@@ -1478,6 +1501,22 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
           disabled={isLoading}
           className="flex-1 resize-none bg-transparent px-4 py-2.5 text-slate-100 placeholder:text-slate-500 focus:outline-none text-sm max-h-48 overflow-y-auto"
         />
+        {isLoading ? (
+          <button
+            type="button"
+            onClick={() => {
+              stopRef.current = true;
+              const id = jobRef.current;
+              // tell the server to stop working on it too
+              if (id) fetch(`${CHAT_WORKER_URL.replace(/\/$/, '')}/job/cancel?id=${id}`, { method: 'POST' }).catch(() => {});
+            }}
+            className="bg-slate-700 hover:bg-slate-600 text-white p-2.5 rounded-full transition-all active:scale-95 shrink-0 shadow-lg mb-0.5"
+            aria-label="Stop"
+            title="Stop"
+          >
+            <Square className="w-4 h-4 fill-current" />
+          </button>
+        ) : (
         <button
           type="submit"
           disabled={isLoading || !input.trim()}
@@ -1486,6 +1525,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
         >
           <Send className="w-4 h-4" />
         </button>
+        )}
       </form>
 
       <div className="mt-4 pt-4 border-t border-slate-800/60 flex items-center justify-center gap-1.5 flex-wrap">
