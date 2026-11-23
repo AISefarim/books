@@ -42,7 +42,7 @@ import { SuperDafErrorBoundary } from './components/SuperDafErrorBoundary';
 import { DafHub } from './components/DafHub';
 import { SuperDafHero } from './components/SuperDafHero';
 import { refFromPath, dafFromTitle, dafPath, dafRefForMedia, loadReadyDafs } from './lib/daf';
-import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats, registerMediaList, recordWebsiteVisit } from './lib/deviceTracker';
+import { recordDeviceWatch, recordDeviceBookRead, recordDeviceBookDownload, getDeviceWatchStats, getGamificationStats, registerMediaList, recordWebsiteVisit, parseDurationMinutes } from './lib/deviceTracker';
 
 // Shiurim page sections, in display order. Categories not listed here appear under Miscellaneous.
 const SHIURIM_SECTIONS: { key: string; title: string; he: string; blurb: string; groups: { title?: string; cats: string[] }[] }[] = [
@@ -1550,6 +1550,20 @@ export default function App() {
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500 max-w-7xl mx-auto px-4 md:px-0">
             {!isLoading && (
               <>
+                {/* estimated total hours: saved lengths where we have them, ~20 min (a standard episode) otherwise */}
+                {(() => {
+                  const mins = videos.reduce((t, v) => t + (parseDurationMinutes(v.duration) || 20), 0);
+                  const hours = Math.round(mins / 60);
+                  return hours > 0 ? (
+                    <div className="mb-4 text-center">
+                      <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#8a6c3c]">The AI Sefarim shiurim library</p>
+                      <p className="mt-1 text-[26px] sm:text-[32px] leading-tight text-slate-100" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 700 }}>
+                        About {hours.toLocaleString()} hours of Torah
+                      </p>
+                      <p className="text-xs text-slate-400">{videos.length.toLocaleString()} shiurim and podcasts, free</p>
+                    </div>
+                  ) : null;
+                })()}
                 <div className="mb-6 flex flex-col sm:flex-row gap-4 sm:gap-6 items-stretch sm:items-center justify-between bg-slate-900 px-4 py-2.5 sm:px-5 sm:py-3 rounded-2xl border border-slate-700 shadow-sm max-w-4xl mx-auto md:mx-0">
                   <div className="flex items-center gap-3 w-auto justify-start">
                     <div className="bg-indigo-500/10 p-2 rounded-xl border border-indigo-500/20 shrink-0 hidden sm:block">
