@@ -1038,6 +1038,17 @@ export default function App() {
   }
 
   const featuredBooks = books.filter(b => b.isFeatured);
+  // Featured series of a shiurim category = the folder of its most recent episode (owner, 2026-11-23);
+  // AI Parasha follows this week's parasha when we have it. The manual setting is only a fallback.
+  const featuredFor = (cat: string): string | undefined => {
+    const inCat = videos.filter(v => v.category === cat && v.folder);
+    if (cat === 'AI Parasha') {
+      const wk = matchParashaFolder(weeklyParasha, [...new Set(inCat.map(v => v.folder as string))]);
+      if (wk) return wk;
+    }
+    const latest = inCat.reduce<typeof inCat[number] | null>((a, v) => (!a || Number(v.createdAt || 0) > Number(a.createdAt || 0) ? v : a), null);
+    return (latest?.folder as string) || siteSettings.categoryFeaturedSeries?.[cat] || undefined;
+  };
 
   const bannerUrl = siteSettings.bannerUrl || "https://chat.whatsapp.com/DHPBDYcQ2J6KIYvJbLMrvr";
   const hasGamificationCard = activeTab === 'library' || Boolean(selectedVideo);
@@ -1712,11 +1723,11 @@ export default function App() {
                           <p className="text-center text-slate-400 text-sm font-medium mt-2">
                             {countText}
                           </p>
-                          {(siteSettings.categoryFeaturedSeries?.[cat] || (cat === 'AI Parasha' ? 'Bereshit' : undefined)) && (
+                          {featuredFor(cat) && (
                             <div className="mt-2.5 flex items-center justify-center">
                               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-indigo-500/20 text-amber-300 border border-amber-500/35 text-[10px] font-black uppercase tracking-wider shadow-sm">
                                 <Sparkles className="w-3 h-3 text-amber-400 animate-pulse" />
-                                Featured: {siteSettings.categoryFeaturedSeries?.[cat] || (cat === 'AI Parasha' ? 'Bereshit' : undefined)}
+                                Featured: {featuredFor(cat)}
                               </span>
                             </div>
                           )}
@@ -1861,7 +1872,7 @@ export default function App() {
                   disableFolders={selectedCategory === 'Top Rated' || selectedCategory === 'Recently Uploaded'}
                   mediaLabel="Media"
                   currentCategory={selectedCategory}
-                  featuredSeries={selectedCategory ? ((selectedCategory === 'AI Parasha' ? matchParashaFolder(weeklyParasha, [...new Set(videos.filter(v => v.category === 'AI Parasha').map(v => v.folder || '').filter(Boolean))]) : null) || siteSettings.categoryFeaturedSeries?.[selectedCategory] || (selectedCategory === 'AI Parasha' ? 'Bereshit' : undefined)) : undefined}
+                  featuredSeries={selectedCategory ? featuredFor(selectedCategory) : undefined}
                   onSetFeaturedSeries={(series) => {
                     if (selectedCategory) {
                       handleSetCategoryFeaturedSeries(selectedCategory, series);
