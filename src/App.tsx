@@ -1558,7 +1558,11 @@ export default function App() {
                     <div className="mb-4 text-center">
                       <p className="text-[11px] font-black uppercase tracking-[0.25em] text-[#8a6c3c]">The AI Sefarim shiurim library</p>
                       <p className="mt-1 text-[26px] sm:text-[32px] leading-tight text-slate-100" style={{ fontFamily: "'Source Serif 4', 'Iowan Old Style', Georgia, serif", fontWeight: 700 }}>
-                        About {hours.toLocaleString()} hours of Torah
+                        About{' '}
+                        <span className="inline-block align-baseline px-3 py-0.5 mx-1 rounded-xl text-[36px] sm:text-[46px] leading-none" style={{ color: '#7a1f2b', background: 'linear-gradient(180deg, rgba(212,175,55,0.18), rgba(212,175,55,0.32))', border: '1.5px solid rgba(179,152,100,0.7)', boxShadow: '0 2px 10px -4px rgba(122,31,43,0.35)' }}>
+                          {hours.toLocaleString()} hours
+                        </span>{' '}
+                        of Torah
                       </p>
                       <p className="text-xs text-slate-400">{videos.length.toLocaleString()} shiurim and podcasts, free</p>
                     </div>
