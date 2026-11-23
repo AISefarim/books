@@ -29,6 +29,7 @@ interface ChatMessage {
   role: 'user' | 'assistant';
   content: string;
   sources?: Source[];
+  stopped?: boolean;   // a question the reader stopped: shown in the chat, left out of what is sent next
 }
 
 const SUGGESTIONS = [
@@ -1078,7 +1079,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
     };
 
     try {
-      const history = nextMessages.slice(0, -1).map((m) => ({ role: m.role, content: m.content }));
+      const history = nextMessages.slice(0, -1).filter((m) => !m.stopped).map((m) => ({ role: m.role, content: m.content }));
       const u = auth.currentUser;
       const isGoogle = !!u && !u.isAnonymous && u.providerData.some((p) => p.providerId === 'google.com');
       const token = isGoogle ? await u!.getIdToken().catch(() => null) : null;
@@ -1127,9 +1128,19 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
         }
       }
       if (stopRef.current) {
-        // stopped by the reader: the question goes back into the box to edit or resend
+        // stopped by the reader: the question stays visible in the chat (marked stopped) and also goes back
+        // into the box, ready to edit or resend
+        setMessages((prev) => {
+          const copy = [...prev];
+          const last = copy[copy.length - 1];
+          if (last && last.role === 'user') copy[copy.length - 1] = { ...last, stopped: true };
+          return [...copy, { role: 'assistant', content: 'Stopped. Your question is back in the box below - edit it or send it again.', stopped: true }];
+        });
         setInput(trimmed);
-        setMessages((prev) => prev.slice(0, -1));
+        setTimeout(() => {
+          const el = textareaRef.current;
+          if (el) { el.style.height = 'auto'; el.style.height = Math.min(el.scrollHeight, 192) + 'px'; el.focus(); }
+        }, 0);
         return;
       }
       if (netFail || !res) {
@@ -1261,7 +1272,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
             >
               {m.role === 'assistant' ? (
                 <div className="text-[15px]">
-                  <Markdown text={m.content} sources={m.sources} onOpenSource={setOpenSource} />
+                  {m.stopped ? <p className="text-sm text-slate-400">⏹ {m.content}</p> : <Markdown text={m.content} sources={m.sources} onOpenSource={setOpenSource} />}
                 </div>
               ) : (
                 <>
