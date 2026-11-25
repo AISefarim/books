@@ -20,6 +20,12 @@ const firebaseConfig = typeof window !== 'undefined' && window.__firebase_config
   ? JSON.parse(window.__firebase_config) 
   : fallbackConfig;
 
+// Sign-in runs on our own domain (aisefarim.com/__/auth/*, proxied to Firebase in vercel.json). With the default
+// firebaseapp.com domain, iPhone Safari and in-app browsers block the sign-in state ("missing initial state").
+if (typeof window !== 'undefined' && /(^|\.)aisefarim\.com$/.test(window.location.hostname)) {
+  firebaseConfig.authDomain = "aisefarim.com"; // www is the same site, so one sign-in address serves both
+}
+
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 export const auth = getAuth(app);
