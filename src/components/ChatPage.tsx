@@ -988,7 +988,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
   const [waitCount, setWaitCount] = useState(1);
   const [waitOrder, setWaitOrder] = useState<number[]>(() => shuffledOrder(WAIT_CARDS.length));
   const [error, setError] = useState<string | null>(null);
-  // Guests get 2 free questions per 2 days; after that we ask for a Google
+  // Guests get 7 free questions per 2 days; after that we ask for a Google
   // sign-in (the worker enforces it) and resend the question once they do.
   const [signInFor, setSignInFor] = useState<string | null>(null);
   const [signingIn, setSigningIn] = useState(false);
@@ -1454,7 +1454,7 @@ export function ChatPage({ onExit, embedded = false, books = NO_BOOKS, media = N
             <div className="mx-auto w-12 h-12 rounded-2xl bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-600/30"><LogIn className="w-6 h-6 text-white" /></div>
             <h3 className="mt-3 text-lg sm:text-xl font-black text-slate-50">Sign in to keep learning</h3>
             <p className="mt-2 text-sm sm:text-[15px] text-slate-300 leading-relaxed max-w-md mx-auto">
-              Thank you for using Super Agent! It's completely free, and to keep it that way we ask everyone to sign in with Google after their first two questions.
+              Thank you for using Super Agent! It's completely free, and to keep it that way we ask everyone to sign in with Google after their first seven questions.
               That's how we stop bots from flooding the library and running up costs, so it stays free and fast for real learners.
             </p>
             <p className="mt-2 text-xs text-slate-400 max-w-md mx-auto">We use your sign-in only to confirm you're a real person and to save your library across your devices. Your question is saved and will send as soon as you're in.</p>
